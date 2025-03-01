@@ -1,53 +1,66 @@
-"use client"
-import { SignIn, useUser } from '@clerk/nextjs'
-import React from 'react'
-import {dark} from '@clerk/themes'
+"use client";
 
+import Link from "next/link";
+import { useState } from "react";
 
-const SignInComponent = () => {
+const SignUpComponent = () => {
+  const [user, setUser] = useState(null);
 
-  const { user } = useUser();
-
-
-  const getRedirectUrl = () => {
-   
-    const userType = user?.publicMetadata?.userType as string;
-    if (userType === "admin") {
-      return "/admin/";
-    } else if (userType === "teacher") {
-      return "/teacher/courses";
+  const handleGoogleSignIn = async () => {
+    try {
+      
+    } catch (error) {
+      console.error(error);
     }
-    return "/user/courses";
   };
 
-
   return (
-    <SignIn appearance={{
-      baseTheme: dark,
-      elements: {
-        rootBox: "flex justify-center items-center py-5",
-        cardBox: "shadow-none",
-        card: "bg-customgreys-secondarybg w-full shadow-none",
-        footer: {
-          background: "#25262F",
-          padding: "0rem 2.5rem",
-          "& > div > div:nth-child(1)": {
-            background: "#25262F",
-          },
-        },
-        formFieldLabel: "text-white-50 font-normal",
-        formButtonPrimary:
-          "bg-primary-700 text-white-100 hover:bg-primary-600 !shadow-none",
-        formFieldInput: "bg-customgreys-primarybg text-white-50 !shadow-none",
-        footerActionLink: "text-primary-750 hover:text-primary-600",
-      },
-    }}
-    signUpUrl="/signup"
-    forceRedirectUrl={getRedirectUrl()}
-    routing="hash"
-    afterSignOutUrl="/"
-    />
-  )
-}
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
+        <h2 className="text-white text-xl font-semibold text-center mb-6">
+          Sign into Eduoxy
+        </h2>
 
-export default SignInComponent
+        {/* Google Sign-In Button */}
+        <button
+          onClick={handleGoogleSignIn}
+          className="w-full bg-white text-white py-2 rounded-md flex items-center justify-center mb-4 border border-gray-300"
+        >
+          <img src="/google.png" alt="Google" className="w-5 h-5 mr-3" />
+          Continue with Google
+        </button>
+
+        <div className="text-gray-400 text-center mb-4">or</div>
+
+        <input
+          type="email"
+          placeholder="Enter your email address"
+          className="w-full bg-[#18181B] text-white px-4 py-2 rounded-md mb-3"
+        />
+        <input
+          type="password"
+          placeholder="Enter your password"
+          className="w-full bg-[#18181B] text-white px-4 py-2 rounded-md mb-4"
+        />
+
+        <div className="flex justify-between items-center text-gray-400 text-sm mb-4">
+          <span>Remember me</span>
+          <a href="/forgot-password" className="text-blue-400 hover:underline">
+            Forgot Password?
+          </a>
+        </div>
+
+        <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md">
+          Continue
+        </button>
+
+        <p className="text-gray-400 text-center mt-4">
+          Already have an account?{" "}
+          <Link href="/signup" className="text-blue-400 hover:underline">Sign Up</Link>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default SignUpComponent;

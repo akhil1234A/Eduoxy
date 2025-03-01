@@ -9,7 +9,7 @@ import {
   useCreateCourseMutation,
   useDeleteCourseMutation,
   useGetCoursesQuery,
-} from "@/state/api";
+} from "@/state/api/coursesApi";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";

@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useCarousel } from "@/hooks/useCarousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCardSearch from "@/components/CourseCardSearch";
-import { useGetCoursesQuery } from "@/state/api";
+import { useGetCoursesQuery } from "@/state/api/coursesApi";
 
 const LoadingSkeleton = () => {
   return (

@@ -192,12 +192,36 @@ declare global {
     coursePrice: string;
     courseStatus: boolean;
   }
+  interface CustomFixedModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    children: ReactNode;
+  }
+
+  export interface SignUpRequest {
+    name: string;
+    email: string;
+    password: string;
+    userType: string;
+  }
+  
+  export interface LoginRequest {
+    email: string;
+    password: string;
+  }
+  
+  export interface VerifyOtpRequest {
+    email: string;
+    otp: string;
+  }
+  
+  export interface Tokens {
+    accessToken: string;
+    refreshToken?: string;
+  }
+  
 }
 
-interface CustomFixedModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  children: ReactNode;
-}
+
 
 export {};

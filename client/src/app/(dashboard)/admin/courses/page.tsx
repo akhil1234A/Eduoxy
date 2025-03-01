@@ -9,7 +9,7 @@ import { useState, useMemo } from "react";
 import Loading from "@/components/Loading";
 import {
   useGetCoursesQuery,
-} from "@/state/api";
+} from "@/state/api/coursesApi";
 
 const Courses = () => {
   const router = useRouter();

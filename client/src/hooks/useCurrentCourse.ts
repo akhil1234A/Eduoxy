@@ -1,4 +1,4 @@
-import { useGetCourseQuery } from "@/state/api";
+import { useGetCourseQuery } from "@/state/api/coursesApi";
 import { useSearchParams } from "next/navigation";
 
 export const useCurrentCourse = () => {

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Course from "../../infrastructure/models/courseModel";
+import Course from "../models/courseModel";
 import { v4 as uuidv4 } from "uuid";
 import { getAuth } from "@clerk/express";
 import cloudinary from "cloudinary";
