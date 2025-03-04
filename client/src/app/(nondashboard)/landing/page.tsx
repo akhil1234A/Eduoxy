@@ -43,9 +43,15 @@ const LoadingSkeleton = () => {
 };
 
 const Landing = () => {
+  const currentImage = useCarousel({ totalImages: 3 });
+  const { data, isLoading, isError } = useGetCoursesQuery({});
 
-   const currentImage = useCarousel({totalImages: 3});
-   const { data: courses, isLoading, isError } = useGetCoursesQuery({});
+  if (isLoading) return <LoadingSkeleton />;
+  if (isError) return <div>Error loading courses</div>;
+
+  // Extract the Course[] from ApiResponse
+  const courses = data?.data || []; // Fallback to empty array if undefined
+  const slicedCourses = courses.slice(0, 4); // Safe to slice now
 
   return (
     <motion.div
@@ -96,7 +102,7 @@ const Landing = () => {
         viewport={{ amount: 0.3, once: true }}
         className="landing__featured"
       >
-         <h2 className="landing__featured-title">Featured Courses</h2>
+        <h2 className="landing__featured-title">Featured Courses</h2>
         <p className="landing__featured-description">
           From beginner to advanced, in all industries, we have the right
           courses just for you and preparing your entire journey for learning
@@ -118,23 +124,18 @@ const Landing = () => {
         </div>
 
         <div className="landing__courses">
-        {courses &&
-            courses.slice(0, 4).map((course, index) => (
-              <motion.div
-                key={course.courseId}
-                initial={{ y: 50, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-                viewport={{ amount: 0.4 }}
-              >
-                <CourseCardSearch
-                  course={course}
-                  // onClick={() => handleCourseClick(course.courseId)}
-                />
-              </motion.div>
-            ))}
+          {slicedCourses.map((course, index) => (
+            <motion.div
+              key={course.courseId}
+              initial={{ y: 50, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              viewport={{ amount: 0.4 }}
+            >
+              <CourseCardSearch course={course} />
+            </motion.div>
+          ))}
         </div>
-       
       </motion.div>
     </motion.div>
   );

@@ -11,6 +11,11 @@ export const signupSchema = z.object({
   userType: z.enum(['student', 'teacher', 'admin']),
 });
 
+export const loginSchema = z.object({
+  email: z.string().email("Invalid email address").min(1, "Email is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export const otpSchema = z.string().length(6, 'Passcode must be 6 digits');
 
 // Course Editor Schemas

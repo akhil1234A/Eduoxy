@@ -1,16 +1,28 @@
-"use client"
-import { Bell, BookOpen } from "lucide-react";
-import { dark } from '@clerk/themes';
-import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
+"use client";
+import { Bell, BookOpen, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+// Mock auth state (replace with your actual auth implementation)
+const useMockAuth = () => {
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [userRole, setUserRole] = useState<"student" | "teacher">("student");
+  const [userName, setUserName] = useState("John Doe");
+
+  return { isSignedIn, userRole, userName };
+};
 
 const NonDashboardNavbar = () => {
-
-  const { user } = useUser();
-  const userRole = user?.publicMetadata.userType as "student" | "teacher";
-  console.log(userRole);
- 
+  const { isSignedIn, userRole, userName } = useMockAuth();
 
   return (
     <nav className="nondashboard-navbar">
@@ -37,47 +49,67 @@ const NonDashboardNavbar = () => {
           </div>
         </div>
         <div className="nondashboard-navbar__actions">
-          <button className="nondashboard-navbar__notification-button">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="nondashboard-navbar__notification-button"
+          >
             <span className="nondashboard-navbar__notification-indicator"></span>
             <Bell className="nondashboard-navbar__notification-icon" />
-          </button>
+          </Button>
 
-          <SignedIn>
-            <UserButton
-              appearance={{
-                baseTheme: dark,
-                elements: {
-                  userButtonOuterIdentifier: "text-customgreys-dirtyGrey",
-                  userButtonBox: "scale-90 sm:scale-100",
-                },
-              }}
-              showName={true}
-              userProfileMode="navigation"
-              userProfileUrl={
-                userRole === "teacher" ? "/teacher/profile" : "/user/profile"
-              }
-            />
-          </SignedIn>
-          <SignedOut>
-            <Link
-              href="/signin"
-              className="nondashboard-navbar__auth-button--login"
-              scroll={false}
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="nondashboard-navbar__auth-button--signup"
-              scroll={false}
-            >
-              Sign up
-            </Link>
-          </SignedOut>
+          {isSignedIn ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="flex items-center gap-2 text-customgreys-dirtyGrey scale-90 sm:scale-100"
+                >
+                  <span>{userName}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link
+                    href={userRole === "teacher" ? "/teacher/profile" : "/user/profile"}
+                  >
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                asChild
+                className="nondashboard-navbar__auth-button--login"
+              >
+                <Link href="/signin" scroll={false}>
+                  Log in
+                </Link>
+              </Button>
+              <Button
+                variant="default"
+                asChild
+                className="nondashboard-navbar__auth-button--signup"
+              >
+                <Link href="/signup" scroll={false}>
+                  Sign up
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </nav>
   );
 };
 
-export default NonDashboardNavbar;
+export default NonDashboardNavbar

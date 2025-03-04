@@ -1,12 +1,14 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { customBaseQuery } from "./baseQuery"; 
+import { clearToken } from "../reducer/auth.reducer";
 
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: customBaseQuery,
+  tagTypes: ["Auth"],
   endpoints: (builder) => ({
-    signUp: builder.mutation<{ message: string }, SignUpRequest>({
+    signUp: builder.mutation<ApiResponse<void>, SignUpRequest>({
       query: (body) => ({
         url: "/auth/signup",
         method: "POST",
@@ -14,15 +16,21 @@ export const authApi = createApi({
       }),
     }),
 
-    login: builder.mutation<Tokens, LoginRequest>({
+    login: builder.mutation<ApiResponse<Tokens>, LoginRequest>({
       query: (body) => ({
         url: "/auth/login",
         method: "POST",
         body,
       }),
     }),
-
-    verifyOtp: builder.mutation<{ message: string }, VerifyOtpRequest>({
+    refresh: builder.mutation<ApiResponse<Tokens>, void>({
+      query: () => ({
+        url: "/auth/refresh",
+        method: "POST",
+        credentials: "include", // Send refreshToken cookie
+      }),
+    }),
+    verifyOtp: builder.mutation<ApiResponse<void>, VerifyOtpRequest>({
       query: (body) => ({
         url: "/auth/verify-otp",
         method: "POST",
@@ -30,11 +38,16 @@ export const authApi = createApi({
       }),
     }),
 
-    logout: builder.mutation<{ message: string }, void>({
+    logout: builder.mutation<ApiResponse<void>, void>({
       query: () => ({
         url: "/auth/logout",
         method: "POST",
+        credentials: "include",
       }),
+      onQueryStarted: async (_, { dispatch }) => {
+        dispatch(clearToken()); 
+        dispatch(authApi.util.invalidateTags(["Auth"]));
+      },
     }),
   }),
 });
@@ -42,6 +55,7 @@ export const authApi = createApi({
 export const {
   useSignUpMutation,
   useLoginMutation,
+  useRefreshMutation,
   useVerifyOtpMutation,
   useLogoutMutation,
 } = authApi;

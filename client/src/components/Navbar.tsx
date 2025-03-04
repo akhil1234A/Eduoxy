@@ -1,16 +1,38 @@
 "use client";
 
-import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
-import { Bell, BookOpen } from "lucide-react";
-import Link from "next/link";
 import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/state/redux";
+import { Bell, BookOpen, User as UserIcon } from "lucide-react";
+import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useLogoutMutation } from "@/state/redux";
+import { clearToken } from "@/state/reducer/auth.reducer";
+import { useRouter } from "next/navigation";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const { user } = useUser();
-  const userRole = user?.publicMetadata?.userType as "student" | "teacher";
+  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout().unwrap();
+      dispatch(clearToken());
+      router.push("/signin");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const toggleProfileCard = () => {
+    setIsProfileOpen((prev) => !prev);
+  };
+
+  const profileRoute = user?.userType === "teacher" ? "/teacher/profile" : "/user/profile";
 
   return (
     <nav className="dashboard-navbar">
@@ -43,21 +65,37 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
             <Bell className="nondashboard-navbar__notification-icon" />
           </button>
 
-          <UserButton
-            appearance={{
-              baseTheme: dark,
-              elements: {
-                userButtonOuterIdentifier: "text-customgreys-dirtyGrey",
-                userButtonBox: "scale-90 sm:scale-100",
-              },
-            }}
-            showName={true}
-            userProfileMode="navigation"
-            userProfileUrl={
-              userRole === "teacher" ? "/teacher/profile" : "/user/profile"
-            }
-            
-          />
+          {/* Profile Icon with Dropdown Card */}
+          <div className="relative">
+            <button
+              onClick={toggleProfileCard}
+              className="dashboard-navbar__profile-button"
+              disabled={isLoggingOut}
+            >
+              <UserIcon className="text-customgreys-dirtyGrey" size={24} />
+            </button>
+
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-customgreys-primarybg border border-gray-700 rounded-md shadow-lg z-10">
+                <div className="py-1">
+                  <Link
+                    href={profileRoute}
+                    className="block px-4 py-2 text-sm text-customgreys-dirtyGrey hover:bg-customgreys-secondarybg"
+                    onClick={() => setIsProfileOpen(false)}
+                  >
+                    Manage Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-customgreys-dirtyGrey hover:bg-customgreys-secondarybg"
+                    disabled={isLoggingOut}
+                  >
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>

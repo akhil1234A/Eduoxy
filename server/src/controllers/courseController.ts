@@ -1,14 +1,8 @@
 import { Request, Response } from "express";
 import Course from "../models/courseModel";
 import { v4 as uuidv4 } from "uuid";
-import { getAuth } from "@clerk/express";
-import cloudinary from "cloudinary";
 
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { successResponse, errorResponse, AuthenticatedRequest } from "../types/types";
 
 export const listCourses = async (req: Request, res: Response): Promise<void> => {
   const { category } = req.query;
@@ -16,9 +10,9 @@ export const listCourses = async (req: Request, res: Response): Promise<void> =>
     const courses = category && category !== "all"
       ? await Course.find({ category })
       : await Course.find();
-    res.json({ message: "Courses retrieved successfully", data: courses });
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving courses", error });
+      res.json(successResponse("Courses retrieved successfully", courses));  
+    } catch (error: any) {
+      res.status(500).json(errorResponse("Error retrieving courses", error.message));
   }
 };
 
@@ -30,9 +24,9 @@ export const getCourse = async (req: Request, res: Response): Promise<void> => {
       res.status(404).json({ message: "Course not found" });
       return;
     }
-    res.json({ message: "Course retrieved successfully", data: course });
-  } catch (error) {
-    res.status(500).json({ message: "Error retrieving course", error });
+    res.json(successResponse("Course retrieved successfully", course));
+  } catch (error:any) {
+    res.status(500).json(errorResponse("Error retrieving course", error.message));
   }
 };
 
@@ -59,33 +53,33 @@ export const createCourse = async (req: Request, res: Response): Promise<void> =
     });
     
     await newCourse.save();
-    res.json({ message: "Course created successfully", data: newCourse });
-  } catch (error) {
-    res.status(500).json({ message: "Error creating course", error });
+    res.json(successResponse("Course created successfully", newCourse));
+  } catch (error:any) {
+    res.status(500).json(errorResponse("Error creating course", error.message));
   }
 };
 
 
 
-export const updateCourse = async (req: Request, res: Response): Promise<void> => {
+export const updateCourse = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { courseId } = req.params;
   const updateData = { ...req.body };
-  const { userId } = getAuth(req);
+  const userId = req.user?.userId; 
   
   try {
     const course = await Course.findOne({ courseId });
     if (!course) {
-      res.status(404).json({ message: "Course not found" });
+      res.status(404).json(errorResponse("Course not found"));
       return;
     }
     if (course.teacherId !== userId) {
-      res.status(403).json({ message: "Not authorized to update this course " });
+      res.status(403).json(errorResponse("Not authorized to update this course"));
       return;
     }
     if (updateData.price) {
       const price = parseInt(updateData.price);
       if (isNaN(price)) {
-        res.status(400).json({ message: "Invalid price format", error: "Price must be a valid number" });
+        res.status(400).json(errorResponse("Invalid price format", "Price must be a valid number"));
         return;
       }
       updateData.price = price * 100;
@@ -107,19 +101,19 @@ export const updateCourse = async (req: Request, res: Response): Promise<void> =
     Object.assign(course, updateData);
   
     await course.save();
-    res.json({ message: "Course updated successfully", data: course });
+    res.json(successResponse("Course updated successfully", course));
   } catch (error: unknown) {
     console.error("Error updating course:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ message: "Error updating course", error: errorMessage });
+    res.status(500).json(errorResponse("Error updating course", errorMessage));
   }
 };
 
 
 
-export const deleteCourse = async (req: Request, res: Response): Promise<void> => {
+export const deleteCourse = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { courseId } = req.params;
-  const { userId } = getAuth(req);
+  const userId = req.user?.userId;
 
   try {
     const course = await Course.findOneAndDelete({ 
@@ -128,13 +122,13 @@ export const deleteCourse = async (req: Request, res: Response): Promise<void> =
     });
 
     if (!course) {
-      res.status(404).json({ message: "Course not found or not authorized" });
+      res.status(404).json(errorResponse("Course not found or not authorized"));
       return;
     }
 
-    res.json({ message: "Course deleted successfully", data: course });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting course", error });
+    res.json(successResponse("Course deleted successfully", course));
+  } catch (error:any) {
+    res.status(500).json(errorResponse("Error deleting course", error.message));
   }
 };
 

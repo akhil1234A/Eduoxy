@@ -1,30 +1,31 @@
 "use client";
 
-import Toolbar from "@/components/Toolbar";
-import CourseCard from "@/components/CourseCard";
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
-import { useUser } from "@clerk/nextjs";
-import { useState, useMemo } from "react";
+import Toolbar from "@/components/Toolbar";
+import CourseCard from "@/components/CourseCard";
 import Loading from "@/components/Loading";
-import {
-  useGetCoursesQuery,
-} from "@/state/api/coursesApi";
+import { useGetCoursesQuery } from "@/state/api/coursesApi";
 
 const Courses = () => {
   const router = useRouter();
-  const { user, isLoaded } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   const {
-      data: courses,
-      isLoading,
-      isError,
-    } = useGetCoursesQuery({ category: "all" });
+    data: courseResponse,
+    isLoading,
+    isError,
+  } = useGetCoursesQuery({ category: "all" });
+
+  // Extract courses from ApiResponse
+  const courses = courseResponse?.data || [];
 
   const filteredCourses = useMemo(() => {
-    if (!courses) return [];
+    if (!courses.length) return [];
 
     return courses.filter((course) => {
       const matchesSearch = course.title
@@ -45,29 +46,32 @@ const Courses = () => {
       const firstChapter = course.sections[0].chapters[0];
       router.push(
         `/user/courses/${course.courseId}/chapters/${firstChapter.chapterId}`,
-        {
-          scroll: false,
-        }
+        { scroll: false }
       );
     } else {
-      router.push(`/user/courses/${course.courseId}`, {
-        scroll: false,
-      });
+      router.push(`/user/courses/${course.courseId}`, { scroll: false });
     }
   };
 
-  if (!isLoaded || isLoading) return <Loading />;
-  if (!user) return <div>Please sign in to view your courses.</div>;
-  if (isError || !courses || courses.length === 0)
-    return <div>You are not enrolled in any courses yet.</div>;
+  if (isLoading) return <Loading />;
+  if (isError || !courses.length) {
+    return (
+      <div className="user-courses">
+        <Header title="My Courses" subtitle="View your enrolled courses" />
+        <div>You are not enrolled in any courses yet.</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="user-courses">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="user-courses"
+    >
       <Header title="My Courses" subtitle="View your enrolled courses" />
-      <Toolbar
-        onSearch={setSearchTerm}
-        onCategoryChange={setSelectedCategory}
-      />
+      <Toolbar onSearch={setSearchTerm} onCategoryChange={setSelectedCategory} />
       <div className="user-courses__grid">
         {filteredCourses.map((course) => (
           <CourseCard
@@ -77,8 +81,9 @@ const Courses = () => {
           />
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
+
 
 export default Courses;

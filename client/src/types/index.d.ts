@@ -202,22 +202,38 @@ declare global {
     name: string;
     email: string;
     password: string;
-    userType: string;
+    userType: "student" | "teacher";
   }
   
-  export interface LoginRequest {
+  interface LoginRequest {
     email: string;
     password: string;
   }
   
-  export interface VerifyOtpRequest {
+  interface VerifyOtpRequest {
     email: string;
     otp: string;
   }
+
+  interface UserResponse {
+  id:string;
+  name: string;
+  email: string;
+  userType: "student" | "admin" | "teacher";
+  isVerified: boolean;
+  }
   
-  export interface Tokens {
+  interface Tokens {
     accessToken: string;
-    refreshToken?: string;
+    user: UserResponse
+    // refreshToken?: string;
+  }
+
+  interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data?: T;
+    error?: string | object;
   }
   
 }

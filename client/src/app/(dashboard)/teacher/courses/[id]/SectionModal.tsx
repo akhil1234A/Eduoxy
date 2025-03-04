@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
+
 const SectionModal = () => {
   const dispatch = useAppDispatch();
   const { isSectionModalOpen, selectedSectionIndex, sections } = useAppSelector(

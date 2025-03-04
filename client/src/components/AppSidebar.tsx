@@ -1,6 +1,7 @@
-import { useClerk, useUser } from "@clerk/nextjs";
-import { usePathname } from "next/navigation";
+"use client";
+
 import React from "react";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -21,18 +22,26 @@ import {
   User,
   Users,
   BarChart,
-  Code
+  Code,
 } from "lucide-react";
-import Loading from "./Loading"
-import Image from "next/image";
+import Loading from "./Loading";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useLogoutMutation } from "@/state/api/authApi"; // Adjust path
+import { useDispatch, useSelector } from "react-redux";
+import { clearToken } from "@/state/reducer/auth.reducer"; // Adjust path
+import { useRouter } from "next/navigation";
+import { RootState } from "@/state/redux";
 
 const AppSidebar = () => {
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
+  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const dispatch = useDispatch();
+  const router = useRouter();
+
+
+  const { token, user } = useSelector((state: RootState)=>state.auth);
 
   const navLinks = {
     student: [
@@ -57,12 +66,21 @@ const AppSidebar = () => {
     ],
   };
 
-  if (!isLoaded) return <Loading />;
-  if (!user) return <div>User not found</div>;
+  const handleSignOut = async () => {
+    try {
+      await logout().unwrap();
+      dispatch(clearToken()); // Clear Redux token
+      router.push("/signin"); // Redirect to sign-in page
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
-  const userType =
-    (user.publicMetadata.userType as "student" | "teacher") || "student";
-  const currentNavLinks = navLinks[userType];
+  // Placeholder for loading state - adjust if fetching user data
+  if (isLoggingOut) return <Loading />;
+
+  const currentUserType = user?.userType || "student";
+  const currentNavLinks = navLinks[currentUserType as keyof typeof navLinks];
 
   return (
     <Sidebar
@@ -80,13 +98,6 @@ const AppSidebar = () => {
             >
               <div className="app-sidebar__logo-container group">
                 <div className="app-sidebar__logo-wrapper">
-                  {/* <Image
-                    src="/logo.svg"
-                    alt="logo"
-                    width={25}
-                    height={20}
-                    className="app-sidebar__logo"
-                  /> */}
                   <p className="app-sidebar__title">EDUOXY</p>
                 </div>
                 <PanelLeft className="app-sidebar__collapse-icon" />
@@ -144,8 +155,9 @@ const AppSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <button
-                onClick={() => signOut()}
+                onClick={handleSignOut}
                 className="app-sidebar__signout"
+                disabled={isLoggingOut}
               >
                 <LogOut className="mr-2 h-6 w-6" />
                 <span>Sign out</span>

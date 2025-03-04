@@ -1,13 +1,18 @@
 "use client";
-import AppSidebar from "@/components/AppSidebar";
-import Loading from "@/components/Loading";
-import Navbar from "@/components/Navbar";
+
+import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useUser } from "@clerk/nextjs";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-// import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar";
+import AppSidebar from "@/components/AppSidebar";
+import Navbar from "@/components/Navbar";
+import Loading from "@/components/Loading"; // Uncommented for optional use
+import { useSelector, useDispatch } from "react-redux"; 
+import { RootState } from "@/state/redux";
+import { useRefreshMutation } from "@/state/api/authApi";
+import { setToken } from "@/state/reducer/auth.reducer";
+ 
+// import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar"; // Kept commented as per original
 
 export default function DashboardLayout({
   children,
@@ -16,10 +21,11 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [courseId, setCourseId] = useState<string | null>(null);
-  const { user, isLoaded } = useUser();
-  const isCoursePage = /^\/user\/courses\/[^\/]+(?:\/chapters\/[^\/]+)?$/.test(
-    pathname
-  );
+  const { token } = useSelector((state: RootState) => state.auth); // Check auth state
+  const dispatch = useDispatch();
+  const [refresh, { isLoading: isRefreshing }] = useRefreshMutation();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isCoursePage = /^\/user\/courses\/[^\/]+(?:\/chapters\/[^\/]+)?$/.test(pathname);
 
   useEffect(() => {
     if (isCoursePage) {
@@ -30,8 +36,36 @@ export default function DashboardLayout({
     }
   }, [isCoursePage, pathname]);
 
-  if (!isLoaded) return <Loading />;
-  if (!user) return <div>Please sign in to access this page.</div>;
+  useEffect(() => {
+    const restoreAuth = async () => {
+      if (!token) {
+        try {
+          const response = await refresh().unwrap();
+          if (response.success && response.data) {
+            dispatch(
+              setToken({
+                token: response.data.accessToken,
+                user: response.data.user as UserResponse,
+              })
+            );
+            console.log("Token restored:", response.data.accessToken);
+          }
+        } catch (error) {
+          console.error("Failed to restore token on reload:", error);
+          // Token refresh failed (e.g., refreshToken expired or invalid)
+        }
+      }
+      setIsInitialLoad(false);
+    };
+
+    restoreAuth();
+  }, [token, refresh, dispatch]);
+
+  // Show loading during initial token check or refresh
+  if (isInitialLoad || isRefreshing) return <Loading />;
+
+  // Show sign-in message if no token after refresh attempt
+  if (!token) return <div>Please sign in to access this page.</div>;
 
   return (
     <SidebarProvider>
@@ -53,4 +87,4 @@ export default function DashboardLayout({
       </div>
     </SidebarProvider>
   );
-}
+};

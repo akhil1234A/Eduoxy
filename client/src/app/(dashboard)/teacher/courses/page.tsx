@@ -10,15 +10,18 @@ import {
   useDeleteCourseMutation,
   useGetCoursesQuery,
 } from "@/state/api/coursesApi";
-import { useUser } from "@clerk/nextjs";
+// import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/state/redux";
 
 const Courses = () => {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, token } = useSelector((state: RootState) => state.auth);
+
   const {
-    data: courses,
+    data: courseResponse,
     isLoading,
     isError,
   } = useGetCoursesQuery({ category: "all" });
@@ -28,6 +31,8 @@ const Courses = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const courses = courseResponse?.data || [];
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
@@ -55,11 +60,12 @@ const Courses = () => {
   };
 
   const handleCreateCourse = async () => {
-    if (!user) return;
+    if (!token) return;
+   
 
     const result = await createCourse({
-      teacherId: user.id,
-      teacherName: user.fullName || "Unknown Teacher",
+      teacherId: user?.id || 'Undefined',
+      teacherName: user?.name || "Unknown Teacher",
     }).unwrap();
     router.push(`/teacher/courses/${result.courseId}`, {
       scroll: false,
@@ -67,7 +73,14 @@ const Courses = () => {
   };
 
   if (isLoading) return <Loading />;
-  if (isError || !courses) return <div>Error loading courses.</div>;
+  if (isError || !courses.length) {
+    return (
+      <div className="teacher-courses">
+        <Header title="Courses" subtitle="Browse your courses" />
+        <div>Error loading courses or no courses available.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="teacher-courses">
@@ -78,6 +91,7 @@ const Courses = () => {
           <Button
             onClick={handleCreateCourse}
             className="teacher-courses__header"
+            disabled={!token}
           >
             Create Course
           </Button>

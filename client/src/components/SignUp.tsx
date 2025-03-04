@@ -4,24 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSignUpMutation } from "@/state/redux";
 import { signupSchema } from "@/lib/schema";
-import { useRouter } from "next/navigation";
 import EnterPasscodeComponent from "./EnterPasscodeComponent";
-import { z } from 'zod';
-
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { setToken } from "@/state/reducer/auth.reducer";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { z } from "zod";
+import Image from "next/image";
 
 const SignUpComponent = () => {
- 
   const [formData, setFormData] = useState<SignUpRequest>({
-    name: '',
-    email: '',
-    password: '',
-    userType: 'student',
+    name: "",
+    email: "",
+    password: "",
+    userType: "student",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [signUp, { isLoading, error }] = useSignUpMutation();
-  const router = useRouter();
   const [showPasscodeStep, setShowPasscodeStep] = useState(false);
-
+  const router = useRouter();
+  const dispatch = useDispatch();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -50,37 +53,85 @@ const SignUpComponent = () => {
 
     try {
       const response = await signUp(formData).unwrap();
-      localStorage.setItem('signupEmail', response.email);
-      setShowPasscodeStep(true);
+      if (response.success) {
+        localStorage.setItem("signupEmail", formData.email);
+        localStorage.setItem("userType", formData.userType);
+        setShowPasscodeStep(true);
+      }
     } catch (err) {
-      
-      console.error('Signup error:', err);
+      console.error("Signup error:", err);
+      const errorMessage =
+      (err as { data?: { error?: string; message?: string } }).data?.error ||
+      (err as Error).message ||
+      "An error occurred during signup";
+      // const errorMessage = err.data?.error || err.message || "An error occurred during signup";
+      setErrors((prev) => ({ ...prev, general: errorMessage }));
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+
+      // Send ID token to backend Google signup endpoint
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Include cookies
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        dispatch(setToken({ token: data.data.accessToken, user: data.data.user }));
+        const userType = data.data.user.userType;
+        switch (userType) {
+          case "admin":
+            router.push("/admin/courses");
+            break;
+          case "teacher":
+            router.push("/teacher/courses");
+            break;
+          case "student":
+            router.push("/user/courses");
+            break;
+          default:
+            router.push("/user/courses");
+        }
+      } else {
+        throw new Error(data.message || "Google sign-up failed");
+      }
+    } catch (error) {
+      console.error("Google sign-up error:", error);
+      setErrors((prev) => ({ ...prev, general: "Google sign-up failed" }));
     }
   };
 
   if (showPasscodeStep) {
-    return <EnterPasscodeComponent email={formData.email} />;
+    return <EnterPasscodeComponent email={formData.email} userType={formData.userType}/>;
   }
 
   return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
-      <h2 className="text-white text-xl font-semibold text-center mb-6">
+        <h2 className="text-white text-xl font-semibold text-center mb-6">
           Sign up for Eduoxy
-      </h2>
+        </h2>
 
-        {/* Google Sign-In Button */}
         <button
-          // onClick={handleGoogleSignIn}
+          onClick={handleGoogleSignUp}
           className="w-full bg-white text-white py-2 rounded-md flex items-center justify-center mb-4 border border-gray-300"
+          disabled={isLoading}
         >
-          <img src="/google.png" alt="Google" className="w-5 h-5 mr-3" />
+          <Image src="/google.png" alt="Google" width={20} height={20} className="mr-3" />
           Continue with Google
         </button>
 
         <div className="text-gray-400 text-center mb-4">or</div>
 
-        {/* Signup Form */}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <input
@@ -121,7 +172,9 @@ const SignUpComponent = () => {
           </div>
 
           <div className="mb-4">
+            <label htmlFor="userType" className="sr-only">User Type:</label>
             <select
+              id="userType"
               name="userType"
               value={formData.userType}
               onChange={handleChange}
@@ -129,13 +182,16 @@ const SignUpComponent = () => {
             >
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
-              
             </select>
           </div>
 
-          {error && (
+          {errors.general && (
+            <p className="text-red-400 text-sm mb-4">{errors.general}</p>
+          )}
+          {error && !errors.general && (
             <p className="text-red-400 text-sm mb-4">
-              {(error as any)?.data?.error || 'An error occurred'}
+              {/* {(error as any)?.data?.error || "An error occurred"} */}
+              {(error as { data?: { error?: string } })?.data?.error || "An error occurred"}
             </p>
           )}
 
@@ -144,13 +200,12 @@ const SignUpComponent = () => {
             disabled={isLoading}
             className="w-full bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-md disabled:opacity-50"
           >
-            {isLoading ? 'Signing up...' : 'Continue'}
+            {isLoading ? "Signing up..." : "Continue"}
           </button>
         </form>
 
-
         <p className="text-gray-400 text-center mt-4">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link href="/signin" className="text-blue-400 hover:underline">
             Sign in
           </Link>
