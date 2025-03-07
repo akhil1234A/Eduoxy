@@ -4,7 +4,7 @@ import { CustomFormField } from "@/components/CustomFormField";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { courseSchema } from "@/lib/schema";
+import { courseSchema, CourseFormData } from "@/lib/schema";
 import {
   centsToDollars,
   createCourseFormData,
@@ -30,11 +30,11 @@ const CourseEditor = () => {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const { data: course, isLoading, refetch } = useGetCourseQuery(id);
+  const { data: course, isLoading } = useGetCourseQuery(id);
   const [updateCourse] = useUpdateCourseMutation();
 
   const dispatch = useAppDispatch();
-  const { sections } = useAppSelector((state) => state.global.courseEditor);
+  const sections = useAppSelector((state) => state.global.courseEditor.sections || []); // Fallback to empty array
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
@@ -50,23 +50,19 @@ const CourseEditor = () => {
   useEffect(() => {
     if (course) {
       methods.reset({
-        courseTitle: course.title,
-        courseDescription: course.description,
-        courseCategory: course.category,
-        coursePrice: centsToDollars(course.price),
+        courseTitle: course.title || "",
+        courseDescription: course.description || "",
+        courseCategory: course.category || "",
+        coursePrice: centsToDollars(course.price) || "0",
         courseStatus: course.status === "Published",
       });
       dispatch(setSections(course.sections || []));
     }
-  }, [course, methods,dispatch]);
+  }, [course, methods, dispatch]);
 
   const onSubmit = async (data: CourseFormData) => {
     try {
-    
-      const updatedSections = await uploadAllVideos(
-        sections,id
-      );
-      
+      const updatedSections = await uploadAllVideos(sections, id);
       const formData = createCourseFormData(data, updatedSections);
 
       await updateCourse({
@@ -75,14 +71,14 @@ const CourseEditor = () => {
       }).unwrap();
 
       toast.success("Course updated successfully!");
-
-      await refetch();
-
       router.push("/teacher/courses", { scroll: false });
     } catch (error) {
       console.error("Failed to update course:", error);
+      toast.error("Failed to update course");
     }
   };
+
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div>
@@ -92,7 +88,7 @@ const CourseEditor = () => {
           onClick={() => router.push("/teacher/courses", { scroll: false })}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Courses</span>
+          <span>Back to Courses</span
         </button>
       </div>
 
@@ -136,17 +132,13 @@ const CourseEditor = () => {
                   type="text"
                   placeholder="Write course title here"
                   className="border-none"
-                  initialValue={course?.title}
                 />
-
                 <CustomFormField
                   name="courseDescription"
                   label="Course Description"
                   type="textarea"
                   placeholder="Write course description here"
-                  initialValue={course?.description}
                 />
-
                 <CustomFormField
                   name="courseCategory"
                   label="Course Category"
@@ -156,20 +148,14 @@ const CourseEditor = () => {
                     { value: "Web Development", label: "Web Development" },
                     { value: "Data Science", label: "Data Science" },
                     { value: "Machine Learning", label: "Machine Learning" },
-                    {
-                      value: "CyberSecurity",
-                      label: "CyberSecurity",
-                    },
+                    { value: "CyberSecurity", label: "CyberSecurity" },
                   ]}
-                  initialValue={course?.category}
                 />
-
                 <CustomFormField
                   name="coursePrice"
                   label="Course Price"
                   type="number"
                   placeholder="0"
-                  initialValue={course?.price}
                 />
               </div>
             </div>
@@ -179,7 +165,6 @@ const CourseEditor = () => {
                 <h2 className="text-2xl font-semibold text-secondary-foreground">
                   Sections
                 </h2>
-
                 <Button
                   type="button"
                   variant="outline"

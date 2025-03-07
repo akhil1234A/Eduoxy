@@ -32,7 +32,7 @@ const Courses = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const courses = courseResponse?.data || [];
+  const courses = courseResponse || [];
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];

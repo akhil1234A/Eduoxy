@@ -1,3 +1,4 @@
+"use client"
 import { CustomFormField } from "@/components/CustomFormField";
 import CustomModal from "@/components/CustomModal";
 import { Button } from "@/components/ui/button";

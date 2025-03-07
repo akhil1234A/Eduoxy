@@ -36,7 +36,7 @@ export const customBaseQuery: BaseQueryFn<
 
   if (result.error && result.error.status === 401 && !isAuthEndpoint) {
     if (!extraOptions.isRefreshing) {
-      console.log("Attempting token refresh for:", args);
+      // console.log("Attempting token refresh for:", args);
       const refreshResult = await baseQuery(
         { url: "/auth/refresh", method: "POST" },
         { ...api, extra: { ...extraOptions, isRefreshing: true } },
@@ -47,7 +47,7 @@ export const customBaseQuery: BaseQueryFn<
       if (refreshData?.success && refreshData.data?.accessToken) {
         const { accessToken, user } = refreshData.data;
         api.dispatch(setToken({ token: accessToken, user }));
-        console.log("Token refreshed successfully");
+        // console.log("Token refreshed successfully");
         result = await baseQuery(args, api, extraOptions);
       } else {
         api.dispatch(clearToken());
@@ -87,5 +87,5 @@ export const customBaseQuery: BaseQueryFn<
     return { data: { success: true, message: "No content" } as ApiResponse<null> };
   }
 
-  return { data: resultData };
+  return { data: resultData.data};
 };

@@ -50,7 +50,7 @@ const Landing = () => {
   if (isError) return <div>Error loading courses</div>;
 
   // Extract the Course[] from ApiResponse
-  const courses = data?.data || []; // Fallback to empty array if undefined
+  const courses = data || []; // Fallback to empty array if undefined
   const slicedCourses = courses.slice(0, 4); // Safe to slice now
 
   return (

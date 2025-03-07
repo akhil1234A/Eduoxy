@@ -18,7 +18,9 @@ export const setupApiStore = () => {
     reducer: rootReducer,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
-        serializableCheck: {/* ... */},
+        serializableCheck: {
+          ignoredPaths: ["global.courseEditor.sections"],
+        },
       }).concat(authApi.middleware, coursesApi.middleware),
   });
 };

@@ -41,14 +41,14 @@ export default function DashboardLayout({
       if (!token) {
         try {
           const response = await refresh().unwrap();
-          if (response.success && response.data) {
+          if (response) {
             dispatch(
               setToken({
-                token: response.data.accessToken,
-                user: response.data.user as UserResponse,
+                token: response.accessToken,
+                user: response.user as UserResponse,
               })
             );
-            console.log("Token restored:", response.data.accessToken);
+            // console.log("Token restored:", response.accessToken);
           }
         } catch (error) {
           console.error("Failed to restore token on reload:", error);
