@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useCarousel } from "@/hooks/useCarousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import CourseCardSearch from "@/components/CourseCardSearch";
-import { useGetCoursesQuery } from "@/state/api/coursesApi";
+import { useGetPublicCoursesQuery } from "@/state/api/coursesApi";
 
 const LoadingSkeleton = () => {
   return (
@@ -44,14 +44,13 @@ const LoadingSkeleton = () => {
 
 const Landing = () => {
   const currentImage = useCarousel({ totalImages: 3 });
-  const { data, isLoading, isError } = useGetCoursesQuery({});
+  const { data, isLoading, isError } = useGetPublicCoursesQuery({});
 
   if (isLoading) return <LoadingSkeleton />;
   if (isError) return <div>Error loading courses</div>;
 
-  // Extract the Course[] from ApiResponse
-  const courses = data || []; // Fallback to empty array if undefined
-  const slicedCourses = courses.slice(0, 4); // Safe to slice now
+  const courses = data?.data || []; 
+  const slicedCourses = courses.slice(0, 4); 
 
   return (
     <motion.div

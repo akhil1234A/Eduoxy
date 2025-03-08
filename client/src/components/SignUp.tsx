@@ -18,6 +18,7 @@ const SignUpComponent = () => {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     userType: "student",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -168,6 +169,20 @@ const SignUpComponent = () => {
             />
             {errors.password && (
               <p className="text-red-400 text-sm mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm Password"
+              className="w-full bg-[#18181B] text-white px-4 py-2 rounded-md"
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>
             )}
           </div>
 

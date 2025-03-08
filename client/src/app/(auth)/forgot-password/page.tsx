@@ -16,7 +16,7 @@ const ForgotPassword = () => {
     setSuccess("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/password-reset/request`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/request-password-reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

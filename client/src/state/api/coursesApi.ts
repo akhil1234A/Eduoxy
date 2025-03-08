@@ -7,9 +7,25 @@ export const coursesApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Courses"],
   endpoints: (build) => ({
-    getCourses: build.query<Course[], { category?: string }>({
+    getPublicCourses: build.query<Course[], { category?: string }>({
       query: ({ category }) => ({
-        url: "courses",
+        url: "courses/public",
+        params: { category },
+      }),
+      providesTags: ["Courses"],
+    }),
+
+    getAdminCourses: build.query<Course[], { category?: string }>({
+      query: ({ category }) => ({
+        url: "courses/admin",
+        params: { category },
+      }),
+      providesTags: ["Courses"],
+    }),
+
+    getTeacherCourses: build.query<Course[], { category?: string }>({
+      query: ({ category }) => ({
+        url: "courses/teacher",
         params: { category },
       }),
       providesTags: ["Courses"],
@@ -65,13 +81,33 @@ export const coursesApi = createApi({
       }),
       invalidatesTags: ["Courses"],
     }),
+
+    unlistCourse: build.mutation<Course, string>({
+      query: (courseId) => ({
+        url: `courses/${courseId}/unlist`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Courses"],
+    }),
+
+    publishCourse: build.mutation<Course, string>({
+      query: (courseId) => ({
+        url: `courses/${courseId}/publish`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Courses"],
+    }),
   }),
 });
 
 export const {
-  useGetCoursesQuery,
+  useGetPublicCoursesQuery,
+  useGetAdminCoursesQuery,
+  useGetTeacherCoursesQuery,
   useGetCourseQuery,
   useCreateCourseMutation,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
+  usePublishCourseMutation,
+  useUnlistCourseMutation,
 } = coursesApi;

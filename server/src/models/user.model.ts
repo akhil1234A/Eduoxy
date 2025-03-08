@@ -10,6 +10,16 @@ export interface IUser extends Document {
   isBlocked: boolean; 
 }
 
+export interface UserInput {
+  name: string;
+  email: string;
+  password?: string;
+  googleId?: string;
+  userType: "student" | "admin" | "teacher";
+  isVerified?: boolean;
+  isBlocked?: boolean;
+}
+
 const UserSchema: Schema = new Schema(
   {
     name: { type: String, required: true },

@@ -4,8 +4,12 @@ import {
   createCourse,
   deleteCourse,
   getCourse,
-  listCourses,
+  listAdminCourses,
+  listPublicCourses,
+  listTeacherCourses,
   updateCourse,
+  unlistCourse,
+  publishCourse,
 } from "../controllers/courseController";
 import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware";
 
@@ -13,9 +17,18 @@ import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware"
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.get("/", listCourses);
-router.post("/", authenticateUser, authorizeRoles("teacher"),createCourse);
+//Public
+router.get("/public", listPublicCourses);
 
+//Admin
+router.get("/admin", authenticateUser, authorizeRoles("admin"),listAdminCourses);
+router.put("/:courseId/unlist", authenticateUser, authorizeRoles("admin"), unlistCourse);
+router.put("/:courseId/publish", authenticateUser, authorizeRoles("admin"), publishCourse);
+
+
+//Teacer
+router.get("/teacher", authenticateUser, authorizeRoles("teacher"),listTeacherCourses)
+router.post("/", authenticateUser, authorizeRoles("teacher"),createCourse);
 router.get("/:courseId", getCourse);
 router.put("/:courseId", authenticateUser, authorizeRoles("teacher"),upload.single("image"), updateCourse);
 router.delete("/:courseId", authenticateUser, authorizeRoles("teacher"),deleteCourse);

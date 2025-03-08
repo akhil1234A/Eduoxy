@@ -8,23 +8,23 @@ import { Button } from "@/components/ui/button";
 import {
   useCreateCourseMutation,
   useDeleteCourseMutation,
-  useGetCoursesQuery,
+  useGetTeacherCoursesQuery,
 } from "@/state/api/coursesApi";
-// import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/state/redux";
+import { toast } from "sonner";
 
 const Courses = () => {
   const router = useRouter();
   const { user, token } = useSelector((state: RootState) => state.auth);
 
   const {
-    data: courseResponse,
+    data, 
     isLoading,
     isError,
-  } = useGetCoursesQuery({ category: "all" });
+  } = useGetTeacherCoursesQuery({ category: "all" });
 
   const [createCourse] = useCreateCourseMutation();
   const [deleteCourse] = useDeleteCourseMutation();
@@ -32,11 +32,9 @@ const Courses = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const courses = courseResponse || [];
+  const courses: Course[] = useMemo(() => data?.data || [], [data]);
 
   const filteredCourses = useMemo(() => {
-    if (!courses) return [];
-
     return courses.filter((course) => {
       const matchesSearch = course.title
         .toLowerCase()
@@ -48,28 +46,32 @@ const Courses = () => {
   }, [courses, searchTerm, selectedCategory]);
 
   const handleEdit = (course: Course) => {
-    router.push(`/teacher/courses/${course.courseId}`, {
-      scroll: false,
-    });
+    router.push(`/teacher/courses/${course.courseId}`, { scroll: false });
   };
 
   const handleDelete = async (course: Course) => {
     if (window.confirm("Are you sure you want to delete this course?")) {
-      await deleteCourse(course.courseId).unwrap();
+      try {
+        await deleteCourse(course.courseId).unwrap();
+        toast.success("Course deleted successfully!");
+      } catch (error) {
+        toast.error("Failed to delete course");
+      }
     }
   };
 
   const handleCreateCourse = async () => {
-    if (!token) return;
-   
+    if (!token || !user) return;
 
-    const result = await createCourse({
-      teacherId: user?.id || 'Undefined',
-      teacherName: user?.name || "Unknown Teacher",
-    }).unwrap();
-    router.push(`/teacher/courses/${result.courseId}`, {
-      scroll: false,
-    });
+    try {
+      const result = await createCourse({
+        teacherId: user.id,
+        teacherName: user.name || "Unknown Teacher",
+      }).unwrap();
+      router.push(`/teacher/courses/${result.courseId}`, { scroll: false });
+    } catch (error) {
+      toast.error("Failed to create course");
+    }
   };
 
   if (isLoading) return <Loading />;
@@ -97,10 +99,7 @@ const Courses = () => {
           </Button>
         }
       />
-      <Toolbar
-        onSearch={setSearchTerm}
-        onCategoryChange={setSelectedCategory}
-      />
+      <Toolbar onSearch={setSearchTerm} onCategoryChange={setSelectedCategory} />
       <div className="teacher-courses__grid">
         {filteredCourses.map((course) => (
           <TeacherCourseCard

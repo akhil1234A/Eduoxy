@@ -1,24 +1,13 @@
 declare global {
 
-  interface User {
-    userId: string;
-    firstName?: string;
-    lastName?: string;
-    username?: string;
+
+  interface IUser {
+    id: string;
+    name: string;
     email: string;
-    publicMetadata: {
-      userType: "teacher" | "student";
-    };
-    privateMetadata: {
-      settings?: UserSettings;
-      paymentMethods?: Array<PaymentMethod>;
-      defaultPaymentMethodId?: string;
-      stripeCustomerId?: string;
-    };
-    unsafeMetadata: {
-      bio?: string;
-      urls?: string[];
-    };
+    userType: "student" | "admin" | "teacher";
+    isVerified: boolean;
+    isBlocked: boolean;
   }
 
   interface Course {
@@ -31,7 +20,7 @@ declare global {
     image?: string;
     price?: number; 
     level: "Beginner" | "Intermediate" | "Advanced";
-    status: "Draft" | "Published";
+    status: "Draft" | "Published" | "Unlisted";
     sections: Section[];
     enrollments?: Array<{
       userId: string;
@@ -190,7 +179,7 @@ declare global {
     courseDescription: string;
     courseCategory: string;
     coursePrice: string;
-    courseStatus: boolean;
+    courseStatus: string;
   }
   interface CustomFixedModalProps {
     isOpen: boolean;
@@ -202,6 +191,7 @@ declare global {
     name: string;
     email: string;
     password: string;
+    confirmPassword?: string;
     userType: "student" | "teacher";
   }
   

@@ -6,13 +6,13 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import AppSidebar from "@/components/AppSidebar";
 import Navbar from "@/components/Navbar";
-import Loading from "@/components/Loading"; // Uncommented for optional use
+import Loading from "@/components/Loading"; 
 import { useSelector, useDispatch } from "react-redux"; 
 import { RootState } from "@/state/redux";
 import { useRefreshMutation } from "@/state/api/authApi";
 import { setToken } from "@/state/reducer/auth.reducer";
  
-// import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar"; // Kept commented as per original
+// import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar";
 
 export default function DashboardLayout({
   children,
@@ -21,7 +21,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [courseId, setCourseId] = useState<string | null>(null);
-  const { token } = useSelector((state: RootState) => state.auth); // Check auth state
+  const { token } = useSelector((state: RootState) => state.auth); 
   const dispatch = useDispatch();
   const [refresh, { isLoading: isRefreshing }] = useRefreshMutation();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -44,15 +44,13 @@ export default function DashboardLayout({
           if (response) {
             dispatch(
               setToken({
-                token: response.accessToken,
-                user: response.user as UserResponse,
+                token: response?.data?.accessToken,
+                user: response.data.user as UserResponse,
               })
             );
-            // console.log("Token restored:", response.accessToken);
           }
         } catch (error) {
           console.error("Failed to restore token on reload:", error);
-          // Token refresh failed (e.g., refreshToken expired or invalid)
         }
       }
       setIsInitialLoad(false);
@@ -61,10 +59,9 @@ export default function DashboardLayout({
     restoreAuth();
   }, [token, refresh, dispatch]);
 
-  // Show loading during initial token check or refresh
   if (isInitialLoad || isRefreshing) return <Loading />;
 
-  // Show sign-in message if no token after refresh attempt
+
   if (!token) return <div>Please sign in to access this page.</div>;
 
   return (

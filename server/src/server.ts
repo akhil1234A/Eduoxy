@@ -1,15 +1,13 @@
 import dotenv from "dotenv";
 import { connectDB } from "./config/database";
-import redisClient from "./config/redis"; // Import Redis client
+import redisClient from "./config/redis"; 
 import app from "./app";
 
 
-// Load environment variables
 dotenv.config();
 
 async function startServer() {
   try {
-    // Connect to MongoDB
     await connectDB();
     
     // Ensure Redis is connected

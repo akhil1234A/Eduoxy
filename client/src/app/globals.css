@@ -1551,6 +1551,49 @@ input[type="color"] {
   @apply text-customgreys-dirtyGrey hover:text-white-50 transition-colors;
 }
 
+/* Admin Courses Page */
+.admin-courses {
+  @apply w-full h-full;
+}
+
+.admin-courses__grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 mt-6 w-full;
+}
+
+.course-card-wrapper {
+  @apply flex flex-col;
+}
+
+.course-card-actions {
+  @apply flex justify-between gap-2;
+}
+
+/* Admin Management */
+.manage-users, .manage-instructors {
+  @apply w-full h-full;
+}
+
+table {
+  @apply min-w-full bg-customgreys-primarybg rounded-lg;
+}
+
+thead tr {
+  @apply bg-customgreys-darkerGrey text-white-100;
+}
+
+th {
+  @apply p-3 text-left font-semibold;
+}
+
+tbody tr {
+  @apply border-b border-customgreys-darkGrey;
+}
+
+td {
+  @apply p-3;
+}
+
+
 
 
 @layer base {

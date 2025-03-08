@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import Toolbar from "@/components/Toolbar";
 import CourseCard from "@/components/CourseCard";
 import Loading from "@/components/Loading";
-import { useGetCoursesQuery } from "@/state/api/coursesApi";
+import { useGetPublicCoursesQuery } from "@/state/api/coursesApi";
 
 const Courses = () => {
   const router = useRouter();
@@ -19,14 +19,11 @@ const Courses = () => {
     data: courseResponse,
     isLoading,
     isError,
-  } = useGetCoursesQuery({ category: "all" });
+  } = useGetPublicCoursesQuery({ category: "all" });
 
-  // Extract courses from ApiResponse
-  const courses = courseResponse?.data || [];
+  const courses: Course[] = useMemo(() => courseResponse?.data || [], [courseResponse]);
 
   const filteredCourses = useMemo(() => {
-    if (!courses.length) return [];
-
     return courses.filter((course) => {
       const matchesSearch = course.title
         .toLowerCase()
@@ -84,6 +81,5 @@ const Courses = () => {
     </motion.div>
   );
 };
-
 
 export default Courses;

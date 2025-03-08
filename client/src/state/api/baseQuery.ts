@@ -87,5 +87,5 @@ export const customBaseQuery: BaseQueryFn<
     return { data: { success: true, message: "No content" } as ApiResponse<null> };
   }
 
-  return { data: resultData.data};
+  return { data: resultData};
 };

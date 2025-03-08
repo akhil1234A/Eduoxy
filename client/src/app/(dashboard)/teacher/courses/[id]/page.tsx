@@ -30,11 +30,14 @@ const CourseEditor = () => {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const { data: course, isLoading } = useGetCourseQuery(id);
+  const { data, isLoading } = useGetCourseQuery(id);
   const [updateCourse] = useUpdateCourseMutation();
 
+  const course = data?.data || {};
   const dispatch = useAppDispatch();
-  const sections = useAppSelector((state) => state.global.courseEditor.sections || []); // Fallback to empty array
+  const sections = useAppSelector(
+    (state) => state.global.courseEditor.sections
+  ) || [];
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
@@ -48,7 +51,7 @@ const CourseEditor = () => {
   });
 
   useEffect(() => {
-    if (course) {
+    if (course && course.title) {
       methods.reset({
         courseTitle: course.title || "",
         courseDescription: course.description || "",
@@ -88,7 +91,7 @@ const CourseEditor = () => {
           onClick={() => router.push("/teacher/courses", { scroll: false })}
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Courses</span
+          <span>Back to Courses</span>
         </button>
       </div>
 
@@ -96,29 +99,43 @@ const CourseEditor = () => {
         <form onSubmit={methods.handleSubmit(onSubmit)}>
           <Header
             title="Course Setup"
-            subtitle="Complete all fields and save your course"
+            subtitle={
+              course?.status === "Unlisted"
+                ? "This course is unlisted by an admin and cannot be edited until re-published."
+                : "Complete all fields and save your course"
+            }
             rightElement={
               <div className="flex items-center space-x-4">
-                <CustomFormField
-                  name="courseStatus"
-                  label={methods.watch("courseStatus") ? "Published" : "Draft"}
-                  type="switch"
-                  className="flex items-center space-x-2"
-                  labelClassName={`text-sm font-medium ${
-                    methods.watch("courseStatus")
-                      ? "text-green-500"
-                      : "text-yellow-500"
-                  }`}
-                  inputClassName="data-[state=checked]:bg-green-500"
-                />
-                <Button
-                  type="submit"
-                  className="bg-primary-700 hover:bg-primary-600"
-                >
-                  {methods.watch("courseStatus")
-                    ? "Update Published Course"
-                    : "Save Draft"}
-                </Button>
+                {course?.status === "Unlisted" ? (
+                  <span className="text-sm text-gray-500">
+                    Unlisted (Admin Controlled)
+                  </span>
+                ) : (
+                  <>
+                    <CustomFormField
+                      name="courseStatus"
+                      label={
+                        methods.watch("courseStatus") ? "Published" : "Draft"
+                      }
+                      type="switch"
+                      className="flex items-center space-x-2"
+                      labelClassName={`text-sm font-medium ${
+                        methods.watch("courseStatus")
+                          ? "text-green-500"
+                          : "text-yellow-500"
+                      }`}
+                      inputClassName="data-[state=checked]:bg-green-500"
+                    />
+                    <Button
+                      type="submit"
+                      className="bg-primary-700 hover:bg-primary-600"
+                    >
+                      {methods.watch("courseStatus")
+                        ? "Update Published Course"
+                        : "Save Draft"}
+                    </Button>
+                  </>
+                )}
               </div>
             }
           />
@@ -132,12 +149,14 @@ const CourseEditor = () => {
                   type="text"
                   placeholder="Write course title here"
                   className="border-none"
+                  disabled={course?.status === "Unlisted"}
                 />
                 <CustomFormField
                   name="courseDescription"
                   label="Course Description"
                   type="textarea"
                   placeholder="Write course description here"
+                  disabled={course?.status === "Unlisted"}
                 />
                 <CustomFormField
                   name="courseCategory"
@@ -150,12 +169,14 @@ const CourseEditor = () => {
                     { value: "Machine Learning", label: "Machine Learning" },
                     { value: "CyberSecurity", label: "CyberSecurity" },
                   ]}
+                  disabled={course?.status === "Unlisted"}
                 />
                 <CustomFormField
                   name="coursePrice"
                   label="Course Price"
                   type="number"
                   placeholder="0"
+                  disabled={course?.status === "Unlisted"}
                 />
               </div>
             </div>
@@ -173,6 +194,7 @@ const CourseEditor = () => {
                     dispatch(openSectionModal({ sectionIndex: null }))
                   }
                   className="border-none text-primary-700 group"
+                  disabled={course?.status === "Unlisted"}
                 >
                   <Plus className="mr-1 h-4 w-4 text-primary-700 group-hover:white-100" />
                   <span className="text-primary-700 group-hover:white-100">

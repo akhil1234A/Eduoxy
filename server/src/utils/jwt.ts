@@ -1,29 +1,26 @@
 import jwt from "jsonwebtoken";
-import redis from "../config/redis";
 
-export const generateAccessToken = (userId: string, userType: string) => {
-  return jwt.sign({ userId, userType }, process.env.ACCESS_TOKEN_SECRET as string, {
-    expiresIn: "15m",
-  });
-};
+export interface IJwtService {
+  generateAccessToken(userId: string, userType: string): string;
+  generateRefreshToken(userId: string, userType: string): string;
+  verifyRefreshToken(token: string): { userId: string; userType: string };
+}
 
-export const generateRefreshToken = (userId: string, userType: string) => {
-  return jwt.sign({ userId, userType }, process.env.REFRESH_TOKEN_SECRET as string, {
-    expiresIn: "7d",
-  });
-};
-
-export const invalidateRefreshToken = async (userId: string) => {
-  await redis.del(`refresh_token:${userId}`); 
-};
-
-
-
-export const verifyRefreshToken = (token: string) => {
-  try {
-    const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET || "cat") as { userId: string, userType:string };    
-    return {userId: decoded.userId, userType: decoded.userType};
-  } catch (error) {
-    throw new Error("Invalid refresh token");
+export class JwtService implements IJwtService {
+  generateAccessToken(userId: string, userType: string): string {
+    return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "15m" });
   }
-};
+
+  generateRefreshToken(userId: string, userType: string): string {
+    return jwt.sign({ userId, userType }, process.env.JWT_REFRESH_SECRET!, { expiresIn: "7d" });
+  }
+
+  verifyRefreshToken(token: string): { userId: string; userType: string } {
+    return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { userId: string; userType: string };
+  }
+}
+
+export const jwtService = new JwtService();
+export const generateAccessToken = jwtService.generateAccessToken.bind(jwtService);
+export const generateRefreshToken = jwtService.generateRefreshToken.bind(jwtService);
+export const verifyRefreshToken = jwtService.verifyRefreshToken.bind(jwtService);

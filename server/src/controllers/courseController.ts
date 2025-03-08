@@ -1,18 +1,97 @@
 import { Request, Response } from "express";
-import Course from "../models/courseModel";
+import Course from "../models/course.model";
 import { v4 as uuidv4 } from "uuid";
 
 import { successResponse, errorResponse, AuthenticatedRequest } from "../types/types";
 
-export const listCourses = async (req: Request, res: Response): Promise<void> => {
+
+// Unlist a course (admin only)
+export const unlistCourse = async (req: Request, res: Response): Promise<void> => {
+  const { courseId } = req.params;
+
+  try {
+    const course = await Course.findOneAndUpdate(
+      { courseId },
+      { status: "Unlisted" },
+      { new: true } // Return updated document
+    );
+
+    if (!course) {
+      res.status(404).json(errorResponse("Course not found", "Course not found"));
+      return;
+    }
+
+    res.json(successResponse("Course unlisted successfully", course));
+  } catch (error: any) {
+    res.status(500).json(errorResponse("Error unlisting course", error.message));
+  }
+};
+
+// Publish a course (admin only)
+export const publishCourse = async (req: Request, res: Response): Promise<void> => {
+  const { courseId } = req.params;
+
+  try {
+    const course = await Course.findOneAndUpdate(
+      { courseId },
+      { status: "Published" },
+      { new: true } // Return updated document
+    );
+
+    if (!course) {
+      res.status(404).json(errorResponse("Course not found", "Course not found"));
+      return;
+    }
+
+    res.json(successResponse("Course published successfully", course));
+  } catch (error: any) {
+    res.status(500).json(errorResponse("Error publishing course", error.message));
+  }
+};
+
+export const listPublicCourses = async (req: Request, res: Response): Promise<void> => {
   const { category } = req.query;
   try {
-    const courses = category && category !== "all"
-      ? await Course.find({ category })
-      : await Course.find();
-      res.json(successResponse("Courses retrieved successfully", courses));  
+    const query: Record<string, unknown> = { status: "Published"};
+    if(category && category !=="all"){
+      query["category"] = category; 
+    }
+    const courses = await Course.find(query);
+    res.json(successResponse("Courses retrieved successfully", courses));  
     } catch (error: any) {
       res.status(500).json(errorResponse("Error retrieving courses", error.message));
+  }
+};
+
+export const listAdminCourses = async (req: Request, res: Response): Promise<void> => {
+  const { category } = req.query;
+  try {
+    const query = category && category !== "all" ? { category: category as string } : {};
+    const courses = await Course.find(query);
+    res.json(successResponse("All courses retrieved successfully", courses));
+  } catch (error: any) {
+    res.status(500).json(errorResponse("Error retrieving courses", error.message));
+  }
+};
+
+export const listTeacherCourses = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { category } = req.query;
+  const teacherId = req.user?.userId; 
+
+  if (!teacherId) {
+    res.status(401).json(errorResponse("Unauthorized", "Teacher ID not found"));
+    return;
+  }
+
+  try {
+    const query: Record<string, unknown> = { teacherId };
+    if (category && category !== "all") {
+      query["category"] = category;
+    }
+    const courses = await Course.find(query);
+    res.json(successResponse("Your courses retrieved successfully", courses));
+  } catch (error: any) {
+    res.status(500).json(errorResponse("Error retrieving courses", error.message));
   }
 };
 
