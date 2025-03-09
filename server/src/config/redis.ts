@@ -3,17 +3,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Define a standalone interface with correct return types
 export interface IRedisClient {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, options?: { EX: number }): Promise<string | null>;
   del(key: string): Promise<number>;
   keys(pattern: string): Promise<string[]>;
   isOpen: boolean;
-  connect(): Promise<void>; // Keep as void since we don’t use the returned client
+  connect(): Promise<void>; 
 }
 
-// Create the Redis client
 const redisClient: RedisClientType = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
@@ -26,7 +24,7 @@ redisClient.on("end", () => console.log("Redis Disconnected"));
 async function ensureRedisConnection() {
   if (!redisClient.isOpen) {
     try {
-      await redisClient.connect(); // Ignore the returned client
+      await redisClient.connect(); 
       console.log("Redis connection established");
     } catch (err) {
       console.error("Redis Connection Failed:", err);
@@ -47,7 +45,7 @@ const redisClientWrapper: IRedisClient = {
   keys: redisClient.keys.bind(redisClient),
   isOpen: redisClient.isOpen,
   connect: async () => {
-    await redisClient.connect(); // Return void
+    await redisClient.connect(); 
   },
 };
 

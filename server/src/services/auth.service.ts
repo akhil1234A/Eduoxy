@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
 import { IAuthService } from "../interfaces/auth.service";
 import { IUserRepository } from "../interfaces/user.repository";
-import { IRedisClient } from "../config/redis"; // Define this interface if not already
-import { IMailService } from "../utils/mail"; // Define this interface
-import { IJwtService } from "../utils/jwt"; // Define this interface
-import { UserResponse, AuthTokens } from "../types/types";
+import { IRedisClient } from "../config/redis"; 
+import { IMailService } from "../utils/mail"; 
+import { IJwtService } from "../utils/jwt"; 
+import { UserResponse, AuthTokens, LoginResponse } from "../types/types";
 import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 
@@ -41,13 +41,18 @@ export class AuthService implements IAuthService {
     };
   }
 
-  async login(email: string, password: string): Promise<AuthTokens & { user: UserResponse }> {
+  async login(email: string, password: string): Promise<LoginResponse> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) throw new Error("No User Found");
     if (user.isBlocked) throw new Error("User is blocked");
     if (user.googleId && !user.password) throw new Error("Use Google authentication for this account");
     if (!user.password || !(await bcrypt.compare(password, user.password))) throw new Error("Invalid credentials");
-    if (!user.isVerified) throw new Error("Account not verified. Please verify OTP.");
+    if (!user.isVerified) {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      await this.redisClient.set(`otp:${user.email}`, otp, { EX: 120 });
+      await this.mailService.sendOtpEmail(user.email, otp);
+      return { needsVerification: true, user: { id: user.id, email: user.email, userType: user.userType } };
+    }
 
     const loginAttempts = await this.redisClient.get(`login_attempts:${email}`);
     if (loginAttempts && parseInt(loginAttempts) >= 5) throw new Error("Too many failed login attempts. Try again later.");
@@ -77,15 +82,29 @@ export class AuthService implements IAuthService {
     await this.mailService.sendOtpEmail(email, otp);
   }
 
-  async verifyOtp(email: string, otp: string): Promise<boolean> {
+  async verifyOtp(email: string, otp: string): Promise<LoginResponse> {
     const storedOtp = await this.redisClient.get(`otp:${email}`);
     if (!storedOtp || storedOtp !== otp) throw new Error("Invalid or expired OTP");
 
-    await this.redisClient.del(`otp:${email}`);
     const user = await this.userRepository.findByEmail(email);
-    if (user) await this.userRepository.update(user.id, { isVerified: true });
+    if (!user) throw new Error("User not found");
 
-    return true;
+    if (!user.isVerified) {
+      await this.userRepository.update(user.id, { isVerified: true });
+    }
+
+    const accessToken = this.jwtService.generateAccessToken(user.id, user.userType);
+    const refreshToken = this.jwtService.generateRefreshToken(user.id, user.userType);
+    await this.redisClient.set(`refresh_token:${user.id}`, refreshToken, { EX: 7 * 24 * 60 * 60 });
+    await this.redisClient.del(`otp:${email}`); 
+    const userResponse: UserResponse = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      userType: user.userType,
+      isVerified: user.isVerified,
+    };
+    return { accessToken, refreshToken, user:userResponse };
   }
 
   async logout(userId: string): Promise<void> {
@@ -186,7 +205,6 @@ export class AuthService implements IAuthService {
 
     const accessToken = this.jwtService.generateAccessToken(user.id, user.userType);
     const newRefreshToken = this.jwtService.generateRefreshToken(user.id, user.userType);
-
     await this.redisClient.set(`refresh_token:${user.id}`, newRefreshToken, { EX: 7 * 24 * 60 * 60 });
 
     const userResponse: UserResponse = {
@@ -196,7 +214,6 @@ export class AuthService implements IAuthService {
       userType: user.userType,
       isVerified: user.isVerified,
     };
-
     return { accessToken, refreshToken: newRefreshToken, user: userResponse };
   }
 

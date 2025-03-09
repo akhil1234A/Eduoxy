@@ -16,7 +16,7 @@ export const authApi = createApi({
       }),
     }),
 
-    login: builder.mutation<ApiResponse<Tokens>, LoginRequest>({
+    login: builder.mutation<ApiResponse<LoginResponseData>, LoginRequest>({
       query: (body) => ({
         url: "/auth/login",
         method: "POST",

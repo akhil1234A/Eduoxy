@@ -55,16 +55,15 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
         setSuccess("OTP verified successfully. Redirecting...");
         localStorage.removeItem("signupEmail");
 
-        const { accessToken, user } = response.data || {}; 
-        const targetRoute = userType === "teacher" ? "/teacher/courses" : "/user/courses";
-
+        const { accessToken, user } = response.data;
         if (accessToken && user) {
           dispatch(setToken({ token: accessToken, user }));
-          setTimeout(() => router.push(targetRoute), 2000);
-        } else {
-          // Fallback navigation if no tokens
-          setTimeout(() => router.push(targetRoute), 2000);
         }
+
+        const targetRoute = userType === "teacher" ? "/teacher/courses" : "/user/courses";
+        setTimeout(() => router.push(targetRoute), 2000);
+      } else {
+        throw new Error(response.error || "OTP verification failed");
       }
     } catch (err) {
       if (err instanceof z.ZodError) {

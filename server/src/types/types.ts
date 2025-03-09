@@ -1,11 +1,11 @@
 import { Request } from "express";
-
+import { IUser } from "../models/user.model";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
     userType: string;
-  };
+  }
 }
 
 export interface ApiResponse<T> {
@@ -38,4 +38,18 @@ export interface UserResponse {
 export interface AuthTokens{
   accessToken: string;
   refreshToken: string; 
+}
+
+export interface LoginUser {
+  id?: string;
+  email: string;
+  userType: "student" | "admin" | "teacher";
+  name?: string; 
+  isVerified?: boolean; 
+}
+export interface LoginResponse {
+  accessToken?: string;
+  refreshToken?: string;
+  user?: LoginUser;
+  needsVerification?:boolean;
 }

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { IAuthService } from "../interfaces/auth.service";
-import { successResponse, errorResponse } from "../types/types";
+import { successResponse, errorResponse, LoginResponse } from "../types/types";
 import { verifyRefreshToken } from "../utils/jwt";
 
 export class AuthController {
@@ -19,16 +19,21 @@ export class AuthController {
   async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      const { accessToken, refreshToken, user } = await this.authService.login(email, password);
+      const result = await this.authService.login(email, password);
 
-      res.cookie("refreshToken", refreshToken, {
+      if (result.needsVerification) {
+        res.json(successResponse("User not verified. OTP sent to email.", result));
+        return;
+      }
+
+      res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
-      res.json(successResponse("Login successful", { accessToken, user }));
+      res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
     } catch (error: any) {
       res.status(401).json(errorResponse("Login failed", error.message));
     }
@@ -37,8 +42,16 @@ export class AuthController {
   async verifyOtp(req: Request, res: Response): Promise<void> {
     try {
       const { email, otp } = req.body;
-      await this.authService.verifyOtp(email, otp);
-      res.json(successResponse("OTP verified successfully. You can now log in."));
+      const result = await this.authService.verifyOtp(email, otp);
+
+      res.cookie("refreshToken", result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+      res.json(successResponse("OTP verified successfully", result));
     } catch (error: any) {
       res.status(400).json(errorResponse("OTP verification failed", error.message));
     }
@@ -49,9 +62,8 @@ export class AuthController {
       const refreshToken = req.cookies.refreshToken;
       if (!refreshToken) throw new Error("No refresh token provided in cookies");
   
-      const { userId, userType } = verifyRefreshToken(refreshToken); // Initial validation
+      const { userId, userType } = verifyRefreshToken(refreshToken);
       const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
-  
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

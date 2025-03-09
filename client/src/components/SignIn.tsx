@@ -11,6 +11,7 @@ import { useDispatch} from "react-redux";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { setToken } from "@/state/reducer/auth.reducer";
+import EnterPasscodeComponent from '@/components/EnterPasscodeComponent'
 
 const SignInComponent = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,8 @@ const SignInComponent = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [login, { isLoading, error }] = useLoginMutation();
+  const [showPasscodeStep, setShowPasscodeStep] = useState(false);
+  const [userType, setUserType] = useState<"student" | "teacher">("student");
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -51,23 +54,21 @@ const SignInComponent = () => {
     try {
       const response = await login(formData).unwrap();
       if (response.success && response.data) {
+
+        if (response.data?.needsVerification) {
+          setUserType(response.data.user?.userType as "student" | "teacher");
+          setShowPasscodeStep(true);
+          return;
+        }
        
         const { accessToken, user } = response.data;
         dispatch(setToken({ token: accessToken, user }));
 
-        switch (user.userType) {
-          case "admin":
-            router.push("/admin/courses");
-            break;
-          case "teacher":
-            router.push("/teacher/courses");
-            break;
-          case "student":
-            router.push("/user/courses");
-            break;
-          default:
-            router.push("/user/courses");
-        }
+        const targetRoute =
+          user.userType === "admin" ? "/admin/courses" :
+          user.userType === "teacher" ? "/teacher/courses" :
+          "/user/courses";
+        router.push(targetRoute);
       } else {
         throw new Error("Login response missing data");
       }
@@ -101,20 +102,11 @@ const SignInComponent = () => {
       const data = await response.json();
       if (data.success && data.data) {
         dispatch(setToken({ token: data.data.accessToken, user: data.data.user }));
-        const userType = data.data.user.userType;
-        switch (userType) {
-          case "admin":
-            router.push("/admin/courses");
-            break;
-          case "teacher":
-            router.push("/teacher/courses");
-            break;
-          case "student":
-            router.push("/user/courses");
-            break;
-          default:
-            router.push("/user/courses");
-        }
+        const targetRoute =
+          data.data.user.userType === "admin" ? "/admin/courses" :
+          data.data.user.userType === "teacher" ? "/teacher/courses" :
+          "/user/courses";
+        router.push(targetRoute);
       } else {
         throw new Error(data.message || "Google sign-in failed");
       }
@@ -123,6 +115,10 @@ const SignInComponent = () => {
       setErrors((prev) => ({ ...prev, general: "Google sign-in failed" }));
     }
   };
+
+  if (showPasscodeStep) {
+    return <EnterPasscodeComponent email={formData.email} userType={userType} />;
+  }
 
   return (
     <div className="flex justify-center items-center min-h-screen">

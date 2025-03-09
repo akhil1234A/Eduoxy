@@ -4,7 +4,6 @@ import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware"
 
 const router = express.Router();
 
-// Middleware to ensure only admins can access these routes
 router.use(authenticateUser, authorizeRoles("admin"));
 
 router.get("/students", adminController.listStudents.bind(adminController));

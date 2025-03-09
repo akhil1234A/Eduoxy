@@ -22,6 +22,8 @@ app.use(cors({
 
 app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
+
+//API 
 app.get("/api",(req,res)=>{
   res.send('API TEST')
 })

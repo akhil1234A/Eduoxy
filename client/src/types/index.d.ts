@@ -225,6 +225,13 @@ declare global {
     data?: T;
     error?: string | object;
   }
+
+  interface LoginResponseData {
+    accessToken?: string;
+    refreshToken?: string;
+    user?: IUser;
+    needsVerification?: boolean;
+  }
   
 }
 

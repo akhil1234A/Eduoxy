@@ -26,7 +26,7 @@ router.put("/:courseId/unlist", authenticateUser, authorizeRoles("admin"), unlis
 router.put("/:courseId/publish", authenticateUser, authorizeRoles("admin"), publishCourse);
 
 
-//Teacer
+//Teacher
 router.get("/teacher", authenticateUser, authorizeRoles("teacher"),listTeacherCourses)
 router.post("/", authenticateUser, authorizeRoles("teacher"),createCourse);
 router.get("/:courseId", getCourse);

@@ -6,7 +6,6 @@ import { AuthenticatedRequest } from "../types/types";
 
 
 
-// Middleware to authenticate the access token
 export const authenticateUser = (
   req: AuthenticatedRequest,
   res: Response,
@@ -35,7 +34,6 @@ export const authenticateUser = (
   }
 };
 
-// Middleware to authorize based on user roles
 export const authorizeRoles = (...allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction):void => {
     if (!req.user) {

@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import { successResponse, errorResponse, AuthenticatedRequest } from "../types/types";
 
 
-// Unlist a course (admin only)
 export const unlistCourse = async (req: Request, res: Response): Promise<void> => {
   const { courseId } = req.params;
 
@@ -13,7 +12,7 @@ export const unlistCourse = async (req: Request, res: Response): Promise<void> =
     const course = await Course.findOneAndUpdate(
       { courseId },
       { status: "Unlisted" },
-      { new: true } // Return updated document
+      { new: true } 
     );
 
     if (!course) {
@@ -27,7 +26,7 @@ export const unlistCourse = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-// Publish a course (admin only)
+
 export const publishCourse = async (req: Request, res: Response): Promise<void> => {
   const { courseId } = req.params;
 
@@ -35,7 +34,7 @@ export const publishCourse = async (req: Request, res: Response): Promise<void> 
     const course = await Course.findOneAndUpdate(
       { courseId },
       { status: "Published" },
-      { new: true } // Return updated document
+      { new: true } 
     );
 
     if (!course) {

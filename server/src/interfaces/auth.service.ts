@@ -1,9 +1,9 @@
-import { UserResponse, AuthTokens } from "../types/types";
+import { UserResponse, AuthTokens, LoginResponse} from "../types/types";
 
 export interface IAuthService {
   signUp(name: string, email: string, password: string, userType: "student" | "admin" | "teacher"): Promise<UserResponse>;
-  login(email: string, password: string): Promise<AuthTokens & { user: UserResponse }>;
-  verifyOtp(email: string, otp: string): Promise<boolean>;
+  login(email: string, password: string): Promise<LoginResponse>
+  verifyOtp(email: string, otp: string): Promise<LoginResponse>;
   sendOtp(email: string): Promise<void>;
   logout(userId: string): Promise<void>;
   googleAuth(idToken: string): Promise<AuthTokens & { user: UserResponse }>;
