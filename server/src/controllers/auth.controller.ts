@@ -27,6 +27,14 @@ export class AuthController {
         return;
       }
 
+      res.cookie("accessToken", result.accessToken, {
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production", 
+        sameSite: "strict", 
+        maxAge: 15 * 60 * 1000, 
+        path: "/",
+      });
+
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -46,6 +54,14 @@ export class AuthController {
       const { email, otp } = req.body;
       const result = await this.authService.verifyOtp(email, otp);
 
+      res.cookie("accessToken", result.accessToken, {
+        httpOnly: true, 
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict", 
+        maxAge: 15 * 60 * 1000, 
+        path: "/",
+      });
+
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -53,6 +69,15 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
+
+      res.cookie("userType", result?.user?.userType, {
+        httpOnly: false, 
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, 
+        path: "/",
+      });
+
       res.json(successResponse("OTP verified successfully", result));
     } catch (error) {
       const err = error as Error; 
@@ -67,6 +92,7 @@ export class AuthController {
   
       const { userId, userType } = verifyRefreshToken(refreshToken);
       const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
+      
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -74,6 +100,21 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000, 
+        path: "/",
+      });
+      res.cookie("userType", userType, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+      
       res.json(successResponse("Token refreshed", { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
@@ -88,7 +129,9 @@ export class AuthController {
         const { userId } = verifyRefreshToken(refreshToken);
         await this.authService.logout(userId);
       }
-      res.clearCookie("refreshToken");
+      res.clearCookie("accessToken", { path: "/" });
+      res.clearCookie("refreshToken", { path: "/" });
+      res.clearCookie("userType", { path: "/" });
       res.json(successResponse("Logged out successfully"));
     } catch (error) {
       const err = error as Error; 
@@ -104,6 +147,13 @@ export class AuthController {
       const { accessToken, refreshToken, user } = await this.authService.googleAuth(idToken);
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+      res.cookie("userType", user.userType, {
+        httpOnly: false,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
