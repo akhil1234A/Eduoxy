@@ -27,9 +27,9 @@ import {
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useLogoutMutation } from "@/state/api/authApi"; // Adjust path
+import { useLogoutMutation } from "@/state/api/authApi"; 
 import { useDispatch, useSelector } from "react-redux";
-import { clearToken } from "@/state/reducer/auth.reducer"; // Adjust path
+import { clearToken } from "@/state/reducer/auth.reducer"; 
 import { useRouter } from "next/navigation";
 import { RootState } from "@/state/redux";
 
@@ -69,14 +69,14 @@ const AppSidebar = () => {
   const handleSignOut = async () => {
     try {
       await logout().unwrap();
-      dispatch(clearToken()); // Clear Redux token
-      router.push("/signin"); // Redirect to sign-in page
+      dispatch(clearToken()); 
+      router.push("/signin"); 
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
-  // Placeholder for loading state - adjust if fetching user data
+ 
   if (isLoggingOut) return <Loading />;
 
   const currentUserType = user?.userType || "student";

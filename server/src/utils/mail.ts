@@ -6,7 +6,7 @@ dotenv.config();
 export const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
-  secure: false, // Use true for port 465, false for others like 587
+  secure: false, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -25,7 +25,7 @@ export class MailService implements IMailService {
         to,
         subject,
         text: otp.includes("\n")
-          ? otp // For multi-line bodies (e.g., password reset)
+          ? otp 
           : `Your ${subject.toLowerCase()} is: ${otp}. It expires in ${subject.includes("OTP") ? "2" : "15"} minutes.`,
       });
       console.log(`OTP email sent to ${to} with subject: ${subject}`);

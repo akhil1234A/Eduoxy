@@ -42,6 +42,15 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
+
+      res.cookie("userType", result?.user?.userType, {
+        httpOnly: false, 
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, 
+        path: "/",
+      });
+      
       res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
     } catch (error) {
       const err = error as Error; 
@@ -92,7 +101,7 @@ export class AuthController {
   
       const { userId, userType } = verifyRefreshToken(refreshToken);
       const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
-      
+
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

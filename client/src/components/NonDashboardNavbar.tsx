@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Mock auth state (replace with your actual auth implementation)
+
 const useMockAuth = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userRole, setUserRole] = useState<"student" | "teacher">("student");

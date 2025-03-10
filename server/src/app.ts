@@ -1,9 +1,11 @@
 import express from "express";
 import cors from "cors";
-import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
 
 import { errorHandler } from "./middleware/errorHandler";
+import { logRequests } from "./utils/logRequests";
+import { logErrors } from "./middleware/logError";
+
 import courseRoutes from "./routes/courseRoutes";
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
@@ -20,8 +22,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(morgan(':method :url :status :response-time ms - :res[content-length]'));
 
+app.use(logRequests)
 
 //API 
 app.get("/api",(req,res)=>{
@@ -32,6 +34,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
 
 // Error Handling Middleware
+app.use(logErrors);
 app.use(errorHandler);
 
 export default app;

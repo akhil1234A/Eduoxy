@@ -21,7 +21,7 @@ const ResetPassword = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Retrieve token from URL params
+  
   useEffect(() => {
     const tokenFromUrl = searchParams.get("token");
     if (tokenFromUrl) setToken(tokenFromUrl);
@@ -46,7 +46,7 @@ const ResetPassword = () => {
     }
 
     try {
-      // Validate password using Zod
+    
       passwordSchema.parse(newPassword);
 
       const response = await fetch(

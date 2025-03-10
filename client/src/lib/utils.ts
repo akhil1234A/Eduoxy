@@ -100,13 +100,10 @@ export const createCourseFormData = (
 
 
 
-// lib/utils.ts
 export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
-  // Step 1: Get the Cloudinary signature
   const res = await fetch("/api/cloudinary-signature");
   const { signature, timestamp, api_key, cloud_name } = await res.json();
 
-  // Step 2: Prepare the FormData for direct upload
   const formData = new FormData();
   formData.append("file", file);
   formData.append("api_key", api_key);
@@ -115,7 +112,6 @@ export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
   formData.append("folder", "course_videos");
   formData.append("resource_type", "video");
 
-  // Step 3: Upload directly to Cloudinary
   const cloudinaryResponse = await fetch(
     `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`,
     { method: "POST", body: formData }
@@ -125,10 +121,10 @@ export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
   if (!cloudinaryResponse.ok) {
     throw new Error(result.error?.message || "Failed to upload video");
   }
-  return result.secure_url; // Return the uploaded video URL
+  return result.secure_url;  
 };
 
-// Update uploadAllVideos to use the new function
+
 export const uploadAllVideos = async (localSections: Section[], courseId: string) => {
   const updatedSections = localSections.map((section) => ({
     ...section,

@@ -34,7 +34,7 @@ declare global {
     courseId: string;
     paymentProvider: "stripe";
     paymentMethodId?: string;
-    amount: number; // Stored in cents
+    amount: number; // Stored in paisa
     savePaymentMethod?: boolean;
   }
 

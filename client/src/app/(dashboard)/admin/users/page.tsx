@@ -14,10 +14,8 @@ const ManageUsers = () => {
   const [unblockUser] = useUnblockUserMutation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Memoized students data
   const students = useMemo(() => data?.data || [], [data]);
 
-  // Memoized filtered students
   const filteredStudents = useMemo(() => {
     return students.filter(
       (student) =>

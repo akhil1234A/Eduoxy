@@ -5,7 +5,6 @@ import { setToken, clearToken } from "../reducer/auth.reducer";
 import { RootState } from "../redux";
 
 
-// Define extraOptions type to include isRefreshing
 interface CustomBaseQueryExtraOptions {
   isRefreshing?: boolean;
 }
@@ -14,7 +13,7 @@ export const customBaseQuery: BaseQueryFn<
   string | FetchArgs,
   ApiResponse<unknown>,
   FetchBaseQueryError,
-  CustomBaseQueryExtraOptions // Add custom extra options
+  CustomBaseQueryExtraOptions 
 > = async (args, api, extraOptions = {}) => {
   const baseQuery = fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",

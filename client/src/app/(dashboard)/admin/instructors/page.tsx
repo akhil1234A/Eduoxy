@@ -14,10 +14,10 @@ const ManageInstructors = () => {
   const [unblockUser] = useUnblockUserMutation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Memoized teachers data
+  
   const teachers = useMemo(() => data?.data || [], [data]);
 
-  // Memoized filtered teachers
+
   const filteredTeachers = useMemo(() => {
     return teachers.filter(
       (teacher) =>

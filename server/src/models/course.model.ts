@@ -2,7 +2,6 @@ import mongoose, { Document } from "mongoose";
 import { CourseLevel, ChapterType, CourseStatus } from "../types/types";
 
 
-// Define the ICourse interface with enums
 export interface ICourse {
   courseId: string;
   teacherId: string;

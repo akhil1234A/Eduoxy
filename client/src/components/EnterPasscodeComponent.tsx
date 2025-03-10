@@ -10,7 +10,7 @@ import { setToken } from "@/state/reducer/auth.reducer";
 
 interface Props {
   email: string;
-  userType: "student" | "teacher"; // Added userType prop
+  userType: "student" | "teacher"; 
 }
 
 const EnterPasscodeComponent = ({ email, userType }: Props) => {
@@ -24,7 +24,7 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  // Timer countdown
+  
   useEffect(() => {
     if (timer > 0) {
       const countdown = setInterval(() => {
@@ -32,7 +32,7 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
       }, 1000);
       return () => clearInterval(countdown);
     } else {
-      setCanResend(true); // Enable resend after timer expires
+      setCanResend(true); 
     }
   }, [timer]);
 

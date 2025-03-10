@@ -75,7 +75,6 @@ const SignUpComponent = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      // Send ID token to backend Google signup endpoint
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/google`, {
         method: "POST",
         headers: {

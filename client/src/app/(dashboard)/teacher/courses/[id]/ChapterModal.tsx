@@ -94,12 +94,12 @@ const ChapterModal = () => {
       } catch (error) {
         toast.error("Failed to upload video", { id: toastId });
         console.error("Video upload error:", error);
-        return; // Stop if upload fails
+        return; 
       } finally {
         setIsUploading(false);
       }
     } else if (typeof data.video === "string") {
-      videoUrl = data.video; // Use existing URL
+      videoUrl = data.video; 
     }
 
     const newChapter: Chapter = {
