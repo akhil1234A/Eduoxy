@@ -58,7 +58,7 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     if (updateData.price) {
       const price = parseInt(updateData.price as unknown as string);
       if (isNaN(price)) throw new Error("Invalid price format");
-      updateData.price = price * 100;
+      updateData.price = Math.round(price * 100);
     }
 
     if (updateData.sections) {

@@ -30,7 +30,11 @@ export const courseSchema = z.object({
   courseTitle: z.string().min(1, "Title is required"),
   courseDescription: z.string().min(1, "Description is required"),
   courseCategory: z.string().min(1, "Category is required"),
-  coursePrice: z.string(),
+  coursePrice: z
+    .string()
+    .min(1, "Price is required")
+    .regex(/^\d+(\.\d{1,2})?$/, "Price must be a valid number")
+    .refine((val) => parseFloat(val) >= 0, { message: "Price cannot be negative" }),
   courseStatus: z.boolean(),
 });
 
