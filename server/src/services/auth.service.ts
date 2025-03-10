@@ -4,9 +4,10 @@ import { IUserRepository } from "../interfaces/user.repository";
 import { IRedisClient } from "../config/redis"; 
 import { IMailService } from "../utils/mail"; 
 import { IJwtService } from "../utils/jwt"; 
-import { UserResponse, AuthTokens, LoginResponse } from "../types/types";
+import { UserResponse, AuthTokens, LoginResponse, UserRole } from "../types/types";
 import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
+import { User } from "@clerk/express";
 
 export class AuthService implements IAuthService {
   constructor(
@@ -25,7 +26,7 @@ export class AuthService implements IAuthService {
       name,
       email,
       password: hashedPassword,
-      userType,
+      userType: userType as UserRole,
       isVerified: false,
       isBlocked:false,
     });
@@ -36,7 +37,7 @@ export class AuthService implements IAuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
   }
@@ -51,7 +52,7 @@ export class AuthService implements IAuthService {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       await this.redisClient.set(`otp:${user.email}`, otp, { EX: 120 });
       await this.mailService.sendOtpEmail(user.email, otp);
-      return { needsVerification: true, user: { id: user.id, email: user.email, userType: user.userType } };
+      return { needsVerification: true, user: { id: user.id, email: user.email, userType: user.userType as UserRole } };
     }
 
     const loginAttempts = await this.redisClient.get(`login_attempts:${email}`);
@@ -66,7 +67,7 @@ export class AuthService implements IAuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
 
@@ -101,7 +102,7 @@ export class AuthService implements IAuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
     return { accessToken, refreshToken, user:userResponse };
@@ -129,7 +130,7 @@ export class AuthService implements IAuthService {
           name,
           email,
           googleId,
-          userType: "student",
+          userType: UserRole.STUDENT,
           isVerified: true,
           isBlocked: false,
         });
@@ -148,7 +149,7 @@ export class AuthService implements IAuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
 
@@ -211,7 +212,7 @@ export class AuthService implements IAuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      userType: user.userType,
+      userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
     return { accessToken, refreshToken: newRefreshToken, user: userResponse };

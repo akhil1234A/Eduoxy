@@ -1,10 +1,34 @@
 import { Request } from "express";
 import { IUser } from "../models/user.model";
 
+export enum UserRole {
+  ADMIN = "admin",
+  STUDENT = "student",
+  TEACHER = "teacher"
+}
+
+export enum CourseLevel {
+  Beginner = "Beginner",
+  Intermediate = "Intermediate",
+  Advanced = "Advanced",
+}
+
+export enum CourseStatus {
+  Draft = "Draft",
+  Published = "Published",
+  Unlisted = "Unlisted",
+}
+
+export enum ChapterType {
+  Text = "Text",
+  Quiz = "Quiz",
+  Video = "Video",
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     userId: string;
-    userType: string;
+    userType: UserRole;
   }
 }
 
@@ -31,7 +55,7 @@ export interface UserResponse {
   id: string
   name: string;
   email: string;
-  userType: "student" | "admin" | "teacher";
+  userType: UserRole
   isVerified: boolean;
 }
 
@@ -43,7 +67,7 @@ export interface AuthTokens{
 export interface LoginUser {
   id?: string;
   email: string;
-  userType: "student" | "admin" | "teacher";
+  userType: UserRole
   name?: string; 
   isVerified?: boolean; 
 }
@@ -52,4 +76,9 @@ export interface LoginResponse {
   refreshToken?: string;
   user?: LoginUser;
   needsVerification?:boolean;
+}
+
+export interface CourseCreationInput {
+  teacherId: string;
+  teacherName: string;
 }

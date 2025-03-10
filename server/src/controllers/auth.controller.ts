@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IAuthService } from "../interfaces/auth.service";
 import { successResponse, errorResponse, LoginResponse } from "../types/types";
 import { verifyRefreshToken } from "../utils/jwt";
-
+import { HttpStatus } from "../utils/httpStatus";
 export class AuthController {
   constructor(private authService: IAuthService) {}
 
@@ -10,9 +10,10 @@ export class AuthController {
     try {
       const { name, email, password, userType } = req.body;
       await this.authService.signUp(name, email, password, userType);
-      res.status(201).json(successResponse("User registered. OTP sent to email."));
-    } catch (error: any) {
-      res.status(400).json(errorResponse("Signup failed", error.message));
+      res.status(HttpStatus.CREATED).json(successResponse("User registered. OTP sent to email."));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Signup failed", err.message));
     }
   }
 
@@ -34,8 +35,9 @@ export class AuthController {
         path: "/",
       });
       res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
-    } catch (error: any) {
-      res.status(401).json(errorResponse("Login failed", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Login failed", err.message));
     }
   }
 
@@ -52,8 +54,9 @@ export class AuthController {
         path: "/",
       });
       res.json(successResponse("OTP verified successfully", result));
-    } catch (error: any) {
-      res.status(400).json(errorResponse("OTP verification failed", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("OTP verification failed", err.message));
     }
   }
 
@@ -72,8 +75,9 @@ export class AuthController {
         path: "/",
       });
       res.json(successResponse("Token refreshed", { accessToken, user }));
-    } catch (error: any) {
-      res.status(401).json(errorResponse("Refresh failed", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Refresh failed", err.message));
     }
   }
 
@@ -86,8 +90,9 @@ export class AuthController {
       }
       res.clearCookie("refreshToken");
       res.json(successResponse("Logged out successfully"));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Logout failed", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Logout failed", err.message));
     }
   }
 
@@ -105,8 +110,9 @@ export class AuthController {
         path: "/",
       });
       res.json(successResponse("Google login successful", { accessToken, user }));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Google authentication failed", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Google authentication failed", err.message));
     }
   }
 
@@ -117,8 +123,9 @@ export class AuthController {
 
       await this.authService.requestPasswordReset(email);
       res.json(successResponse("Password reset token sent successfully"));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Failed to request password reset", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to request password reset", err.message));
     }
   }
 
@@ -133,9 +140,10 @@ export class AuthController {
   
       await this.authService.resetPassword(token, newPassword);
       res.json(successResponse("Password reset successfully"));
-    } catch (error: any) {
-      res.status(error.message === "Invalid or expired reset token" ? 400 : 500).json(
-        errorResponse("Failed to reset password", error.message)
+    } catch (error) {
+      const err = error as Error; 
+      res.status(err.message === "Invalid or expired reset token" ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR).json(
+        errorResponse("Failed to reset password", err.message)
       );
     }
   }
@@ -148,8 +156,9 @@ export class AuthController {
 
       await this.authService.sendOtp(email);
       res.json(successResponse("OTP sent successfully"));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Failed to send OTP", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to send OTP", err.message));
     }
   }
 }

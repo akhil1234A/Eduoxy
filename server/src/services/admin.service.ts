@@ -1,16 +1,17 @@
 import { IAdminService } from "../interfaces/admin.service";
 import { IUserRepository } from "../interfaces/user.repository";
 import { IUser } from "../models/user.model";
+import { UserRole } from "../types/types";
 
 export class AdminService implements IAdminService {
   constructor(private userRepository: IUserRepository) {}
 
   async listStudents(): Promise<IUser[]> {
-    return this.userRepository.listByUserType("student");
+    return this.userRepository.listByUserType(UserRole.STUDENT);
   }
 
   async listTeachers(): Promise<IUser[]> {
-    return this.userRepository.listByUserType("teacher");
+    return this.userRepository.listByUserType(UserRole.TEACHER);
   }
 
   async blockUser(userId: string): Promise<IUser> {

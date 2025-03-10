@@ -1,7 +1,7 @@
-import { UserResponse, AuthTokens, LoginResponse} from "../types/types";
+import { UserResponse, AuthTokens, LoginResponse, UserRole} from "../types/types";
 
 export interface IAuthService {
-  signUp(name: string, email: string, password: string, userType: "student" | "admin" | "teacher"): Promise<UserResponse>;
+  signUp(name: string, email: string, password: string, userType: UserRole): Promise<UserResponse>;
   login(email: string, password: string): Promise<LoginResponse>
   verifyOtp(email: string, otp: string): Promise<LoginResponse>;
   sendOtp(email: string): Promise<void>;

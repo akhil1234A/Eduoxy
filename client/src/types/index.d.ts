@@ -79,7 +79,7 @@ declare global {
     chapterId: string;
     title: string;
     content: string;
-    video?: string | File;
+    video?: string;
     freePreview?: boolean;
     type: "Text" | "Quiz" | "Video";
   }

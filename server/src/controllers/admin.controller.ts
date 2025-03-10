@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { IAdminService } from "../interfaces/admin.service";
 import { successResponse, errorResponse } from "../types/types";
+import { HttpStatus } from "../utils/httpStatus";
 
 export class AdminController {
   constructor(private adminService: IAdminService) {}
@@ -9,8 +10,9 @@ export class AdminController {
     try {
       const students = await this.adminService.listStudents();
       res.json(successResponse("Students retrieved successfully", students));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Failed to list students", error.message));
+    } catch (error) {
+      const err = error as Error
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to list students", err.message));
     }
   }
 
@@ -18,8 +20,9 @@ export class AdminController {
     try {
       const teachers = await this.adminService.listTeachers();
       res.json(successResponse("Teachers retrieved successfully", teachers));
-    } catch (error: any) {
-      res.status(500).json(errorResponse("Failed to list teachers", error.message));
+    } catch (error) {
+      const err = error as Error; 
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to list teachers", err.message));
     }
   }
 
@@ -28,8 +31,9 @@ export class AdminController {
       const { userId } = req.params;
       const updatedUser = await this.adminService.blockUser(userId);
       res.json(successResponse("User blocked successfully", updatedUser));
-    } catch (error: any) {
-      res.status(400).json(errorResponse("Failed to block user", error.message));
+    } catch (error) {
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to block user", err.message));
     }
   }
 
@@ -38,8 +42,9 @@ export class AdminController {
       const { userId } = req.params;
       const updatedUser = await this.adminService.unblockUser(userId);
       res.json(successResponse("User unblocked successfully", updatedUser));
-    } catch (error: any) {
-      res.status(400).json(errorResponse("Failed to unblock user", error.message));
+    } catch (error) {
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to unblock user", err.message));
     }
   }
 }

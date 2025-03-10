@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import redisClient from "../config/redis";
 import { verifyRefreshToken } from "../utils/jwt";
-import { AuthenticatedRequest } from "../types/types";
+import { AuthenticatedRequest, UserRole } from "../types/types";
 
 
 
@@ -23,7 +23,7 @@ export const authenticateUser = (
       userId: string;
       userType: string;
     };
-    req.user = { userId: decoded.userId, userType: decoded.userType };
+    req.user = { userId: decoded.userId, userType: decoded.userType as UserRole };
     next();
   } catch (error) {
 

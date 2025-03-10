@@ -1,5 +1,6 @@
 import { IBaseRepository } from "./base.repository";
 import { IUser, UserInput } from "../models/user.model";
+import { UserRole } from "../types/types";
 
 export interface IUserRepository extends IBaseRepository<IUser> {
   create(data: UserInput): Promise<IUser>;
@@ -7,5 +8,5 @@ export interface IUserRepository extends IBaseRepository<IUser> {
   findByGoogleId(googleId: string): Promise<IUser | null>;
   blockUser(id: string): Promise<boolean>;
   unblockUser(id: string): Promise<boolean>;
-  listByUserType(userType: "student" | "teacher" | "admin"): Promise<IUser[]>
+  listByUserType(userType: UserRole): Promise<IUser[]>
 }

@@ -1,11 +1,12 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { UserRole } from "../types/types";
 
 export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
   googleId?:string;
-  userType: "student" | "admin" | "teacher";
+  userType: UserRole;
   isVerified: boolean;
   isBlocked: boolean; 
 }
@@ -15,7 +16,7 @@ export interface UserInput {
   email: string;
   password?: string;
   googleId?: string;
-  userType: "student" | "admin" | "teacher";
+  userType: UserRole;
   isVerified?: boolean;
   isBlocked?: boolean;
 }
@@ -26,7 +27,7 @@ const UserSchema: Schema = new Schema(
     email: { type: String, unique: true, required: true },
     password: { type: String, required: false },
     googleId: { type: String, unique: true, sparse: true },
-    userType: { type: String, enum: ["student", "admin", "teacher"], required: true },
+    userType: { type: String, enum: Object.values(UserRole), required: true },
     isVerified: {type: Boolean, default: false},
     isBlocked: {type: Boolean, default: false},
   },
