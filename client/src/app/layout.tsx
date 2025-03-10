@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans} from "next/font/google";
 import "./globals.css";
+import { Toaster } from "sonner";
 import Providers from "./providers";
 
 
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body
         className={`${dmSans.className}`}
       >
+       <Toaster richColors position="top-right" /> 
        <Providers> <div className='root-layout'>{children}</div>  </Providers>
       </body>
     </html>

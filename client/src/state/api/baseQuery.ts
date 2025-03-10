@@ -80,7 +80,8 @@ export const customBaseQuery: BaseQueryFn<
 
   const resultData = result.data as ApiResponse<unknown>;
   if (isMutationRequest && resultData?.success) {
-    toast.success(resultData.message);
+    // toast.success(resultData.message);
+    console.info(resultData.message);
   }
 
   if (result.meta?.response?.status === 204) {

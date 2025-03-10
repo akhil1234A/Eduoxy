@@ -16,10 +16,13 @@ import { addChapter, closeChapterModal, editChapter } from "@/state";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import { uploadVideoToCloudinary } from "@/lib/utils";
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB in bytes
 
 const ChapterModal = () => {
   const dispatch = useAppDispatch();
@@ -44,6 +47,8 @@ const ChapterModal = () => {
     },
   });
 
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     if (chapter) {
       methods.reset({
@@ -64,15 +69,45 @@ const ChapterModal = () => {
     dispatch(closeChapterModal());
   };
 
-  const onSubmit = (data: ChapterFormData) => {
+  const validateFileSize = (file: File): boolean => {
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File size exceeds limit of ${MAX_FILE_SIZE / (1024 * 1024)} MB`);
+      return false;
+    }
+    return true;
+  };
+
+  const onSubmit = async(data: ChapterFormData) => {
     if (selectedSectionIndex === null) return;
+
+    let videoUrl = "";
+    if (data.video instanceof File) {
+      if (!validateFileSize(data.video)) {
+        return;
+      }
+
+      setIsUploading(true);
+      const toastId = toast.loading("Uploading video...");
+      try {
+        videoUrl = await uploadVideoToCloudinary(data.video);
+        toast.success("Video uploaded successfully", { id: toastId });
+      } catch (error) {
+        toast.error("Failed to upload video", { id: toastId });
+        console.error("Video upload error:", error);
+        return; // Stop if upload fails
+      } finally {
+        setIsUploading(false);
+      }
+    } else if (typeof data.video === "string") {
+      videoUrl = data.video; // Use existing URL
+    }
 
     const newChapter: Chapter = {
       chapterId: chapter?.chapterId || uuidv4(),
       title: data.title,
       content: data.content,
-      type: data.video ? "Video" : "Text",
-      video: data.video,
+      type: videoUrl ? "Video" : "Text",
+      video: videoUrl, 
     };
 
     if (selectedChapterIndex === null) {
@@ -165,10 +200,10 @@ const ChapterModal = () => {
             />
 
             <div className="chapter-modal__actions">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isUploading}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-primary-700">
+              <Button type="submit" className="bg-primary-700" disabled={isUploading}>
                 Save
               </Button>
             </div>

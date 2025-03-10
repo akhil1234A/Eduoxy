@@ -1,10 +1,10 @@
 import React from "react";
-import { Toaster } from "sonner";
+// import { Toaster } from "sonner";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="auth-layout">
-      <Toaster />
+      {/* <Toaster /> */}
       <main className="auth-layout__main">{children}</main>
     </div>
   );

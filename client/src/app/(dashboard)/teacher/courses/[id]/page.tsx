@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CustomFormField } from "@/components/CustomFormField";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   createCourseFormData,
   uploadAllVideos,
 } from "@/lib/utils";
-import { openSectionModal, setSections } from "@/state";
+import { openSectionModal, setSections, setCourseId } from "@/state";
 import {
   useGetCourseQuery,
   useUpdateCourseMutation,
@@ -33,7 +34,8 @@ const CourseEditor = () => {
   const { data, isLoading } = useGetCourseQuery(id);
   const [updateCourse] = useUpdateCourseMutation();
 
-  const course = data?.data || {};
+  const course = useMemo(() => data?.data || {}, [data?.data]);
+
   const dispatch = useAppDispatch();
   const sections = useAppSelector(
     (state) => state.global.courseEditor.sections
@@ -60,19 +62,23 @@ const CourseEditor = () => {
         courseStatus: course.status === "Published",
       });
       dispatch(setSections(course.sections || []));
+      dispatch(setCourseId(id))
     }
-  }, [course, methods, dispatch]);
+  }, [course, methods, dispatch, id]);
 
   const onSubmit = async (data: CourseFormData) => {
     try {
+      toast.loading("Uploading videos and updating course...");
       const updatedSections = await uploadAllVideos(sections, id);
+      console.log('updatedSections',updatedSections);
       const formData = createCourseFormData(data, updatedSections);
-
+      console.log('formData',formData);
       await updateCourse({
         courseId: id,
         formData,
       }).unwrap();
 
+      toast.dismiss(); 
       toast.success("Course updated successfully!");
       router.push("/teacher/courses", { scroll: false });
     } catch (error) {

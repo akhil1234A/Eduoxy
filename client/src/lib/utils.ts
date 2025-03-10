@@ -100,41 +100,36 @@ export const createCourseFormData = (
 
 
 
-async function uploadVideo(chapter, courseId, sectionId) {
-  const file = chapter.video;
+// lib/utils.ts
+export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
+  // Step 1: Get the Cloudinary signature
+  const res = await fetch("/api/cloudinary-signature");
+  const { signature, timestamp, api_key, cloud_name } = await res.json();
 
-  if (!(file instanceof File) || file.type !== "video/mp4") {
-    throw new Error("Invalid file type. Only MP4 videos are supported.");
+  // Step 2: Prepare the FormData for direct upload
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", api_key);
+  formData.append("timestamp", timestamp);
+  formData.append("signature", signature);
+  formData.append("folder", "course_videos");
+  formData.append("resource_type", "video");
+
+  // Step 3: Upload directly to Cloudinary
+  const cloudinaryResponse = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`,
+    { method: "POST", body: formData }
+  );
+
+  const result = await cloudinaryResponse.json();
+  if (!cloudinaryResponse.ok) {
+    throw new Error(result.error?.message || "Failed to upload video");
   }
+  return result.secure_url; // Return the uploaded video URL
+};
 
-  try {
-    const formData = new FormData();
-    formData.append("video", file);
-    formData.append("courseId", courseId);
-    formData.append("sectionId", sectionId);
-    formData.append("chapterId", chapter.chapterId);
-
-    const response = await fetch("/api/upload-video", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to upload video");
-    }
-
-    const { videoUrl } = await response.json();
-    toast.success(`Video uploaded successfully for chapter ${chapter.chapterId}`);
-
-    return { ...chapter, video: videoUrl };
-  } catch (error) {
-    console.error(`Failed to upload video for chapter ${chapter.chapterId}:`, error);
-    toast.error(`Failed to upload video for chapter ${chapter.chapterId}`);
-    throw error;
-  }
-}
-
-export const uploadAllVideos = async (localSections, courseId) => {
+// Update uploadAllVideos to use the new function
+export const uploadAllVideos = async (localSections: Section[], courseId: string) => {
   const updatedSections = localSections.map((section) => ({
     ...section,
     chapters: section.chapters.map((chapter) => ({ ...chapter })),
@@ -143,14 +138,14 @@ export const uploadAllVideos = async (localSections, courseId) => {
   for (let i = 0; i < updatedSections.length; i++) {
     for (let j = 0; j < updatedSections[i].chapters.length; j++) {
       const chapter = updatedSections[i].chapters[j];
-      if (chapter.video instanceof File && chapter.video.type === "video/mp4") {
+      if (chapter.video instanceof File && chapter.video.type.startsWith("video/")) {
         try {
-          const updatedChapter = await uploadVideo(
-            chapter,
-            courseId,
-            updatedSections[i].sectionId
-          );
-          updatedSections[i].chapters[j] = updatedChapter;
+          const videoUrl = await uploadVideoToCloudinary(chapter.video);
+          updatedSections[i].chapters[j] = {
+            ...chapter,
+            video: videoUrl,
+            type: "Video",
+          };
         } catch (error) {
           console.error(`Failed to upload video for chapter ${chapter.chapterId}:`, error);
         }

@@ -7,6 +7,7 @@ interface InitialStateTypes {
     isSectionModalOpen: boolean;
     selectedSectionIndex: number | null;
     selectedChapterIndex: number | null;
+    courseId: string; 
   };
 }
 
@@ -17,6 +18,7 @@ const initialState: InitialStateTypes = {
     isSectionModalOpen: false,
     selectedSectionIndex: null,
     selectedChapterIndex: null,
+    courseId: "",
   },
 };
 
@@ -26,6 +28,9 @@ export const globalSlice = createSlice({
   reducers: {
     setSections: (state, action: PayloadAction<Section[]>) => {
       state.courseEditor.sections = action.payload;
+    },
+    setCourseId: (state, action: PayloadAction<string>) => { 
+      state.courseEditor.courseId = action.payload;
     },
     openChapterModal: (
       state,
@@ -104,6 +109,7 @@ export const globalSlice = createSlice({
 
 export const {
   setSections,
+  setCourseId,
   openChapterModal,
   closeChapterModal,
   openSectionModal,
