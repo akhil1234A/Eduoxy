@@ -7,8 +7,8 @@ export function middleware(request: NextRequest) {
  
   const routeRoles: Record<string, string> = {
     admin: "/admin",
-    instructor: "/teacher",
-    student: "/student",
+    teacher: "/teacher",
+    student: "/user",
   };
 
   const publicRoutes = ["/signin", "/signup", "/"];
@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
 
   // If a logged-in user tries to access a public route, redirect them
   if (isPublicRoute && userType) {
-    const targetRoute = routeRoles[userType] || "/student/courses";
+    const targetRoute = routeRoles[userType] || "/user/courses";
     if (!pathname.startsWith(targetRoute)) {
       return NextResponse.redirect(new URL(targetRoute, request.url));
     }
@@ -47,5 +47,5 @@ export function middleware(request: NextRequest) {
 
 
 export const config = {
-  matcher: ["/admin/:path*", "/teacher/:path*", "/student/:path*", "/signin", "/signup", "/"],
+  matcher: ["/admin/:path*", "/teacher/:path*", "/user/:path*", "/signin", "/signup", "/"],
 };
