@@ -3,6 +3,7 @@ import { IAuthService } from "../interfaces/auth.service";
 import { successResponse, errorResponse, LoginResponse } from "../types/types";
 import { verifyRefreshToken } from "../utils/jwt";
 import { HttpStatus } from "../utils/httpStatus";
+import { setAuthCookies } from "../utils/setAuthCookies";
 export class AuthController {
   constructor(private authService: IAuthService) {}
 
@@ -27,30 +28,7 @@ export class AuthController {
         return;
       }
 
-      res.cookie("accessToken", result.accessToken, {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production", 
-        sameSite: "strict", 
-        maxAge: 15 * 60 * 1000, 
-        path: "/",
-      });
-
-      res.cookie("refreshToken", result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-
-      res.cookie("userType", result?.user?.userType, {
-        httpOnly: false, 
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, 
-        path: "/",
-      });
-      
+      setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
       res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
     } catch (error) {
       const err = error as Error; 
@@ -63,29 +41,7 @@ export class AuthController {
       const { email, otp } = req.body;
       const result = await this.authService.verifyOtp(email, otp);
 
-      res.cookie("accessToken", result.accessToken, {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict", 
-        maxAge: 15 * 60 * 1000, 
-        path: "/",
-      });
-
-      res.cookie("refreshToken", result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-
-      res.cookie("userType", result?.user?.userType, {
-        httpOnly: false, 
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, 
-        path: "/",
-      });
+      setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
 
       res.json(successResponse("OTP verified successfully", result));
     } catch (error) {
@@ -102,28 +58,7 @@ export class AuthController {
       const { userId, userType } = verifyRefreshToken(refreshToken);
       const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
 
-      res.cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 15 * 60 * 1000, 
-        path: "/",
-      });
-      res.cookie("userType", userType, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-      
+      setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Token refreshed", { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
@@ -138,10 +73,11 @@ export class AuthController {
         const { userId } = verifyRefreshToken(refreshToken);
         await this.authService.logout(userId);
       }
-      res.clearCookie("accessToken", { path: "/" });
-      res.clearCookie("refreshToken", { path: "/" });
-      res.clearCookie("userType", { path: "/" });
-      res.json(successResponse("Logged out successfully"));
+      ["accessToken", "refreshToken", "userType", "userId", "userName"].forEach((cookie) =>
+        res.clearCookie(cookie, { path: "/" })
+      );
+      
+      res.status(200).json({ message: "Logged out" });
     } catch (error) {
       const err = error as Error; 
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Logout failed", err.message));
@@ -154,20 +90,7 @@ export class AuthController {
       if (!idToken) throw new Error("No ID token provided");
 
       const { accessToken, refreshToken, user } = await this.authService.googleAuth(idToken);
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
-      res.cookie("userType", user.userType, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        path: "/",
-      });
+      setAuthCookies(res, { accessToken: accessToken || "", refreshToken: refreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Google login successful", { accessToken, user }));
     } catch (error) {
       const err = error as Error; 

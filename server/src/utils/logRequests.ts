@@ -4,9 +4,10 @@ import useragent from "useragent";
 import geoip from "geoip-lite";
 
 export const logRequests = (req: Request, res: Response, next: NextFunction) => {
+  const startTime = Date.now(); 
   const { method, url, headers, ip, body, query, params } = req;
 
-  const ipAddress = ip || "0.0.0.0";
+  const ipAddress = ip || "0.0.0.0"; 
   const userId = req.cookies?.userId || "unknown";
   const userType = req.cookies?.userType || "guest";
 
@@ -14,27 +15,35 @@ export const logRequests = (req: Request, res: Response, next: NextFunction) => 
   const geo = geoip.lookup(ipAddress);
   const location = geo ? `${geo.city || "Unknown"}, ${geo.country || "Unknown"}` : "Unknown";
 
-  // Sanitize the body (avoid logging passwords, etc.)
+  
   const sanitizedBody = { ...body };
-  if (sanitizedBody.password) {
-    sanitizedBody.password = "***";
-  }
-  if (sanitizedBody.confirmPassword) {
-    sanitizedBody.confirmPassword = "***";
-  }
+  if (sanitizedBody.password) sanitizedBody.password = "***";
+  if (sanitizedBody.confirmPassword) sanitizedBody.confirmPassword = "***";
 
-  logger.info({
-    message: "API Request",
-    method,
-    url,
-    user: { id: userId, role: userType },
-    ip: ipAddress,
-    device: agent.toString(),
-    location,
-    timestamp: new Date().toISOString(),
-    query: query,  
-    params: params, 
-    body: sanitizedBody, 
+  
+  res.on("finish", () => {
+    const duration = Date.now() - startTime; 
+
+    logger.info({
+      message: "API Request",
+      method,
+      url,
+      user: { id: userId, role: userType },
+      ip: ipAddress,
+      device: agent.toString(),
+      location,
+      status: res.statusCode, 
+      responseTime: `${duration}ms`, 
+      headers: {
+        host: headers.host,
+        contentType: headers["content-type"],
+        userAgent: headers["user-agent"],
+      },
+      timestamp: new Date().toISOString(),
+      query,
+      params,
+      body: sanitizedBody,
+    });
   });
 
   next();

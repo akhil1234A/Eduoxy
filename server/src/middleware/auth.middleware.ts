@@ -11,8 +11,9 @@ export const authenticateUser = (
   res: Response,
   next: NextFunction
 ): void => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; 
+  // const authHeader = req.headers["authorization"];
+  // const token = authHeader && authHeader.split(" ")[1]; 
+  const token = req.cookies?.accessToken;
 
   if (!token) {
     return next(new Error("No token provided"))
