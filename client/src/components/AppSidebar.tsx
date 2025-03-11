@@ -28,20 +28,16 @@ import Loading from "./Loading";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useLogoutMutation } from "@/state/api/authApi"; 
-import { useDispatch, useSelector } from "react-redux";
-import { clearToken } from "@/state/reducer/auth.reducer"; 
 import { useRouter } from "next/navigation";
-import { RootState } from "@/state/redux";
+import Cookies from "js-cookie"
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-  const dispatch = useDispatch();
   const router = useRouter();
 
-
-  const { token, user } = useSelector((state: RootState)=>state.auth);
+const userType = Cookies.get('userType');
 
   const navLinks = {
     student: [
@@ -69,7 +65,6 @@ const AppSidebar = () => {
   const handleSignOut = async () => {
     try {
       await logout().unwrap();
-      dispatch(clearToken()); 
       router.push("/signin"); 
     } catch (error) {
       console.error("Logout error:", error);
@@ -79,7 +74,7 @@ const AppSidebar = () => {
  
   if (isLoggingOut) return <Loading />;
 
-  const currentUserType = user?.userType || "student";
+  const currentUserType = userType || "student";
   const currentNavLinks = navLinks[currentUserType as keyof typeof navLinks];
 
   return (

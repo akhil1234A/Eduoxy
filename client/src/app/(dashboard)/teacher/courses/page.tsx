@@ -12,13 +12,15 @@ import {
 } from "@/state/api/coursesApi";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/state/redux";
 import { toast } from "sonner";
+import Cookies from 'js-cookie'
 
 const Courses = () => {
   const router = useRouter();
-  const { user, token } = useSelector((state: RootState) => state.auth);
+  const userId = Cookies.get("userId");
+  const userName = Cookies.get("userName");
+
+  
 
   const {
     data, 
@@ -61,12 +63,12 @@ const Courses = () => {
   };
 
   const handleCreateCourse = async () => {
-    if (!token || !user) return;
+    if (!userId) return;
 
     try {
       const result = await createCourse({
-        teacherId: user.id,
-        teacherName: user.name || "Unknown Teacher",
+        teacherId: userId,
+        teacherName: userName || "Unknown Teacher",
       }).unwrap();
       router.push(`/teacher/courses/${result.courseId}`, { scroll: false });
     } catch (error) {
@@ -93,7 +95,7 @@ const Courses = () => {
           <Button
             onClick={handleCreateCourse}
             className="teacher-courses__header"
-            disabled={!token}
+            
           >
             Create Course
           </Button>
@@ -107,7 +109,7 @@ const Courses = () => {
             course={course}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            isOwner={course.teacherId === user?.id}
+            isOwner={course.teacherId === userId}
           />
         ))}
       </div>

@@ -1,8 +1,8 @@
 import { fetchBaseQuery, FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 import { BaseQueryFn, FetchArgs } from "@reduxjs/toolkit/query";
 import { toast } from "sonner";
-import { setToken, clearToken } from "../reducer/auth.reducer";
-import { RootState } from "../redux";
+// import { setToken, clearToken } from "../reducer/auth.reducer";
+// import { RootState } from "../redux";
 
 
 interface CustomBaseQueryExtraOptions {
@@ -17,14 +17,6 @@ export const customBaseQuery: BaseQueryFn<
 > = async (args, api, extraOptions = {}) => {
   const baseQuery = fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
-    prepareHeaders: (headers) => {
-      const state = api.getState() as RootState;
-      const token = state.auth.token;
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
     credentials: "include", // Send cookies
   });
 
@@ -44,12 +36,10 @@ export const customBaseQuery: BaseQueryFn<
 
       const refreshData = refreshResult.data as ApiResponse<Tokens> | undefined;
       if (refreshData?.success && refreshData.data?.accessToken) {
-        const { accessToken, user } = refreshData.data;
-        api.dispatch(setToken({ token: accessToken, user }));
-        // console.log("Token refreshed successfully");
+        
         result = await baseQuery(args, api, extraOptions);
       } else {
-        api.dispatch(clearToken());
+       
         toast.error("Session expired. Please log in again.");
         console.error("Refresh failed:", refreshResult.error || "No data");
         return {

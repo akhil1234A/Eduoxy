@@ -2,7 +2,7 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { coursesApi } from "./api/coursesApi";
 import { authApi } from "./api/authApi";
 import { adminApi } from "./api/adminApi";
-import authReducer from './reducer/auth.reducer';
+// import authReducer from './reducer/auth.reducer';
 import globalReducer from '@/state/index'
 import { useDispatch, useSelector } from "react-redux";
 import type { TypedUseSelectorHook } from "react-redux";
@@ -11,7 +11,7 @@ export const rootReducer = combineReducers({
   [authApi.reducerPath]: authApi.reducer,
   [coursesApi.reducerPath]: coursesApi.reducer,
   [adminApi.reducerPath]: adminApi.reducer,
-  auth:authReducer,
+  // auth:authReducer,
   global: globalReducer
 });
 

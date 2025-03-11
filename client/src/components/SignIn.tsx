@@ -7,10 +7,8 @@ import { loginSchema } from "@/lib/schema";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { z } from "zod";
-import { useDispatch} from "react-redux";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
-import { setToken } from "@/state/reducer/auth.reducer";
 import EnterPasscodeComponent from '@/components/EnterPasscodeComponent'
 
 const SignInComponent = () => {
@@ -23,7 +21,6 @@ const SignInComponent = () => {
   const [showPasscodeStep, setShowPasscodeStep] = useState(false);
   const [userType, setUserType] = useState<"student" | "teacher">("student");
   const router = useRouter();
-  const dispatch = useDispatch();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -62,11 +59,10 @@ const SignInComponent = () => {
         }
        
         const { accessToken, user } = response.data;
-        dispatch(setToken({ token: accessToken, user }));
 
         const targetRoute =
-          user.userType === "admin" ? "/admin/courses" :
-          user.userType === "teacher" ? "/teacher/courses" :
+          user?.userType === "admin" ? "/admin/courses" :
+          user?.userType === "teacher" ? "/teacher/courses" :
           "/user/courses";
         router.push(targetRoute);
       } else {
@@ -100,7 +96,7 @@ const SignInComponent = () => {
 
       const data = await response.json();
       if (data.success && data.data) {
-        dispatch(setToken({ token: data.data.accessToken, user: data.data.user }));
+        
         const targetRoute =
           data.data.user.userType === "admin" ? "/admin/courses" :
           data.data.user.userType === "teacher" ? "/teacher/courses" :

@@ -1,6 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { customBaseQuery } from "./baseQuery"; 
-import { clearToken } from "../reducer/auth.reducer";
+
 
 
 export const authApi = createApi({
@@ -44,8 +44,7 @@ export const authApi = createApi({
         method: "POST",
         credentials: "include",
       }),
-      onQueryStarted: async (_, { dispatch }) => {
-        dispatch(clearToken()); 
+      onQueryStarted: async (_, { dispatch }) => { 
         dispatch(authApi.util.invalidateTags(["Auth"]));
       },
     }),

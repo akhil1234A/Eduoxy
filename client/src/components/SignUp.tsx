@@ -6,8 +6,6 @@ import { useSignUpMutation } from "@/state/redux";
 import { signupSchema } from "@/lib/schema";
 import EnterPasscodeComponent from "./EnterPasscodeComponent";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
-import { setToken } from "@/state/reducer/auth.reducer";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { z } from "zod";
@@ -25,7 +23,6 @@ const SignUpComponent = () => {
   const [signUp, { isLoading, error }] = useSignUpMutation();
   const [showPasscodeStep, setShowPasscodeStep] = useState(false);
   const router = useRouter();
-  const dispatch = useDispatch();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -86,7 +83,7 @@ const SignUpComponent = () => {
 
       const data = await response.json();
       if (data.success && data.data) {
-        dispatch(setToken({ token: data.data.accessToken, user: data.data.user }));
+        
         const userType = data.data.user.userType;
         switch (userType) {
           case "admin":

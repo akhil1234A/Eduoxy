@@ -1,19 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/state/redux";
 import { Bell, BookOpen, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useLogoutMutation } from "@/state/redux";
-import { clearToken } from "@/state/reducer/auth.reducer";
 import { useRouter } from "next/navigation";
+import Cookies from 'js-cookie';
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const dispatch = useDispatch();
+  const userType = Cookies.get("userType");
   const router = useRouter();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -21,7 +18,6 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
   const handleLogout = async () => {
     try {
       await logout().unwrap();
-      dispatch(clearToken());
       router.push("/signin");
     } catch (error) {
       console.error("Logout error:", error);
@@ -32,7 +28,7 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
     setIsProfileOpen((prev) => !prev);
   };
 
-  const profileRoute = user?.userType === "teacher" ? "/teacher/profile" : "/user/profile";
+  const profileRoute = userType === "teacher" ? "/teacher/profile" : "/user/profile";
 
   return (
     <nav className="dashboard-navbar">

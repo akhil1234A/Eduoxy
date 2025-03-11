@@ -5,8 +5,6 @@ import { useVerifyOtpMutation } from "@/state/redux";
 import { otpSchema } from "@/lib/schema";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { useDispatch } from "react-redux";
-import { setToken } from "@/state/reducer/auth.reducer";
 
 interface Props {
   email: string;
@@ -22,7 +20,6 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [verifyOtp, { isLoading: verifying }] = useVerifyOtpMutation();
   const router = useRouter();
-  const dispatch = useDispatch();
 
   
   useEffect(() => {
@@ -55,12 +52,8 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
         setSuccess("OTP verified successfully. Redirecting...");
         localStorage.removeItem("signupEmail");
 
-        const { accessToken, user } = response.data;
-        if (accessToken && user) {
-          dispatch(setToken({ token: accessToken, user }));
-        }
-
-        const targetRoute = userType === "teacher" ? "/teacher/courses" : "/user/courses";
+        const { user } = response.data;
+        const targetRoute = user.userType === "teacher" ? "/teacher/courses" : "/user/courses";
         setTimeout(() => router.push(targetRoute), 2000);
       } else {
         throw new Error(response.error || "OTP verification failed");
