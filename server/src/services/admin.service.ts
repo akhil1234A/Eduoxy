@@ -2,9 +2,11 @@ import { IAdminService } from "../interfaces/admin.service";
 import { IUserRepository } from "../interfaces/user.repository";
 import { IUser } from "../models/user.model";
 import { UserRole } from "../types/types";
-
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
+@injectable()
 export class AdminService implements IAdminService {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(@inject(TYPES.IUserRepository) private userRepository: IUserRepository) {}
 
   async listStudents(): Promise<IUser[]> {
     return this.userRepository.listByUserType(UserRole.STUDENT);

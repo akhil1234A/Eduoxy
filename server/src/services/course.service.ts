@@ -4,8 +4,11 @@ import { ICourseDocument } from "../models/course.model";
 import { CourseStatus } from "../types/types";
 import { CacheUtil } from "../utils/cache";
 import { v4 as uuidv4, v4 } from "uuid";
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
+@injectable()
 export class CourseService implements ICourseService {
-  constructor(private courseRepository: ICourseRepository) {}
+  constructor(@inject(TYPES.ICourseRepository) private courseRepository: ICourseRepository) {}
 
   async createCourse(teacherId: string, teacherName: string): Promise<ICourseDocument> {
     const courseData: Partial<ICourseDocument> = { 

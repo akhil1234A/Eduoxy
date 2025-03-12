@@ -7,14 +7,15 @@ import { IJwtService } from "../utils/jwt";
 import { UserResponse, AuthTokens, LoginResponse, UserRole } from "../types/types";
 import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
-import { User } from "@clerk/express";
-
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types"
+@injectable()
 export class AuthService implements IAuthService {
   constructor(
-    private userRepository: IUserRepository,
-    private redisClient: IRedisClient,
-    private mailService: IMailService,
-    private jwtService: IJwtService
+    @inject(TYPES.IUserRepository) private userRepository: IUserRepository,
+    @inject(TYPES.IRedisClient) private redisClient: IRedisClient,
+    @inject(TYPES.IMailService) private mailService: IMailService,
+    @inject(TYPES.IJwtService) private jwtService: IJwtService
   ) {}
 
   async signUp(name: string, email: string, password: string, userType: "student" | "admin" | "teacher"): Promise<UserResponse> {

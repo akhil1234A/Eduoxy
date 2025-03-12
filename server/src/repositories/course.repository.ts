@@ -4,9 +4,11 @@ import { BaseRepository } from "./base.repository";
 import Course, { ICourseDocument} from "../models/course.model";
 import {CourseLevel, CourseStatus, ChapterType} from '../types/types';
 import { v4 as uuidv4 } from "uuid";
-
+import { inject, injectable } from "inversify";
+import TYPES from "../di/types";
+@injectable()
 export class CourseRepository extends BaseRepository<ICourseDocument> implements ICourseRepository {
-  constructor(model: Model<ICourseDocument>) {
+  constructor(@inject(TYPES.CourseModel) model: Model<ICourseDocument>) {
     super(model);
   }
 

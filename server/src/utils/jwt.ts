@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { injectable } from "inversify";
 
 export interface IJwtService {
   generateAccessToken(userId: string, userType: string): string;
@@ -6,6 +7,7 @@ export interface IJwtService {
   verifyRefreshToken(token: string): { userId: string; userType: string };
 }
 
+@injectable()
 export class JwtService implements IJwtService {
   generateAccessToken(userId: string, userType: string): string {
     return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "15m" });

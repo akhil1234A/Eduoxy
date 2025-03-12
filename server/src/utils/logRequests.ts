@@ -10,6 +10,7 @@ export const logRequests = (req: Request, res: Response, next: NextFunction) => 
   const ipAddress = ip || "0.0.0.0"; 
   const userId = req.cookies?.userId || "unknown";
   const userType = req.cookies?.userType || "guest";
+  const userName = req.cookies?.userName || 'unkown';
 
   const agent = useragent.parse(headers["user-agent"] || "");
   const geo = geoip.lookup(ipAddress);
@@ -19,6 +20,7 @@ export const logRequests = (req: Request, res: Response, next: NextFunction) => 
   const sanitizedBody = { ...body };
   if (sanitizedBody.password) sanitizedBody.password = "***";
   if (sanitizedBody.confirmPassword) sanitizedBody.confirmPassword = "***";
+  if (sanitizedBody.idToken) sanitizedBody.idToken = "***"; 
 
   
   res.on("finish", () => {
@@ -28,7 +30,7 @@ export const logRequests = (req: Request, res: Response, next: NextFunction) => 
       message: "API Request",
       method,
       url,
-      user: { id: userId, role: userType },
+      user: { id: userId, role: userType, name: userName },
       ip: ipAddress,
       device: agent.toString(),
       location,

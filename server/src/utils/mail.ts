@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import { injectable } from "inversify";
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ export const transporter = nodemailer.createTransport({
 export interface IMailService {
   sendOtpEmail(to: string, otp: string, subject?: string): Promise<void>;
 }
-
+@injectable()
 export class MailService implements IMailService {
   async sendOtpEmail(to: string, otp: string, subject: string = "Your OTP Code"): Promise<void> {
     try {

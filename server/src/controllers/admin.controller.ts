@@ -2,9 +2,10 @@ import { Request, Response } from "express";
 import { IAdminService } from "../interfaces/admin.service";
 import { successResponse, errorResponse } from "../types/types";
 import { HttpStatus } from "../utils/httpStatus";
-
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
 export class AdminController {
-  constructor(private adminService: IAdminService) {}
+  constructor(@inject(TYPES.IAdminService) private adminService: IAdminService) {}
 
   async listStudents(req: Request, res: Response): Promise<void> {
     try {

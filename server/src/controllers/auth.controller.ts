@@ -4,8 +4,13 @@ import { successResponse, errorResponse, LoginResponse } from "../types/types";
 import { verifyRefreshToken } from "../utils/jwt";
 import { HttpStatus } from "../utils/httpStatus";
 import { setAuthCookies } from "../utils/setAuthCookies";
-export class AuthController {
-  constructor(private authService: IAuthService) {}
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
+import IAuthController from "../interfaces/auth.controller";
+
+@injectable()
+export class AuthController implements IAuthController {
+  constructor(@inject(TYPES.IAuthService) private authService: IAuthService) {}
 
   async signUp(req: Request, res: Response): Promise<void> {
     try {

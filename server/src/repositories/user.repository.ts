@@ -1,9 +1,12 @@
 import { IUserRepository } from "../interfaces/user.repository";
 import { BaseRepository } from "./base.repository";
 import User, { IUser, UserInput } from "../models/user.model";
-
+import { injectable } from "inversify";
+import TYPES from "../di/types";
+import { inject } from "inversify";
+@injectable()
 export class UserRepository extends BaseRepository<IUser> implements IUserRepository {
-  constructor() {
+  constructor(@inject(TYPES.UserModel) private userModel: typeof User) {
     super(User);
   }
 

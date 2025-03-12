@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import { ICourseService } from "../interfaces/course.service";
 import { successResponse, errorResponse, AuthenticatedRequest } from "../types/types";
 import { HttpStatus } from "../utils/httpStatus";
-
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
+@injectable()
 export class CourseController {
-  constructor(private courseService: ICourseService) {}
+  constructor(@inject(TYPES.ICourseService) private courseService: ICourseService) {}
 
   async unlistCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
