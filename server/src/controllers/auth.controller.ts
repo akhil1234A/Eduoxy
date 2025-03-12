@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { IAuthService } from "../interfaces/auth.service";
 import { successResponse, errorResponse, LoginResponse } from "../types/types";
-import { verifyRefreshToken } from "../utils/jwt";
+import { IJwtService} from "../utils/jwt";
+import { IRedisClient } from "../config/redis";
 import { HttpStatus } from "../utils/httpStatus";
 import { setAuthCookies } from "../utils/setAuthCookies";
 import { injectable, inject } from "inversify";
@@ -10,7 +11,7 @@ import IAuthController from "../interfaces/auth.controller";
 
 @injectable()
 export class AuthController implements IAuthController {
-  constructor(@inject(TYPES.IAuthService) private authService: IAuthService) {}
+  constructor(@inject(TYPES.IAuthService) private authService: IAuthService, @inject(TYPES.IJwtService) private jwtService: IJwtService, @inject(TYPES.IRedisClient) private redisClient: IRedisClient) {}
 
   async signUp(req: Request, res: Response): Promise<void> {
     try {
@@ -59,8 +60,13 @@ export class AuthController implements IAuthController {
     try {
       const refreshToken = req.cookies.refreshToken;
       if (!refreshToken) throw new Error("No refresh token provided in cookies");
+
+      const isBlacklisted = await this.redisClient.get(`blacklist:${refreshToken}`);
+     if (isBlacklisted) {
+      throw new Error("Refresh token is invalid or expired");
+    }
   
-      const { userId, userType } = verifyRefreshToken(refreshToken);
+      const { userId, userType } = this.jwtService.verifyRefreshToken(refreshToken);
       const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
 
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
@@ -74,9 +80,10 @@ export class AuthController implements IAuthController {
   async logout(req: Request, res: Response): Promise<void> {
     try {
       const refreshToken = req.cookies.refreshToken;
+      const accessToken = req.cookies.accessToken;
       if (refreshToken) {
-        const { userId } = verifyRefreshToken(refreshToken);
-        await this.authService.logout(userId);
+        const { userId } = this.jwtService.verifyRefreshToken(refreshToken);
+        await this.authService.logout(userId, accessToken);
       }
       ["accessToken", "refreshToken", "userType", "userId", "userName"].forEach((cookie) =>
         res.clearCookie(cookie, { path: "/" })

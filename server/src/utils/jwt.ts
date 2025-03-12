@@ -1,14 +1,20 @@
 import jwt from "jsonwebtoken";
-import { injectable } from "inversify";
+import { injectable, inject } from "inversify";
+import { IRedisClient } from "../config/redis";
+import TYPES from "../di/types";
 
 export interface IJwtService {
   generateAccessToken(userId: string, userType: string): string;
   generateRefreshToken(userId: string, userType: string): string;
   verifyRefreshToken(token: string): { userId: string; userType: string };
+  verifyAccessToken(token: string): { userId: string; userType: string; exp: number };
+  blacklistToken(token: string): Promise<void>;
+  isTokenBlacklisted(token: string): Promise<boolean>;
 }
 
 @injectable()
 export class JwtService implements IJwtService {
+  constructor(@inject(TYPES.IRedisClient) private redisClient: IRedisClient) {}
   generateAccessToken(userId: string, userType: string): string {
     return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "15m" });
   }
@@ -20,9 +26,19 @@ export class JwtService implements IJwtService {
   verifyRefreshToken(token: string): { userId: string; userType: string } {
     return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as { userId: string; userType: string };
   }
+  verifyAccessToken(token: string): { userId: string; userType: string; exp: number } {
+    return jwt.verify(token, process.env.JWT_SECRET!) as { userId: string; userType: string; exp: number };
+  }
+
+  async blacklistToken(token: string): Promise<void> {
+    const decoded = this.verifyAccessToken(token); 
+    const expiresIn = decoded.exp - Math.floor(Date.now() / 1000); 
+    await this.redisClient.set(`blacklist:${token}`, "true", { EX: expiresIn });
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    const result = await this.redisClient.get(`blacklist:${token}`);
+    return result === "true";
+  }
 }
 
-export const jwtService = new JwtService();
-export const generateAccessToken = jwtService.generateAccessToken.bind(jwtService);
-export const generateRefreshToken = jwtService.generateRefreshToken.bind(jwtService);
-export const verifyRefreshToken = jwtService.verifyRefreshToken.bind(jwtService);

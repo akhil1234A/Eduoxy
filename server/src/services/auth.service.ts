@@ -109,8 +109,9 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken, user:userResponse };
   }
 
-  async logout(userId: string): Promise<void> {
+  async logout(userId: string, accessToken: string): Promise<void> {
     await this.redisClient.del(`refresh_token:${userId}`);
+    await this.jwtService.blacklistToken(accessToken);
   }
 
   async googleAuth(idToken: string): Promise<AuthTokens & { user: UserResponse }> {

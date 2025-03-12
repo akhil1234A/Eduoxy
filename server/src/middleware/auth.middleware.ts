@@ -1,16 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import redisClient from "../config/redis";
-import { verifyRefreshToken } from "../utils/jwt";
 import { AuthenticatedRequest, UserRole } from "../types/types";
 
 
 
-export const authenticateUser = (
+export const authenticateUser = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   // const authHeader = req.headers["authorization"];
   // const token = authHeader && authHeader.split(" ")[1]; 
   const token = req.cookies?.accessToken;
@@ -20,6 +19,12 @@ export const authenticateUser = (
   }
 
   try {
+
+    const isBlacklisted = await redisClient.get(`blacklist:${token}`);
+    if (isBlacklisted === "true") {
+      return next(new Error("Token is blacklisted"));
+    }
+
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || "tom") as {
       userId: string;
       userType: string;
