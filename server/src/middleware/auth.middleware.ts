@@ -47,7 +47,6 @@ export const authorizeRoles = (...allowedRoles: string[]) => {
     }
 
     const { userType } = req.user;
-    console.log(userType,req.user);
     if (!allowedRoles.includes(userType)) {
       return next(new Error("Forbidden: Insufficient permissions"));
     }

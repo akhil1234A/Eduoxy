@@ -9,7 +9,7 @@ import { HttpStatus } from "../utils/httpStatus";
 export class UserCourseProgressController {
   constructor(
     @inject(TYPES.IUserCourseProgressService) private userCourseProgressService: IUserCourseProgressService
-  ) {console.log("userCourseProgressService:", this.userCourseProgressService);}
+  ) {}
 
   async getUserEnrolledCourses(req: Request, res: Response): Promise<void> {
     try {
@@ -25,9 +25,7 @@ export class UserCourseProgressController {
   async getUserCourseProgress(req: Request, res: Response): Promise<void> {
     try {
       const { userId, courseId } = req.params;
-      console.log('sd');
       const progress = await this.userCourseProgressService.getUserCourseProgress(userId, courseId);
-      console.log('resafter', progress);
       if (!progress) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course progress not found for this user"));
         return;

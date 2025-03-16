@@ -53,7 +53,6 @@ container.bind<IAuthService>(TYPES.IAuthService).to(AuthService).inSingletonScop
 container.bind<IAdminService>(TYPES.IAdminService).to(AdminService).inSingletonScope();
 container.bind<ICourseService>(TYPES.ICourseService).to(CourseService).inSingletonScope();
 container.bind<IUserCourseProgressService>(TYPES.IUserCourseProgressService).to(UserCourseProgressService).inSingletonScope();
-console.log("Bound IUserCourseProgressService");
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();

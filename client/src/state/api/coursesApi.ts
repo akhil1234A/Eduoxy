@@ -98,6 +98,11 @@ export const coursesApi = createApi({
       invalidatesTags: ["Courses"],
     }),
 
+    getUserEnrolledCourses: build.query<Course[], string>({
+      query: (userId) => `users/course-progress/${userId}/enrolled-courses`,
+      providesTags: ["Courses", "UserCourseProgress"],
+    }),
+
     getUserCourseProgress: build.query<
       UserCourseProgress,
       { userId: string; courseId: string }
@@ -159,4 +164,5 @@ export const {
   useUnlistCourseMutation,
   useGetUserCourseProgressQuery,
   useUpdateUserCourseProgressMutation, 
+  useGetUserEnrolledCoursesQuery,
 } = coursesApi;

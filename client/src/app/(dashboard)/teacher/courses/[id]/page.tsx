@@ -70,9 +70,9 @@ const CourseEditor = () => {
     try {
       toast.loading("Uploading videos and updating course...");
       const updatedSections = await uploadAllVideos(sections, id);
-      console.log('updatedSections',updatedSections);
+      // console.log('updatedSections',updatedSections);
       const formData = createCourseFormData(data, updatedSections);
-      console.log('formData',formData);
+      // console.log('formData',formData);
       await updateCourse({
         courseId: id,
         formData,

@@ -8,20 +8,26 @@ import Header from "@/components/Header";
 import Toolbar from "@/components/Toolbar";
 import CourseCard from "@/components/CourseCard";
 import Loading from "@/components/Loading";
-import { useGetPublicCoursesQuery } from "@/state/redux";
+import { useGetUserEnrolledCoursesQuery } from "@/state/redux";
+import Cookies from "js-cookie";
 
 const Courses = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const userId = Cookies.get("userId");
 
   const {
     data: courseResponse,
     isLoading,
     isError,
-  } = useGetPublicCoursesQuery({ category: "all" });
+  } = useGetUserEnrolledCoursesQuery(userId ?? "", { skip: !userId });
+
+  console.log('courseResponse', courseResponse);
 
   const courses: Course[] = useMemo(() => courseResponse?.data || [], [courseResponse]);
+
+  console.log(courses);
 
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {

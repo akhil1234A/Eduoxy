@@ -145,7 +145,6 @@ export class AuthService implements IAuthService {
     const accessToken = this.jwtService.generateAccessToken(user.id, user.userType);
     const refreshToken = this.jwtService.generateRefreshToken(user.id, user.userType);
 
-    console.log('user',user.userType);
 
     await this.redisClient.set(`refresh_token:${user.id}`, refreshToken, { EX: 7 * 24 * 60 * 60 });
 

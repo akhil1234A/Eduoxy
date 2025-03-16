@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isCoursePage, pathname]);
 
-  console.log("courseId", courseId);
+  // console.log("courseId", courseId);
 
   return (
     <SidebarProvider>

@@ -19,7 +19,6 @@ export const useCourseProgressData = () => {
     { skip: !courseId }
   );
   const course = useMemo(() => courseResponse?.data || null, [courseResponse]);
-  console.log("useGetCourseQuery", course);
 
   const { data: userProgressResponse, isLoading: progressLoading, isFetching: progressFetching } =
     useGetUserCourseProgressQuery(
@@ -30,7 +29,6 @@ export const useCourseProgressData = () => {
       { skip: !userId || !courseId }
     );
   const userProgress = useMemo(() => userProgressResponse?.data || null, [userProgressResponse]);
-  console.log("useProgress", userProgress);
 
   const isLoading = useMemo(
     () => courseLoading || progressLoading || courseFetching || progressFetching,
@@ -40,7 +38,6 @@ export const useCourseProgressData = () => {
   // Initialize progress if none exists
   useEffect(() => {
     if (!isLoading && course && userId && userProgress === null) {
-      console.log("Initializing user progress for course:", courseId);
       const initialSections = course.sections.map((section: any) => ({
         sectionId: section.sectionId,
         chapters: section.chapters.map((chapter: any) => ({

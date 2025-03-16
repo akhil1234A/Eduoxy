@@ -4,7 +4,7 @@ import { IUserCourseProgress } from "../models/userCourseProgress.model";
 import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
 import { mergeSections, calculateOverallProgress } from "../utils/course.progress";
 import { IUserCourseProgressService } from "../interfaces/courseProgress.service";
-
+import { ICourseDocument } from "../models/course.model";
 
 @injectable()
 export class UserCourseProgressService implements IUserCourseProgressService {
@@ -12,12 +12,11 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     @inject(TYPES.IUserCourseProgressRepository) private userCourseProgressRepository: IUserCourseProgressRepository
   ) {}
 
-  async getUserEnrolledCourses(userId: string): Promise<IUserCourseProgress[]> {
+  async getUserEnrolledCourses(userId: string): Promise<ICourseDocument[]> {
     return this.userCourseProgressRepository.getUserEnrolledCourses(userId);
-  }
+  } 
 
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
-    console.log('getUserProgress');
     return this.userCourseProgressRepository.getUserCourseProgress(userId, courseId);
   }
 
