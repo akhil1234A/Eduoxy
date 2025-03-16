@@ -11,4 +11,5 @@ export interface ICourseRepository extends IBaseRepository<ICourseDocument> {
   publish(courseId: string): Promise<ICourseDocument | null>;
   updateByCourseId(courseId: string, teacherId: string, updateData: Partial<ICourseDocument>): Promise<ICourseDocument | null>;
   deleteByCourseId(courseId: string, teacherId: string): Promise<ICourseDocument | null>;
+  addEnrollment(courseId: string, userId: string): Promise<ICourseDocument | null>;
 }

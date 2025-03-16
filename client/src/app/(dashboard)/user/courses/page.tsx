@@ -23,7 +23,7 @@ const Courses = () => {
     isError,
   } = useGetUserEnrolledCoursesQuery(userId ?? "", { skip: !userId });
 
-  console.log('courseResponse', courseResponse);
+  
 
   const courses: Course[] = useMemo(() => courseResponse?.data || [], [courseResponse]);
 

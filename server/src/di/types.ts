@@ -1,21 +1,35 @@
 const TYPES = {
+  //Repositories
   IUserRepository: Symbol.for("IUserRepository"),
+  ICourseRepository: Symbol.for("ICourseRepository"),
+  IUserCourseProgressRepository: Symbol.for("IUserCourseProgressRepository"),
+  ITransactionRepository: Symbol.for("ITransactionRepository"),
+
+  //Services
   IAuthService: Symbol.for("IAuthService"),
   IAdminService: Symbol.for("IAdminService"),
   ICourseService: Symbol.for("ICourseService"),
+  IUserCourseProgressService: Symbol.for("IUserCourseProgressService"),
+  ITransactionService: Symbol.for("ITransactionService"),
+
+  //Controllers
   IAuthController: Symbol.for("IAuthController"),
   IAdminController: Symbol.for("IAdminController"),
   ICourseController: Symbol.for("ICourseController"),
-  ICourseRepository: Symbol.for("ICourseRepository"),
+  IUserCourseProgressController: Symbol.for("IUserCourseProgressController"),
+  ITransactionController: Symbol.for("ITransactionController"),
+
+  //Utils
   IMailService: Symbol.for("IMailService"),
   IJwtService: Symbol.for("IJwtService"),
   IRedisClient: Symbol.for("IRedisClient"),
+
+  //Models
   CourseModel: Symbol.for("CourseModel"),
   UserModel: Symbol.for("UserModel"),
   UserCourseProgressModel: Symbol.for("UserCourseProgressModel"),
-  IUserCourseProgressRepository: Symbol.for("IUserCourseProgressRepository"),
-  IUserCourseProgressService: Symbol.for("IUserCourseProgressService"),
-  IUserCourseProgressController: Symbol.for("IUserCourseProgressController"),
+  TransactionModel: Symbol.for("TransactionModel"),
+
 };
 
 export default TYPES;

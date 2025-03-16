@@ -76,7 +76,7 @@ export class CourseService implements ICourseService {
       if (isNaN(price)) {
         throw new Error("Invalid price format: Price must be a valid number");
       }
-      updateData.price = price * 100;
+      updateData.price = price;
     }
   
     if (updateData.sections) {

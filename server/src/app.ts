@@ -34,6 +34,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/users/course-progress",courseProgressRoutes);
 
+
 // Error Handling Middleware
 app.use(logErrors);
 app.use(errorHandler);

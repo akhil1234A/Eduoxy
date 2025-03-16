@@ -6,15 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPrice(paisa: number | undefined): string {
+export function formatPrice(price: number | undefined): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-  }).format((paisa || 0) / 100);
-}
-
-export function centsToDollars(cents: number | undefined): string {
-  return ((cents || 0) / 100).toString();
+  }).format(price || 0);
 }
 
 export const customStyles = "text-gray-300 placeholder:text-gray-500";

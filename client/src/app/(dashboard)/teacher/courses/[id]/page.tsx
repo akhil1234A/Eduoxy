@@ -58,7 +58,7 @@ const CourseEditor = () => {
         courseTitle: course.title || "",
         courseDescription: course.description || "",
         courseCategory: course.category || "",
-        coursePrice: centsToDollars(course.price) || "0",
+        coursePrice: course.price?.toString() || "0",
         courseStatus: course.status === "Published",
       });
       dispatch(setSections(course.sections || []));

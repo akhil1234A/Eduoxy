@@ -60,7 +60,7 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     if (updateData.price) {
       const price = parseInt(updateData.price as unknown as string);
       if (isNaN(price)) throw new Error("Invalid price format");
-      updateData.price = Math.round(price * 100);
+      updateData.price = price;
     }
 
     if (updateData.sections) {
@@ -110,5 +110,13 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
   async delete(id: string): Promise<boolean> {
     const result = await this.model.findOneAndDelete({ courseId: id }).exec();
     return result !== null;
+  }
+
+  async addEnrollment(courseId: string, userId: string): Promise<ICourseDocument | null> {
+    return this.model.findOneAndUpdate(
+      { courseId },
+      { $addToSet: { enrollments: { userId } } },
+      { new: true }
+    ).exec();
   }
 }
