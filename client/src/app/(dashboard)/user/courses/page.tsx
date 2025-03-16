@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import Toolbar from "@/components/Toolbar";
 import CourseCard from "@/components/CourseCard";
 import Loading from "@/components/Loading";
-import { useGetPublicCoursesQuery } from "@/state/api/coursesApi";
+import { useGetPublicCoursesQuery } from "@/state/redux";
 
 const Courses = () => {
   const router = useRouter();

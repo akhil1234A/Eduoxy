@@ -9,7 +9,7 @@ import { logErrors } from "./middleware/logError";
 import courseRoutes from "./routes/courseRoutes";
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
-
+import courseProgressRoutes from './routes/courseProgress.routes'
 
 const app = express();
 
@@ -32,6 +32,7 @@ app.get("/api",(req,res)=>{
 app.use('/api/auth', authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/users/course-progress",courseProgressRoutes);
 
 // Error Handling Middleware
 app.use(logErrors);

@@ -11,7 +11,11 @@ const TYPES = {
   IJwtService: Symbol.for("IJwtService"),
   IRedisClient: Symbol.for("IRedisClient"),
   CourseModel: Symbol.for("CourseModel"),
-  UserModel: Symbol.for("UserModel")
+  UserModel: Symbol.for("UserModel"),
+  UserCourseProgressModel: Symbol.for("UserCourseProgressModel"),
+  IUserCourseProgressRepository: Symbol.for("IUserCourseProgressRepository"),
+  IUserCourseProgressService: Symbol.for("IUserCourseProgressService"),
+  IUserCourseProgressController: Symbol.for("IUserCourseProgressController"),
 };
 
 export default TYPES;

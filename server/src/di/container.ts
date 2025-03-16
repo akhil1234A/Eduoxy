@@ -24,15 +24,24 @@ import { IJwtService } from "../utils/jwt";
 import { IRedisClient } from "../config/redis";
 import User from "../models/user.model";
 
+import { UserCourseProgressRepository } from "../repositories/courseProgress.repository";
+import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
+import { UserCourseProgressService } from "../services/userProgress.service";
+import { IUserCourseProgressService } from "../interfaces/courseProgress.service";
+import { UserCourseProgress } from "../models/userCourseProgress.model";
+import { UserCourseProgressController } from "../controllers/courseProgress.controller";
+
 const container = new Container();
 
 // Repositories
 container.bind<IUserRepository>(TYPES.IUserRepository).to(UserRepository).inSingletonScope();
 container.bind<ICourseRepository>(TYPES.ICourseRepository).to(CourseRepository).inSingletonScope();
+container.bind<IUserCourseProgressRepository>(TYPES.IUserCourseProgressRepository).to(UserCourseProgressRepository).inSingletonScope();
 
 // Model
 container.bind<typeof User>(TYPES.UserModel).toConstantValue(User)
 container.bind<Model<ICourseDocument>>(TYPES.CourseModel).toConstantValue(Course);
+container.bind<typeof UserCourseProgress>(TYPES.UserCourseProgressModel).toConstantValue(UserCourseProgress);
 
 // Utilities
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
@@ -43,15 +52,19 @@ container.bind<IRedisClient>(TYPES.IRedisClient).toConstantValue(redisClient);
 container.bind<IAuthService>(TYPES.IAuthService).to(AuthService).inSingletonScope();
 container.bind<IAdminService>(TYPES.IAdminService).to(AdminService).inSingletonScope();
 container.bind<ICourseService>(TYPES.ICourseService).to(CourseService).inSingletonScope();
+container.bind<IUserCourseProgressService>(TYPES.IUserCourseProgressService).to(UserCourseProgressService).inSingletonScope();
+console.log("Bound IUserCourseProgressService");
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
 container.bind<AdminController>(TYPES.IAdminController).to(AdminController).inSingletonScope();
 container.bind<CourseController>(TYPES.ICourseController).to(CourseController).inSingletonScope();
+container.bind<UserCourseProgressController>(TYPES.IUserCourseProgressController).to(UserCourseProgressController).inSingletonScope();
 
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
 export const adminController = container.get<AdminController>(TYPES.IAdminController);
 export const courseController = container.get<CourseController>(TYPES.ICourseController);
+export const userCourseProgressController = container.get<UserCourseProgressController>(TYPES.IUserCourseProgressController);
 
 export default container;

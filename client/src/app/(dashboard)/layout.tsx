@@ -6,19 +6,12 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import AppSidebar from "@/components/AppSidebar";
 import Navbar from "@/components/Navbar";
-import Loading from "@/components/Loading"; 
+import Loading from "@/components/Loading";
+import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar";
 
- 
-// import ChaptersSidebar from "./user/courses/[courseId]/ChaptersSidebar";
-
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [courseId, setCourseId] = useState<string | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(false);
   const isCoursePage = /^\/user\/courses\/[^\/]+(?:\/chapters\/[^\/]+)?$/.test(pathname);
 
   useEffect(() => {
@@ -30,12 +23,7 @@ export default function DashboardLayout({
     }
   }, [isCoursePage, pathname]);
 
-
-
-  if (isInitialLoad) return <Loading />;
-
-
-  
+  console.log("courseId", courseId);
 
   return (
     <SidebarProvider>
@@ -44,10 +32,7 @@ export default function DashboardLayout({
         <div className="dashboard__content">
           {courseId && <ChaptersSidebar />}
           <div
-            className={cn(
-              "dashboard__main",
-              isCoursePage && "dashboard__main--not-course"
-            )}
+            className={cn("dashboard__main", isCoursePage && "dashboard__main--not-course")}
             style={{ height: "100vh" }}
           >
             <Navbar isCoursePage={isCoursePage} />
@@ -57,4 +42,4 @@ export default function DashboardLayout({
       </div>
     </SidebarProvider>
   );
-};
+}

@@ -1,6 +1,6 @@
 import express from "express";
 import { adminController } from "../di/container";
-import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware"; // Implement these
+import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware";
 
 const router = express.Router();
 

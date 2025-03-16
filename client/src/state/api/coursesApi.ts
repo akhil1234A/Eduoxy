@@ -5,7 +5,7 @@ import { setSections } from "@/state/index";
 export const coursesApi = createApi({
   reducerPath: "coursesApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Courses"],
+  tagTypes: ["Courses", "UserCourseProgress"],
   endpoints: (build) => ({
     getPublicCourses: build.query<Course[], { category?: string }>({
       query: ({ category }) => ({
@@ -97,6 +97,53 @@ export const coursesApi = createApi({
       }),
       invalidatesTags: ["Courses"],
     }),
+
+    getUserCourseProgress: build.query<
+      UserCourseProgress,
+      { userId: string; courseId: string }
+    >({
+      query: ({ userId, courseId }) => ({
+        url: `users/course-progress/${userId}/courses/${courseId}`,
+      }),
+      providesTags: ["UserCourseProgress"],
+    }),
+    updateUserCourseProgress: build.mutation<
+      UserCourseProgress,
+      {
+        userId: string;
+        courseId: string;
+        progressData: { sections: SectionProgress[] };
+      }
+    >({
+      query: ({ userId, courseId, progressData }) => ({
+        url: `users/course-progress/${userId}/courses/${courseId}`,
+        method: "PUT",
+        body: progressData,
+      }),
+      invalidatesTags: ["UserCourseProgress"],
+      async onQueryStarted(
+        { userId, courseId, progressData },
+        { dispatch, queryFulfilled }
+      ) {
+        const patchResult = dispatch(
+          coursesApi.util.updateQueryData(
+            "getUserCourseProgress",
+            { userId, courseId },
+            (draft) => {
+              Object.assign(draft, {
+                ...draft,
+                sections: progressData.sections,
+              });
+            }
+          )
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+    }),
   }),
 });
 
@@ -110,4 +157,6 @@ export const {
   useDeleteCourseMutation,
   usePublishCourseMutation,
   useUnlistCourseMutation,
+  useGetUserCourseProgressQuery,
+  useUpdateUserCourseProgressMutation, 
 } = coursesApi;
