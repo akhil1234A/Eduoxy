@@ -2,8 +2,36 @@ import AccordionSections from "@/components/AccordionSections";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import React from "react";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const SelectedCourse = ({ course, handleEnrollNow }: SelectedCourseProps) => {
+  const userId = Cookies.get("userId");
+  const router = useRouter();
+  const isEnrolled = course.enrollments?.some(
+    (enrollment) => enrollment.userId === userId
+  );
+
+  const handleCourseAction = () => {
+    if (isEnrolled) {
+      if (
+        course.sections &&
+        course.sections.length > 0 &&
+        course.sections[0].chapters.length > 0
+      ) {
+        const firstChapter = course.sections[0].chapters[0];
+        router.push(
+          `/user/courses/${course.courseId}/chapters/${firstChapter.chapterId}`,
+          { scroll: false }
+        );
+      } else {
+        router.push(`/user/courses/${course.courseId}`, { scroll: false });
+      }
+    } else {
+      handleEnrollNow(course.courseId);
+    }
+  };
+
   return (
     <div className="selected-course">
       <div>
@@ -29,10 +57,10 @@ const SelectedCourse = ({ course, handleEnrollNow }: SelectedCourseProps) => {
             {formatPrice(course.price)}
           </span>
           <Button
-            onClick={() => handleEnrollNow(course.courseId)}
+            onClick={handleCourseAction}
             className="bg-primary-700 hover:bg-primary-600"
           >
-            Enroll Now
+            {isEnrolled ? "Continue Learning" : "Purchase Course"}
           </Button>
         </div>
       </div>
