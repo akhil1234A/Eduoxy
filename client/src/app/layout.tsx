@@ -3,6 +3,7 @@ import { DM_Sans} from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Providers from "./providers";
+import { NotificationProvider } from "@/contexts/NotificationContext"
 
 
 const dmSans = DM_Sans({
@@ -28,7 +29,9 @@ export default function RootLayout({
         className={`${dmSans.className}`}
       >
        <Toaster richColors position="top-right" /> 
-       <Providers> <div className='root-layout'>{children}</div>  </Providers>
+       <NotificationProvider>
+         <Providers> <div className='root-layout'>{children}</div>  </Providers>
+       </NotificationProvider>
       </body>
     </html>
 

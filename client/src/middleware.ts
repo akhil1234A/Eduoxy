@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(prefix)
   );
 
-  // If a logged-in user tries to access a public route, redirect them
+  
   if (isPublicRoute && userType) {
     const targetRoute = routeRoles[userType] || "/user/courses";
     if (!pathname.startsWith(targetRoute)) {
@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // If user is not logged in and trying to access protected routes, send them to signin
+ 
   if (!userType && isProtectedRoute) {
     const loginUrl = new URL("/signin", request.url);
     loginUrl.searchParams.set("redirect", pathname);

@@ -9,5 +9,6 @@ export interface IAuthService {
   googleAuth(idToken: string): Promise<AuthTokens & { user: UserResponse }>;
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
-  loginWithRefresh(userId: string, refreshToken: string): Promise<AuthTokens & { user: UserResponse }>; 
+  loginWithRefresh(userId: string, refreshToken: string): Promise<AuthTokens & { user: UserResponse }>;
+  findUserById(userId: string): Promise<any>;
 }

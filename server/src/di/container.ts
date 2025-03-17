@@ -36,6 +36,7 @@ import { ITransactionRepository } from "../interfaces/transaction.repository";
 import { TransactionService } from "../services/transaction.service";
 import { ITransactionService } from "../interfaces/transaction.service";
 import { TransactionController } from "../controllers/transaction.controller";
+import { NotificationService } from "../services/notification.service";
 
 const container = new Container();
 
@@ -62,6 +63,7 @@ container.bind<IAdminService>(TYPES.IAdminService).to(AdminService).inSingletonS
 container.bind<ICourseService>(TYPES.ICourseService).to(CourseService).inSingletonScope();
 container.bind<IUserCourseProgressService>(TYPES.IUserCourseProgressService).to(UserCourseProgressService).inSingletonScope();
 container.bind<ITransactionService>(TYPES.ITransactionService).to(TransactionService).inSingletonScope();
+container.bind<NotificationService>(NotificationService).toSelf();
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();

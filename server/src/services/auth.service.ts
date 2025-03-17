@@ -221,6 +221,9 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken: newRefreshToken, user: userResponse };
   }
 
+  async findUserById(userId: string): Promise<any> {
+    return this.userRepository.findById(userId);
+  }
 }
 
 export default AuthService;

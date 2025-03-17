@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Bell, BookOpen, User as UserIcon } from "lucide-react";
+import { BookOpen, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useLogoutMutation } from "@/state/redux";
 import { useRouter } from "next/navigation";
 import Cookies from 'js-cookie';
+import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
   const userType = Cookies.get("userType");
@@ -56,10 +57,7 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
         </div>
 
         <div className="dashboard-navbar__actions">
-          <button className="nondashboard-navbar__notification-button">
-            <span className="nondashboard-navbar__notification-indicator"></span>
-            <Bell className="nondashboard-navbar__notification-icon" />
-          </button>
+          <NotificationBell />
 
           {/* Profile Icon with Dropdown Card */}
           <div className="relative">
@@ -67,6 +65,7 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
               onClick={toggleProfileCard}
               className="dashboard-navbar__profile-button"
               disabled={isLoggingOut}
+              aria-label="Toggle profile menu"
             >
               <UserIcon className="text-customgreys-dirtyGrey" size={24} />
             </button>
