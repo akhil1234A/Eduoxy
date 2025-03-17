@@ -1,92 +1,77 @@
 "use client";
 
-import Loading from "@/components/Loading";
-import { useGetPublicCoursesQuery } from "@/state/redux";
-import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import CourseCardSearch from "@/components/CourseCardSearch";
-import SelectedCourse from "./SelectedCourse";
+import { useState, useCallback } from "react";
+import { useGetPublicCoursesQuery, useSearchCoursesQuery } from "@/state/api/coursesApi";
+import { debounce } from "lodash";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
+import CourseCard from "@/components/CourseCard";
 
-const Search = () => {
-  const searchParams = useSearchParams();
-  const id = searchParams.get("id");
-  const { data , isLoading, isError } = useGetPublicCoursesQuery({});
-  const courses = useMemo(()=>data?.data || [], [data?.data]);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const router = useRouter();
+export default function SearchPage() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedTerm, setDebouncedTerm] = useState("");
+  
+  // Get all courses when there's no search term
+  const { data: allCourses = [], isLoading: isLoadingAll } = useGetPublicCoursesQuery({
+    category: "all"
+  }, {
+    skip: !!debouncedTerm
+  });
 
- 
+  // Get searched courses when there's a search term
+  const { data: searchedCourses = [], isLoading: isSearching } = useSearchCoursesQuery({
+    searchTerm: debouncedTerm,
+    category: "all"
+  }, {
+    skip: !debouncedTerm
+  });
 
-  useEffect(() => {
-    if (courses.length>0) {
-      if (id) {
-        const course = courses.find((c) => c.courseId === id);
-        setSelectedCourse(course || courses[0]);
-      } else {
-        setSelectedCourse(courses[0]);
-      }
-    }
-  }, [courses, id]);
 
-  if (isLoading) return <Loading />;
-  if (isError || !courses) return <div>Failed to fetch courses</div>;
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setDebouncedTerm(term);
+    }, 500),
+    []
+  );
 
-  const handleCourseSelect = (course: Course) => {
-    setSelectedCourse(course);
-    router.push(`/search?id=${course.courseId}`, {
-      scroll: false,
-    });
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
   };
 
-  const handleEnrollNow = (courseId: string) => {
-    router.push(`/payment/${courseId}`, {
-      scroll: false,
-    });
-  };
+  const isLoading = isLoadingAll || isSearching;
+  const displayedCourses = debouncedTerm ? searchedCourses.data : allCourses.data;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="search"
-    >
-      <h1 className="search__title">List of available courses</h1>
-      <h2 className="search__subtitle">{courses.length} courses avaiable</h2>
-      <div className="search__content">
-        <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="search__courses-grid"
-        >
-          {courses.map((course) => (
-            <CourseCardSearch
-              key={course.courseId}
-              course={course}
-              isSelected={selectedCourse?.courseId === course.courseId}
-              onClick={() => handleCourseSelect(course)}
-            />
-          ))}
-        </motion.div>
-
-        {selectedCourse && (
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="search__selected-course"
-          >
-            <SelectedCourse
-              course={selectedCourse}
-              handleEnrollNow={handleEnrollNow}
-            />
-          </motion.div>
-        )}
+    <div className="container mx-auto py-8">
+      <div className="mb-6">
+        <Input
+          type="text"
+          placeholder="Search courses..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="w-full max-w-xl mx-auto"
+        />
       </div>
-    </motion.div>
-  );
-};
 
-export default Search;
+      {isLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedCourses.map((course) => (
+            <CourseCard key={course.courseId} course={course} />
+          ))}
+          {displayedCourses.length === 0 && (
+            <div className="col-span-full text-center text-gray-500">
+              {debouncedTerm ? "No courses found matching your search." : "No courses available."}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

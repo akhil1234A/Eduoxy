@@ -119,4 +119,20 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       { new: true }
     ).exec();
   }
+
+  async searchPublicCourses(searchTerm: string, category?: string): Promise<ICourseDocument[]> {
+    const query: Record<string, any> = { 
+      status: CourseStatus.Published,
+      $or: [
+        { title: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } }
+      ]
+    };
+    
+    if (category && category !== "all") {
+      query.category = category;
+    }
+    
+    return this.model.find(query).exec();
+  }
 }

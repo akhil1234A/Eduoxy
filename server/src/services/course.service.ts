@@ -141,4 +141,14 @@ export class CourseService implements ICourseService {
     }
     return course;
   }
+
+  async searchCourses(searchTerm: string, category?: string): Promise<ICourseDocument[]> {
+    const cacheKey = CacheUtil.getCoursesListCacheKey(`search:${searchTerm}:${category || 'all'}`);
+    const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
+    if (cachedData) return cachedData;
+
+    const courses = await this.courseRepository.searchPublicCourses(searchTerm, category);
+    await CacheUtil.set(cacheKey, courses, 300); // Cache for 5 minutes
+    return courses;
+  }
 }

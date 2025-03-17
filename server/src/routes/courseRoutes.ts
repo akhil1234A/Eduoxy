@@ -9,6 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 //Public
 router.get("/public", courseController.listPublicCourses.bind(courseController));
+router.get('/search', courseController.searchCourses.bind(courseController));
 
 //Admin
 router.get("/admin", authenticateUser, authorizeRoles("admin"), courseController.listAdminCourses.bind(courseController));

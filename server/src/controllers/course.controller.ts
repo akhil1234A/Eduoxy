@@ -166,4 +166,26 @@ export class CourseController {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error deleting course", err.message));
     }
   }
+
+  async searchCourses(req: Request, res: Response): Promise<void> {
+    const { q: searchTerm, category } = req.query;
+
+    try {
+      if (!searchTerm || typeof searchTerm !== 'string') {
+        res.json(successResponse("Courses retrieved successfully", []));
+        return;
+      }
+
+      const courses = await this.courseService.searchCourses(
+        searchTerm,
+        category as string
+      );
+      res.json(successResponse("Courses retrieved successfully", courses));
+    } catch (error) {
+      const err = error as Error;
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+        errorResponse("Error searching courses", err.message)
+      );
+    }
+  }
 }

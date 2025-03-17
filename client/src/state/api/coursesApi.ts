@@ -149,6 +149,17 @@ export const coursesApi = createApi({
         }
       },
     }),
+
+    searchCourses: build.query<Course[], { searchTerm: string; category?: string }>({
+      query: ({ searchTerm, category }) => ({
+        url: "courses/search",
+        params: { 
+          q: searchTerm,
+          category 
+        },
+      }),
+      skip: ({ searchTerm }) => !searchTerm,
+    }),
   }),
 });
 
@@ -165,4 +176,5 @@ export const {
   useGetUserCourseProgressQuery,
   useUpdateUserCourseProgressMutation, 
   useGetUserEnrolledCoursesQuery,
+  useSearchCoursesQuery,
 } = coursesApi;

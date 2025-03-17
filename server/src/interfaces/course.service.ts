@@ -11,4 +11,5 @@ export interface ICourseService {
   deleteCourse(courseId: string, teacherId: string): Promise<ICourseDocument | null>;
   unlistCourse(courseId: string): Promise<ICourseDocument | null>;
   publishCourse(courseId: string): Promise<ICourseDocument | null>;
+  searchCourses(searchTerm: string, category?: string): Promise<ICourseDocument[]>;
 }

@@ -1,8 +1,20 @@
 /** @type {import('next').NextConfig}  */
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.ANALYZE === "true",
-})
+
 const nextConfig = {
+  swcMinify: true,
+  experimental: {
+    turbotrace: {
+      logLevel: 'error'
+    }
+  },
+ 
+  webpack: (config, { dev }) => {
+   
+    if (dev) {
+      config.cache = true;
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {
