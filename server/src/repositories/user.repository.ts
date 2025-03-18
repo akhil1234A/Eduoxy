@@ -35,4 +35,12 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
   async listByUserType(userType: "student" | "teacher" | "admin"): Promise<IUser[]> {
     return this.model.find({ userType }).exec();
   }
+
+  async findById(id: string): Promise<IUser | null> {
+    return User.findById(id).exec();
+  }
+
+  async update(id: string, user: Partial<IUser>): Promise<IUser | null> {
+    return User.findByIdAndUpdate(id, user, { new: true }).exec();
+  }
 }

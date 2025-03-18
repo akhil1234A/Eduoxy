@@ -37,7 +37,9 @@ import { TransactionService } from "../services/transaction.service";
 import { ITransactionService } from "../interfaces/transaction.service";
 import { TransactionController } from "../controllers/transaction.controller";
 import { NotificationService } from "../services/notification.service";
-
+import { IUserService } from "../interfaces/user.service";
+import { UserService } from "../services/user.service";
+import { UserController } from "../controllers/user.controller";
 const container = new Container();
 
 // Repositories
@@ -64,6 +66,7 @@ container.bind<ICourseService>(TYPES.ICourseService).to(CourseService).inSinglet
 container.bind<IUserCourseProgressService>(TYPES.IUserCourseProgressService).to(UserCourseProgressService).inSingletonScope();
 container.bind<ITransactionService>(TYPES.ITransactionService).to(TransactionService).inSingletonScope();
 container.bind<NotificationService>(NotificationService).toSelf();
+container.bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScope();
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
@@ -71,11 +74,12 @@ container.bind<AdminController>(TYPES.IAdminController).to(AdminController).inSi
 container.bind<CourseController>(TYPES.ICourseController).to(CourseController).inSingletonScope();
 container.bind<UserCourseProgressController>(TYPES.IUserCourseProgressController).to(UserCourseProgressController).inSingletonScope();
 container.bind<TransactionController>(TYPES.ITransactionController).to(TransactionController).inSingletonScope();
+container.bind<UserController>(TYPES.IUserController).to(UserController).inSingletonScope();
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
 export const adminController = container.get<AdminController>(TYPES.IAdminController);
 export const courseController = container.get<CourseController>(TYPES.ICourseController);
 export const userCourseProgressController = container.get<UserCourseProgressController>(TYPES.IUserCourseProgressController);
 export const transactionController = container.get<TransactionController>(TYPES.ITransactionController);
-
+export const userController = container.get<UserController>(TYPES.IUserController);
 export default container;

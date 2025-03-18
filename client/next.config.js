@@ -1,20 +1,6 @@
 /** @type {import('next').NextConfig}  */
 
 const nextConfig = {
-  swcMinify: true,
-  experimental: {
-    turbotrace: {
-      logLevel: 'error'
-    }
-  },
- 
-  webpack: (config, { dev }) => {
-   
-    if (dev) {
-      config.cache = true;
-    }
-    return config;
-  },
   images: {
     remotePatterns: [
       {

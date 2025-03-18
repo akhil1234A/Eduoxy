@@ -2,6 +2,7 @@ import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { coursesApi } from "./api/coursesApi";
 import { authApi } from "./api/authApi";
 import { adminApi } from "./api/adminApi";
+import { userApi } from "./api/userApi";
 import { transactionApi } from "./api/transactionApi";
 
 // import authReducer from './reducer/auth.reducer';
@@ -14,6 +15,7 @@ export const rootReducer = combineReducers({
   [coursesApi.reducerPath]: coursesApi.reducer,
   [adminApi.reducerPath]: adminApi.reducer,
   [transactionApi.reducerPath]: transactionApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
   // auth:authReducer,
   global: globalReducer
 });
@@ -26,7 +28,7 @@ export const setupApiStore = () => {
         serializableCheck: {
           ignoredPaths: ["global.courseEditor.sections"],
         },
-      }).concat(authApi.middleware, coursesApi.middleware, adminApi.middleware, transactionApi.middleware),
+      }).concat(authApi.middleware, coursesApi.middleware, adminApi.middleware, transactionApi.middleware, userApi.middleware),
   });
 };
 
@@ -40,4 +42,5 @@ export * from "./api/authApi";
 export * from "./api/coursesApi";
 export * from './api/adminApi'
 export * from './api/transactionApi'
-export { authApi, coursesApi, adminApi, transactionApi};
+export * from './api/userApi'
+export { authApi, coursesApi, adminApi, transactionApi, userApi};

@@ -11,6 +11,7 @@ const TYPES = {
   ICourseService: Symbol.for("ICourseService"),
   IUserCourseProgressService: Symbol.for("IUserCourseProgressService"),
   ITransactionService: Symbol.for("ITransactionService"),
+  IUserService: Symbol.for("IUserService"),
 
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
@@ -18,6 +19,7 @@ const TYPES = {
   ICourseController: Symbol.for("ICourseController"),
   IUserCourseProgressController: Symbol.for("IUserCourseProgressController"),
   ITransactionController: Symbol.for("ITransactionController"),
+  IUserController: Symbol.for("IUserController"),
 
   //Utils
   IMailService: Symbol.for("IMailService"),

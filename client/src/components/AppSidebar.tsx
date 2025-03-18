@@ -57,8 +57,7 @@ const userType = Cookies.get('userType');
       { icon: Users, label: "Users", href: "/admin/users" },
       { icon: User, label: "Instructors", href: "/admin/instructors" },
       { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-      { icon: DollarSign, label: "Earnings", href: "/admin/earning" },
-      { icon: Code, label: "Problems", href: "/admin/problems" },
+      { icon: Settings, label: "Settings", href: "/admin/settings" },
     ],
   };
 

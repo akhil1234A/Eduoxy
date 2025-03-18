@@ -15,7 +15,7 @@ import adminRoutes from './routes/admin.routes';
 import courseProgressRoutes from './routes/courseProgress.routes'
 import transactionRoutes from "./routes/transaction.routes";
 import notificationRoutes from "./routes/notification.routes";
-
+import userRoutes from "./routes/user.routes";
 const app = express();
 const server = http.createServer(app);
 
@@ -44,7 +44,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/users/course-progress",courseProgressRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use("/api/user", userRoutes);
 // Error Handling Middleware
 app.use(logErrors);
 app.use(errorHandler);
