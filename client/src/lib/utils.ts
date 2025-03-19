@@ -70,16 +70,55 @@ export const customDataGridStyles = {
   },
 };
 
-export const createCourseFormData = (
+export const uploadImageToCloudinary = async (file: File): Promise<string> => {
+  try {
+    const res = await fetch("/api/cloudinary-signature?type=image");
+    const { signature, timestamp, api_key, cloud_name, folder, upload_preset } = await res.json();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("upload_preset", upload_preset);
+    formData.append("api_key", api_key);
+    formData.append("signature", signature);
+
+    const cloudinaryResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`,
+      { 
+        method: "POST", 
+        body: formData,
+      }
+    );
+
+    if (!cloudinaryResponse.ok) {
+      const error = await cloudinaryResponse.json();
+      throw new Error(error.error?.message || "Failed to upload image");
+    }
+
+    const result = await cloudinaryResponse.json();
+    return result.secure_url;
+  } catch (error) {
+    console.error("Image upload error:", error);
+    throw error;
+  }
+};
+
+export const createCourseFormData = async (
   data: CourseFormData,
   sections: Section[]
-): FormData => {
+): Promise<FormData> => {
   const formData = new FormData();
   formData.append("title", data.courseTitle);
   formData.append("description", data.courseDescription);
   formData.append("category", data.courseCategory);
   formData.append("price", data.coursePrice.toString());
   formData.append("status", data.courseStatus ? "Published" : "Draft");
+
+  // Handle course image
+  if (data.courseImage) {
+    formData.append("image", data.courseImage);
+  }
 
   const sectionsWithVideos = sections.map((section) => ({
     ...section,
@@ -98,29 +137,24 @@ export const createCourseFormData = (
 
 export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
   try {
-    
-    const res = await fetch("/api/cloudinary-signature");
-    const { signature, timestamp, api_key, cloud_name } = await res.json();
+    const res = await fetch("/api/cloudinary-signature?type=video");
+    const { signature, timestamp, api_key, cloud_name, folder, upload_preset, eager, eager_async } = await res.json();
 
-    
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("folder", folder);
+    formData.append("timestamp", timestamp.toString());
+    formData.append("upload_preset", upload_preset);
     formData.append("api_key", api_key);
-    formData.append("timestamp", timestamp);
     formData.append("signature", signature);
-    formData.append("folder", "course_videos");
-    formData.append("upload_preset", "ml_default");
-    formData.append("eager", "w_800,h_600,c_fill");
-    formData.append("eager_async", "true");
+    formData.append("eager", eager);
+    formData.append("eager_async", eager_async);
 
     const cloudinaryResponse = await fetch(
       `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`,
       { 
         method: "POST", 
         body: formData,
-        headers: {
-          'Accept': 'application/json',
-        }
       }
     );
 

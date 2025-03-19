@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CustomFormField } from "@/components/CustomFormField";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { courseSchema, CourseFormData } from "@/lib/schema";
 import {
-  centsToDollars,
   createCourseFormData,
   uploadAllVideos,
+  uploadImageToCloudinary,
 } from "@/lib/utils";
 import { openSectionModal, setSections, setCourseId } from "@/state";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/state/api/coursesApi";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Upload } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import DroppableComponent from "./Droppable";
 import ChapterModal from "./ChapterModal";
 import SectionModal from "./SectionModal";
+import Image from "next/image";
 
 const CourseEditor = () => {
   const router = useRouter();
@@ -33,6 +34,8 @@ const CourseEditor = () => {
   const id = params.id as string;
   const { data, isLoading } = useGetCourseQuery(id);
   const [updateCourse] = useUpdateCourseMutation();
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const course = useMemo(() => data?.data || {}, [data?.data]);
 
@@ -49,6 +52,7 @@ const CourseEditor = () => {
       courseCategory: "",
       coursePrice: "0",
       courseStatus: false,
+      courseImage: "",
     },
   });
 
@@ -60,25 +64,55 @@ const CourseEditor = () => {
         courseCategory: course.category || "",
         coursePrice: course.price?.toString() || "0",
         courseStatus: course.status === "Published",
+        courseImage: course.image || "",
       });
+      setImagePreview(course.image || "");
       dispatch(setSections(course.sections || []));
       dispatch(setCourseId(id))
     }
   }, [course, methods, dispatch, id]);
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
+    methods.setValue("courseImage", file);
+
+    setIsUploading(true);
+    try {
+      const imageUrl = await uploadImageToCloudinary(file);
+      methods.setValue("courseImage", imageUrl);
+      setImagePreview(imageUrl);
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error("Failed to upload image");
+      // Reset the form field and preview on error
+      methods.setValue("courseImage", "");
+      setImagePreview("");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const onSubmit = async (data: CourseFormData) => {
     try {
+      // Check if there's a pending image upload
+      if (isUploading) {
+        toast.error("Please wait for the image to finish uploading");
+        return;
+      }
+
       toast.loading("Uploading videos and updating course...");
       const updatedSections = await uploadAllVideos(sections, id);
-      // console.log('updatedSections',updatedSections);
-      const formData = createCourseFormData(data, updatedSections);
-      // console.log('formData',formData);
+      const formData = await createCourseFormData(data, updatedSections);
       await updateCourse({
         courseId: id,
         formData,
       }).unwrap();
 
-      toast.dismiss(); 
+      toast.dismiss();
       toast.success("Course updated successfully!");
       router.push("/teacher/courses", { scroll: false });
     } catch (error) {
@@ -149,6 +183,46 @@ const CourseEditor = () => {
           <div className="flex justify-between md:flex-row flex-col gap-10 mt-5 font-dm-sans">
             <div className="basis-1/2">
               <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm text-customgreys-dirtyGrey">
+                    Course Image
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                      id="course-image"
+                      disabled={course?.status === "Unlisted"}
+                    />
+                    <label
+                      htmlFor="course-image"
+                      className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-customgreys-dirtyGrey rounded-lg cursor-pointer hover:bg-customgreys-darkGrey"
+                    >
+                      {imagePreview ? (
+                        <Image
+                          src={imagePreview}
+                          alt="Course preview"
+                          className="w-full h-full object-cover rounded-lg"
+                          width={500}
+                          height={192}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-2 text-customgreys-dirtyGrey" />
+                          <p className="text-sm text-customgreys-dirtyGrey">
+                            Click to upload or drag and drop
+                          </p>
+                          <p className="text-xs text-customgreys-dirtyGrey mt-1">
+                            PNG, JPG (MAX. 5MB)
+                          </p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
                 <CustomFormField
                   name="courseTitle"
                   label="Course Title"

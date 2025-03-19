@@ -74,6 +74,17 @@ export const courseSchema = z.object({
     .regex(/^\d+(\.\d{1,2})?$/, "Price must be a valid number")
     .refine((val) => parseFloat(val) >= 0, { message: "Price cannot be negative" }),
   courseStatus: z.boolean(),
+  courseImage: z
+    .union([
+      z.string().url("Invalid image URL").optional(),
+      z.instanceof(File)
+        .refine((file) => file.size <= 5 * 1024 * 1024, "Image must be less than 5MB")
+        .refine(
+          (file) => ["image/jpeg", "image/png"].includes(file.type),
+          "Only JPEG or PNG images are allowed"
+        ),
+    ])
+    .optional(),
 });
 
 export type CourseFormData = z.infer<typeof courseSchema>;
