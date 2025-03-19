@@ -97,27 +97,44 @@ export const createCourseFormData = (
 
 
 export const uploadVideoToCloudinary = async (file: File): Promise<string> => {
-  const res = await fetch("/api/cloudinary-signature");
-  const { signature, timestamp, api_key, cloud_name } = await res.json();
+  try {
+    
+    const res = await fetch("/api/cloudinary-signature");
+    const { signature, timestamp, api_key, cloud_name } = await res.json();
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("api_key", api_key);
-  formData.append("timestamp", timestamp);
-  formData.append("signature", signature);
-  formData.append("folder", "course_videos");
-  formData.append("resource_type", "video");
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", api_key);
+    formData.append("timestamp", timestamp);
+    formData.append("signature", signature);
+    formData.append("folder", "course_videos");
+    formData.append("upload_preset", "ml_default");
+    formData.append("eager", "w_800,h_600,c_fill");
+    formData.append("eager_async", "true");
 
-  const cloudinaryResponse = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`,
-    { method: "POST", body: formData }
-  );
+    const cloudinaryResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloud_name}/video/upload`,
+      { 
+        method: "POST", 
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
+      }
+    );
 
-  const result = await cloudinaryResponse.json();
-  if (!cloudinaryResponse.ok) {
-    throw new Error(result.error?.message || "Failed to upload video");
+    if (!cloudinaryResponse.ok) {
+      const error = await cloudinaryResponse.json();
+      throw new Error(error.error?.message || "Failed to upload video");
+    }
+
+    const result = await cloudinaryResponse.json();
+    return result.secure_url;
+  } catch (error) {
+    console.error("Video upload error:", error);
+    throw error;
   }
-  return result.secure_url;  
 };
 
 

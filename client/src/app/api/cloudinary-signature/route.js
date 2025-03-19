@@ -11,8 +11,16 @@ export async function GET() {
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);
 
+    const params = {
+      eager: "w_800,h_600,c_fill",
+      eager_async: "true",
+      folder: "course_videos",
+      timestamp: timestamp,
+      upload_preset: "ml_default"
+    };
+
     const signature = cloudinary.utils.api_sign_request(
-      { timestamp, folder: "course_videos" },
+      params,
       process.env.CLOUDINARY_API_SECRET
     );
 

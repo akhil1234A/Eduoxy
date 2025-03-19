@@ -71,13 +71,13 @@ const NonDashboardNavbar = () => {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-customgreys-primarybg border border-gray-700 rounded-md shadow-lg z-10">
                     <div className="py-1">
-                      <Link
+                  <Link
                         href={profileRoute}
                         className="block px-4 py-2 text-sm text-customgreys-dirtyGrey hover:bg-customgreys-secondarybg"
                         onClick={() => setIsProfileOpen(false)}
-                      >
+                  >
                         Manage Profile
-                      </Link>
+                  </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-customgreys-dirtyGrey hover:bg-customgreys-secondarybg"
