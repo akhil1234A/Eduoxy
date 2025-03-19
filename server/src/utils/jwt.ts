@@ -14,7 +14,7 @@ export interface IJwtService {
 
 @injectable()
 export class JwtService implements IJwtService {
-  constructor(@inject(TYPES.IRedisClient) private redisClient: IRedisClient) {}
+  constructor(@inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
   generateAccessToken(userId: string, userType: string): string {
     return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "15m" });
   }
@@ -33,11 +33,11 @@ export class JwtService implements IJwtService {
   async blacklistToken(token: string): Promise<void> {
     const decoded = this.verifyAccessToken(token); 
     const expiresIn = decoded.exp - Math.floor(Date.now() / 1000); 
-    await this.redisClient.set(`blacklist:${token}`, "true", { EX: expiresIn });
+    await this._redisClient.set(`blacklist:${token}`, "true", { EX: expiresIn });
   }
 
   async isTokenBlacklisted(token: string): Promise<boolean> {
-    const result = await this.redisClient.get(`blacklist:${token}`);
+    const result = await this._redisClient.get(`blacklist:${token}`);
     return result === "true";
   }
 }

@@ -10,15 +10,15 @@ import { Model } from "mongoose";
 @injectable()
 export class UserCourseProgressRepository implements IUserCourseProgressRepository {
   constructor(
-    @inject(TYPES.UserCourseProgressModel) private userCourseProgressModel: typeof UserCourseProgress,
-    @inject(TYPES.CourseModel) private courseModel: Model<ICourseDocument>
+    @inject(TYPES.UserCourseProgressModel) private _userCourseProgressModel: typeof UserCourseProgress,
+    @inject(TYPES.CourseModel) private _courseModel: Model<ICourseDocument>
   ) {}
 
 
   async getUserEnrolledCourses(userId: string): Promise<ICourseDocument[]> {
-    const userProgress = await this.userCourseProgressModel.find({ userId }).exec();
+    const userProgress = await this._userCourseProgressModel.find({ userId }).exec();
     const courseIds = userProgress.map(progress => progress.courseId);
-    const courses = await this.courseModel.find({
+    const courses = await this._courseModel.find({
       courseId: { $in: courseIds }
     }).exec();
     return courses;
@@ -26,12 +26,12 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
 
 
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
-    return this.userCourseProgressModel.findOne({ userId, courseId }).exec();
+    return this._userCourseProgressModel.findOne({ userId, courseId }).exec();
   }
 
   async saveUserCourseProgress(progress: IUserCourseProgress): Promise<IUserCourseProgress> {
     const { userId, courseId } = progress;
-    const updatedProgress = await this.userCourseProgressModel.findOneAndUpdate(
+    const updatedProgress = await this._userCourseProgressModel.findOneAndUpdate(
       { userId, courseId },
       progress,
       { new: true, upsert: true } 

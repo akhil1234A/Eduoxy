@@ -8,7 +8,7 @@ import { IUser } from "../models/user.model";
 @injectable()
 export class UserController {
   constructor(
-    @inject(TYPES.IUserService) private userService: IUserService
+    @inject(TYPES.IUserService) private _userService: IUserService
   ) {}
 
   async updatePassword(req: Request, res: Response): Promise<void> {
@@ -20,7 +20,7 @@ export class UserController {
     }
 
     try {
-      await this.userService.updatePassword(userId, currentPassword, newPassword);
+      await this._userService.updatePassword(userId, currentPassword, newPassword);
       res.json(successResponse("Password updated successfully"));
     } catch (error) {
       const err = error as Error;
@@ -39,7 +39,7 @@ export class UserController {
     }
 
     try {
-      const updatedUser = await this.userService.updateInstructorProfile(userId, title, bio, profileImage);
+      const updatedUser = await this._userService.updateInstructorProfile(userId, title, bio, profileImage);
       res.json(successResponse("Instructor profile updated successfully", updatedUser as IUser));
     } catch (error) {
       const err = error as Error;
@@ -56,7 +56,7 @@ export class UserController {
     }
 
     try{
-     const user = await this.userService.getProfile(userId);
+     const user = await this._userService.getProfile(userId);
      res.json(successResponse("Profile fetched successfully", user as IUser));
     } catch (error) {
       const err = error as Error;

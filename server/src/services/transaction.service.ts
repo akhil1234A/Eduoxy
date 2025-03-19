@@ -11,15 +11,15 @@ import { IAuthService } from "../interfaces/auth.service";
 @injectable()
 export class TransactionService implements ITransactionService {
   constructor(
-    @inject(TYPES.ITransactionRepository) private transactionRepository: ITransactionRepository,
-    @inject(TYPES.ICourseRepository) private courseRepository: ICourseRepository,
-    @inject(TYPES.IUserCourseProgressRepository) private userCourseProgressRepository: IUserCourseProgressRepository,
-    @inject(TYPES.IAuthService) private authService: IAuthService,
-    private notificationService: NotificationService
+    @inject(TYPES.ITransactionRepository) private _transactionRepository: ITransactionRepository,
+    @inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository,
+    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository,
+    @inject(TYPES.IAuthService) private _authService: IAuthService,
+    private _notificationService: NotificationService
   ) {}
 
   async listTransactions(userId?: string): Promise<ITransaction[]> {
-    return userId ? this.transactionRepository.findByUserId(userId) : this.transactionRepository.findAll();
+    return userId ? this._transactionRepository.findByUserId(userId) : this._transactionRepository.findAll();
   }
 
   async createTransaction(
@@ -29,10 +29,10 @@ export class TransactionService implements ITransactionService {
     amount: number,
     paymentProvider: "stripe"
   ): Promise<ITransaction> {
-    const course = await this.courseRepository.findById(courseId);
+    const course = await this._courseRepository.findById(courseId);
     if (!course) throw new Error("Course not found");
 
-    const user = await this.authService.findUserById(userId);
+    const user = await this._authService.findUserById(userId);
     if (!user) throw new Error("User not found");
 
     const transactionData = {
@@ -43,7 +43,7 @@ export class TransactionService implements ITransactionService {
       amount,
       paymentProvider,
     };
-    const savedTransaction = await this.transactionRepository.create(transactionData);
+    const savedTransaction = await this._transactionRepository.create(transactionData);
 
     const initialProgress = {
       userId,
@@ -59,12 +59,12 @@ export class TransactionService implements ITransactionService {
       })),
       lastAccessedTimestamp: new Date().toISOString(),
     };
-    await this.userCourseProgressRepository.saveUserCourseProgress(initialProgress);
+    await this._userCourseProgressRepository.saveUserCourseProgress(initialProgress);
 
-    await this.courseRepository.addEnrollment(courseId, userId);
+    await this._courseRepository.addEnrollment(courseId, userId);
 
     // Send notification to course teacher
-    await this.notificationService.createNotification({
+    await this._notificationService.createNotification({
       userId: course.teacherId,
       title: "New Enrollment",
       message: `${user.name} has enrolled in your course "${course.title}"`,

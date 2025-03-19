@@ -6,13 +6,13 @@ import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 @injectable()
 export class CourseController {
-  constructor(@inject(TYPES.ICourseService) private courseService: ICourseService) {}
+  constructor(@inject(TYPES.ICourseService) private _courseService: ICourseService) {}
 
   async unlistCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
 
     try {
-      const course = await this.courseService.unlistCourse(courseId);
+      const course = await this._courseService.unlistCourse(courseId);
       if (!course) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
         return;
@@ -28,7 +28,7 @@ export class CourseController {
     const { courseId } = req.params;
 
     try {
-      const course = await this.courseService.publishCourse(courseId);
+      const course = await this._courseService.publishCourse(courseId);
       if (!course) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
         return;
@@ -44,7 +44,7 @@ export class CourseController {
     const { category } = req.query;
 
     try {
-      const courses = await this.courseService.listPublicCourses(category as string);
+      const courses = await this._courseService.listPublicCourses(category as string);
       res.json(successResponse("Courses retrieved successfully", courses));
     } catch (error) {
       const err = error as Error;
@@ -56,7 +56,7 @@ export class CourseController {
     const { category } = req.query;
 
     try {
-      const courses = await this.courseService.listAdminCourses(category as string);
+      const courses = await this._courseService.listAdminCourses(category as string);
       res.json(successResponse("All courses retrieved successfully", courses));
     } catch (error) {
       const err = error as Error;
@@ -74,7 +74,7 @@ export class CourseController {
     }
 
     try {
-      const courses = await this.courseService.listTeacherCourses(teacherId, category as string);
+      const courses = await this._courseService.listTeacherCourses(teacherId, category as string);
       res.json(successResponse("Your courses retrieved successfully", courses));
     } catch (error) {
       const err = error as Error;
@@ -86,7 +86,7 @@ export class CourseController {
     const { courseId } = req.params;
 
     try {
-      const course = await this.courseService.getCourse(courseId);
+      const course = await this._courseService.getCourse(courseId);
       if (!course) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
         return;
@@ -107,7 +107,7 @@ export class CourseController {
         return;
       }
 
-      const course = await this.courseService.createCourse(teacherId, teacherName);
+      const course = await this._courseService.createCourse(teacherId, teacherName);
       res.json(successResponse("Course created successfully", course));
     } catch (error) {
       const err = error as Error;
@@ -136,7 +136,7 @@ export class CourseController {
         return;
       }
   
-      const course = await this.courseService.updateCourse(courseId, userId!, updateData);
+      const course = await this._courseService.updateCourse(courseId, userId!, updateData);
       if (!course) {
         res.status(404).json(errorResponse("Course not found or not authorized"));
         return;
@@ -155,7 +155,7 @@ export class CourseController {
     const userId = req.user?.userId;
 
     try {
-      const course = await this.courseService.deleteCourse(courseId, userId!);
+      const course = await this._courseService.deleteCourse(courseId, userId!);
       if (!course) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found or not authorized"));
         return;
@@ -176,7 +176,7 @@ export class CourseController {
         return;
       }
 
-      const courses = await this.courseService.searchCourses(
+      const courses = await this._courseService.searchCourses(
         searchTerm,
         category as string
       );

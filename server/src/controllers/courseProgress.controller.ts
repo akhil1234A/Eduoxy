@@ -8,13 +8,13 @@ import { HttpStatus } from "../utils/httpStatus";
 @injectable()
 export class UserCourseProgressController {
   constructor(
-    @inject(TYPES.IUserCourseProgressService) private userCourseProgressService: IUserCourseProgressService
+    @inject(TYPES.IUserCourseProgressService) private _userCourseProgressService: IUserCourseProgressService
   ) {}
 
   async getUserEnrolledCourses(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const enrolledCourses = await this.userCourseProgressService.getUserEnrolledCourses(userId);
+      const enrolledCourses = await this._userCourseProgressService.getUserEnrolledCourses(userId);
       res.status(HttpStatus.OK).json(successResponse("Enrolled courses retrieved successfully", enrolledCourses));
     } catch (error) {
       const err = error as Error;
@@ -25,7 +25,7 @@ export class UserCourseProgressController {
   async getUserCourseProgress(req: Request, res: Response): Promise<void> {
     try {
       const { userId, courseId } = req.params;
-      const progress = await this.userCourseProgressService.getUserCourseProgress(userId, courseId);
+      const progress = await this._userCourseProgressService.getUserCourseProgress(userId, courseId);
       if (!progress) {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course progress not found for this user"));
         return;
@@ -41,7 +41,7 @@ export class UserCourseProgressController {
     try {
       const { userId, courseId } = req.params;
       const progressData = req.body;
-      const progress = await this.userCourseProgressService.updateUserCourseProgress(userId, courseId, progressData);
+      const progress = await this._userCourseProgressService.updateUserCourseProgress(userId, courseId, progressData);
       res.status(HttpStatus.OK).json(successResponse("Course progress updated successfully", progress));
     } catch (error) {
       const err = error as Error;

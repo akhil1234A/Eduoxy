@@ -9,15 +9,15 @@ import { ICourseDocument } from "../models/course.model";
 @injectable()
 export class UserCourseProgressService implements IUserCourseProgressService {
   constructor(
-    @inject(TYPES.IUserCourseProgressRepository) private userCourseProgressRepository: IUserCourseProgressRepository
+    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository
   ) {}
 
   async getUserEnrolledCourses(userId: string): Promise<ICourseDocument[]> {
-    return this.userCourseProgressRepository.getUserEnrolledCourses(userId);
+    return this._userCourseProgressRepository.getUserEnrolledCourses(userId);
   } 
 
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
-    return this.userCourseProgressRepository.getUserCourseProgress(userId, courseId);
+    return this._userCourseProgressRepository.getUserCourseProgress(userId, courseId);
   }
 
   async updateUserCourseProgress(
@@ -41,6 +41,6 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     }
     progress.lastAccessedTimestamp = new Date().toISOString();
     progress.overallProgress = calculateOverallProgress(progress.sections);
-    return this.userCourseProgressRepository.saveUserCourseProgress(progress);
+    return this._userCourseProgressRepository.saveUserCourseProgress(progress);
   }
 }

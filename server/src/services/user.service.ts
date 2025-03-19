@@ -9,7 +9,7 @@ import fs from "fs";
 @injectable()
 export class UserService implements IUserService {
   constructor(
-    @inject(TYPES.IUserRepository) private userRepository: IUserRepository
+    @inject(TYPES.IUserRepository) private _userRepository: IUserRepository
   ) {
      cloudinary.v2.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,7 +19,7 @@ export class UserService implements IUserService {
   }
 
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await this.userRepository.findById(userId);
+    const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
     if (!user.password) throw new Error("User does not have a password");
 
@@ -30,11 +30,11 @@ export class UserService implements IUserService {
     if (isSamePassword) throw new Error("New password cannot be the same as the old password");
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-    await this.userRepository.update(userId, { password: hashedNewPassword });
+    await this._userRepository.update(userId, { password: hashedNewPassword });
   }
 
   async updateInstructorProfile(userId: string, title?: string, bio?: string, profileImage?: Express.Multer.File): Promise<IUser> {
-    const user = await this.userRepository.findById(userId);
+    const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
 
     const updates: Partial<IUser> = {};
@@ -57,13 +57,13 @@ export class UserService implements IUserService {
     }
     }
 
-    const updatedUser = await this.userRepository.update(userId, updates);
+    const updatedUser = await this._userRepository.update(userId, updates);
     if (!updatedUser) throw new Error("Failed to update profile");
     return updatedUser as IUser;
   }
 
   async getProfile(userId: string): Promise<IUser> {
-    const user = await this.userRepository.findById(userId);
+    const user = await this._userRepository.findById(userId);
     if(!user) throw new Error("User not found");
     return user as IUser; 
   }

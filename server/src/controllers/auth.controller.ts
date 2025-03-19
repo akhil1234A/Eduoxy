@@ -11,12 +11,12 @@ import IAuthController from "../interfaces/auth.controller";
 
 @injectable()
 export class AuthController implements IAuthController {
-  constructor(@inject(TYPES.IAuthService) private authService: IAuthService, @inject(TYPES.IJwtService) private jwtService: IJwtService, @inject(TYPES.IRedisClient) private redisClient: IRedisClient) {}
+  constructor(@inject(TYPES.IAuthService) private _authService: IAuthService, @inject(TYPES.IJwtService) private _jwtService: IJwtService, @inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
 
   async signUp(req: Request, res: Response): Promise<void> {
     try {
       const { name, email, password, userType } = req.body;
-      await this.authService.signUp(name, email, password, userType);
+      await this._authService.signUp(name, email, password, userType);
       res.status(HttpStatus.CREATED).json(successResponse("User registered. OTP sent to email."));
     } catch (error) {
       const err = error as Error; 
@@ -27,7 +27,7 @@ export class AuthController implements IAuthController {
   async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
-      const result = await this.authService.login(email, password);
+      const result = await this._authService.login(email, password);
 
       if (result.needsVerification) {
         res.json(successResponse("User not verified. OTP sent to email.", result));
@@ -45,7 +45,7 @@ export class AuthController implements IAuthController {
   async verifyOtp(req: Request, res: Response): Promise<void> {
     try {
       const { email, otp } = req.body;
-      const result = await this.authService.verifyOtp(email, otp);
+      const result = await this._authService.verifyOtp(email, otp);
 
       setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
 
@@ -61,13 +61,13 @@ export class AuthController implements IAuthController {
       const refreshToken = req.cookies.refreshToken;
       if (!refreshToken) throw new Error("No refresh token provided in cookies");
 
-      const isBlacklisted = await this.redisClient.get(`blacklist:${refreshToken}`);
+      const isBlacklisted = await this._redisClient.get(`blacklist:${refreshToken}`);
      if (isBlacklisted) {
       throw new Error("Refresh token is invalid or expired");
     }
   
-      const { userId, userType } = this.jwtService.verifyRefreshToken(refreshToken);
-      const { accessToken, refreshToken: newRefreshToken, user } = await this.authService.loginWithRefresh(userId, refreshToken);
+      const { userId, userType } = this._jwtService.verifyRefreshToken(refreshToken);
+      const { accessToken, refreshToken: newRefreshToken, user } = await this._authService.loginWithRefresh(userId, refreshToken);
 
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Token refreshed", { accessToken, user }));
@@ -82,8 +82,8 @@ export class AuthController implements IAuthController {
       const refreshToken = req.cookies.refreshToken;
       const accessToken = req.cookies.accessToken;
       if (refreshToken) {
-        const { userId } = this.jwtService.verifyRefreshToken(refreshToken);
-        await this.authService.logout(userId, accessToken);
+        const { userId } = this._jwtService.verifyRefreshToken(refreshToken);
+        await this._authService.logout(userId, accessToken);
       }
       ["accessToken", "refreshToken", "userType", "userId", "userName"].forEach((cookie) =>
         res.clearCookie(cookie, { path: "/" })
@@ -101,7 +101,7 @@ export class AuthController implements IAuthController {
       const { idToken } = req.body;
       if (!idToken) throw new Error("No ID token provided");
 
-      const { accessToken, refreshToken, user } = await this.authService.googleAuth(idToken);
+      const { accessToken, refreshToken, user } = await this._authService.googleAuth(idToken);
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: refreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Google login successful", { accessToken, user }));
     } catch (error) {
@@ -115,7 +115,7 @@ export class AuthController implements IAuthController {
       const { email } = req.body;
       if (!email) throw new Error("Email is required");
 
-      await this.authService.requestPasswordReset(email);
+      await this._authService.requestPasswordReset(email);
       res.json(successResponse("Password reset token sent successfully"));
     } catch (error) {
       const err = error as Error; 
@@ -132,7 +132,7 @@ export class AuthController implements IAuthController {
       if (!newPassword || !confirmPassword) throw new Error("Both password fields are required");
       if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
   
-      await this.authService.resetPassword(token, newPassword);
+      await this._authService.resetPassword(token, newPassword);
       res.json(successResponse("Password reset successfully"));
     } catch (error) {
       const err = error as Error; 
@@ -148,7 +148,7 @@ export class AuthController implements IAuthController {
       const { email } = req.body;
       if (!email) throw new Error("Email is required");
 
-      await this.authService.sendOtp(email);
+      await this._authService.sendOtp(email);
       res.json(successResponse("OTP sent successfully"));
     } catch (error) {
       const err = error as Error; 

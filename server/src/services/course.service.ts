@@ -8,14 +8,14 @@ import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 @injectable()
 export class CourseService implements ICourseService {
-  constructor(@inject(TYPES.ICourseRepository) private courseRepository: ICourseRepository) {}
+  constructor(@inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository) {}
 
   async createCourse(teacherId: string, teacherName: string): Promise<ICourseDocument> {
     const courseData: Partial<ICourseDocument> = { 
       teacherId,
       teacherName,
     }; 
-    const course = await this.courseRepository.create(courseData); 
+    const course = await this._courseRepository.create(courseData); 
     await CacheUtil.del(CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`));
     return course;
   }
@@ -25,7 +25,7 @@ export class CourseService implements ICourseService {
     const cachedData = await CacheUtil.get<ICourseDocument>(cacheKey);
     if (cachedData) return cachedData;
 
-    const course = await this.courseRepository.findByCourseId(courseId);
+    const course = await this._courseRepository.findByCourseId(courseId);
     if (course) await CacheUtil.set(cacheKey, course);
     return course;
   }
@@ -35,7 +35,7 @@ export class CourseService implements ICourseService {
     const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
     if (cachedData) return cachedData;
 
-    const courses = await this.courseRepository.findPublicCourses(category);
+    const courses = await this._courseRepository.findPublicCourses(category);
     await CacheUtil.set(cacheKey, courses);
     return courses;
   }
@@ -45,7 +45,7 @@ export class CourseService implements ICourseService {
     const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
     if (cachedData) return cachedData;
 
-    const courses = await this.courseRepository.findAdminCourses(category);
+    const courses = await this._courseRepository.findAdminCourses(category);
     await CacheUtil.set(cacheKey, courses);
     return courses;
   }
@@ -55,13 +55,13 @@ export class CourseService implements ICourseService {
     const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
     if (cachedData) return cachedData;
 
-    const courses = await this.courseRepository.findTeacherCourses(teacherId, category);
+    const courses = await this._courseRepository.findTeacherCourses(teacherId, category);
     await CacheUtil.set(cacheKey, courses);
     return courses;
   }
 
   async updateCourse(courseId: string, teacherId: string, updateData: Partial<ICourseDocument>): Promise<ICourseDocument | null> {
-    const course = await this.courseRepository.findByCourseId(courseId);
+    const course = await this._courseRepository.findByCourseId(courseId);
   
     if (!course) {
       throw new Error("Course not found");
@@ -104,7 +104,7 @@ export class CourseService implements ICourseService {
       }));
     }
   
-    const updatedCourse = await this.courseRepository.updateByCourseId(courseId, teacherId, updateData);
+    const updatedCourse = await this._courseRepository.updateByCourseId(courseId, teacherId, updateData);
     if (updatedCourse) {
       await CacheUtil.set(CacheUtil.getCourseCacheKey(courseId), updatedCourse);
       await CacheUtil.invalidateCourseListCaches();
@@ -115,7 +115,7 @@ export class CourseService implements ICourseService {
   
 
   async deleteCourse(courseId: string, teacherId: string): Promise<ICourseDocument | null> {
-    const course = await this.courseRepository.deleteByCourseId(courseId, teacherId);
+    const course = await this._courseRepository.deleteByCourseId(courseId, teacherId);
     if (course) {
       await CacheUtil.del(CacheUtil.getCourseCacheKey(courseId));
       await CacheUtil.invalidateCourseListCaches();
@@ -125,7 +125,7 @@ export class CourseService implements ICourseService {
   }
 
   async unlistCourse(courseId: string): Promise<ICourseDocument | null> {
-    const course = await this.courseRepository.unlist(courseId);
+    const course = await this._courseRepository.unlist(courseId);
     if (course) {
       await CacheUtil.set(CacheUtil.getCourseCacheKey(courseId), course);
       await CacheUtil.invalidateCourseListCaches();
@@ -134,7 +134,7 @@ export class CourseService implements ICourseService {
   }
 
   async publishCourse(courseId: string): Promise<ICourseDocument | null> {
-    const course = await this.courseRepository.publish(courseId);
+    const course = await this._courseRepository.publish(courseId);
     if (course) {
       await CacheUtil.set(CacheUtil.getCourseCacheKey(courseId), course);
       await CacheUtil.invalidateCourseListCaches();
@@ -147,7 +147,7 @@ export class CourseService implements ICourseService {
     const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
     if (cachedData) return cachedData;
 
-    const courses = await this.courseRepository.searchPublicCourses(searchTerm, category);
+    const courses = await this._courseRepository.searchPublicCourses(searchTerm, category);
     await CacheUtil.set(cacheKey, courses, 300); // Cache for 5 minutes
     return courses;
   }
