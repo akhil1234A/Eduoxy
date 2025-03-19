@@ -8,7 +8,10 @@ export interface IUser extends Document {
   googleId?:string;
   userType: UserRole;
   isVerified: boolean;
-  isBlocked: boolean; 
+  isBlocked: boolean;
+  title?: string;
+  bio?: string;
+  profileImage?: string;
 }
 
 export interface UserInput {
@@ -30,6 +33,9 @@ const UserSchema: Schema = new Schema(
     userType: { type: String, enum: Object.values(UserRole), required: true },
     isVerified: {type: Boolean, default: false},
     isBlocked: {type: Boolean, default: false},
+    title: {type: String, required: false},
+    bio: {type: String, required: false},
+    profileImage: {type: String, required: false},
   },
   { timestamps: true }
 );

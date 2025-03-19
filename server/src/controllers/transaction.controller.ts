@@ -3,7 +3,8 @@ import TYPES from "../di/types";
 import { Request, Response } from "express";
 import { ITransactionService } from "../interfaces/transaction.service";
 import Stripe from "stripe";
-
+import { HttpStatus } from "../utils/httpStatus";
+import { errorResponse, successResponse } from "../types/types";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: "2025-02-24.acacia" });
 
 @injectable()
@@ -16,9 +17,10 @@ export class TransactionController {
     try {
       const { userId } = req.query as { userId?: string };
       const transactions = await this.transactionService.listTransactions(userId);
-      res.json({ message: "Transactions retrieved successfully", data: transactions });
+      res.json(successResponse("Transactions retrieved successfully", transactions));
     } catch (error) {
-      res.status(500).json({ message: "Error retrieving transactions", error });
+      const err = error as Error;
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving transactions", err));
     }
   }
 
@@ -32,9 +34,10 @@ export class TransactionController {
         currency: "inr",
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       });
-      res.json({ message: "", data: { clientSecret: paymentIntent.client_secret } });
+      res.json(successResponse("Stripe payment intent created successfully", { clientSecret: paymentIntent.client_secret }));
     } catch (error) {
-      res.status(500).json({ message: "Error creating stripe payment intent", error });
+      const err = error as Error;
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating stripe payment intent", err));
     }
   }
 
@@ -48,9 +51,10 @@ export class TransactionController {
         amount,
         paymentProvider
       );
-      res.json({ message: "Purchased Course successfully", data: { transaction } });
+      res.json(successResponse("Purchased Course successfully", { transaction }));
     } catch (error) {
-      res.status(500).json({ message: "Error creating transaction", error });
+      const err = error as Error;
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating transaction", err));
     }
   }
 }

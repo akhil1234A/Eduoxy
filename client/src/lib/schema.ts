@@ -1,5 +1,24 @@
 import * as z from "zod";
 
+export const profileSchema = z.object({
+  title: z.string().max(100, "Title must be 100 characters or less").optional(),
+  bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
+  profileImage: z
+    .union([
+      z.string().url("Invalid image URL").optional(), 
+      z.instanceof(File)
+        .refine((file) => file.size <= 5 * 1024 * 1024, "Image must be less than 5MB")
+        .refine(
+          (file) => ["image/jpeg", "image/png"].includes(file.type),
+          "Only JPEG or PNG images are allowed"
+        ),
+    ])
+    .optional(),
+});
+
+
+export type ProfileFormData = z.infer<typeof profileSchema>;
+
 export const passwordUpdateSchema = z
   .object({
     currentPassword: z.string().min(8, "Current password is required"),

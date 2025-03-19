@@ -2,7 +2,9 @@ import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { Request, Response } from "express";
 import { IUserService } from "../interfaces/user.service";
-
+import { HttpStatus } from "../utils/httpStatus";
+import { errorResponse, successResponse } from "../types/types";
+import { IUser } from "../models/user.model";
 @injectable()
 export class UserController {
   constructor(
@@ -13,17 +15,52 @@ export class UserController {
     const { userId, currentPassword, newPassword } = req.body;
 
     if (!userId || !currentPassword || !newPassword) {
-      res.status(400).json({ message: "Missing required fields" });
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Missing required fields"));
       return;
     }
 
     try {
       await this.userService.updatePassword(userId, currentPassword, newPassword);
-      res.json({ message: "Password updated successfully" });
+      res.json(successResponse("Password updated successfully"));
     } catch (error) {
-      res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Failed to update password" 
-      });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to update password", err.message));
+    }
+  }
+
+  async updateInstructorProfile(req: Request, res: Response): Promise<void> {
+    
+    const { userId, title, bio } = req.body;
+    const profileImage = req.file;
+    
+    if (!userId) {
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("User ID is required"));
+      return;
+    }
+
+    try {
+      const updatedUser = await this.userService.updateInstructorProfile(userId, title, bio, profileImage);
+      res.json(successResponse("Instructor profile updated successfully", updatedUser as IUser));
+    } catch (error) {
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to update instructor profile", err.message));
+    }
+  }
+
+  async getProfile(req: Request, res: Response): Promise<void>{
+    const userId = req.query.userId as string;
+
+    if(!userId || typeof userId !== "string"){
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("User ID is required"));
+      return;
+    }
+
+    try{
+     const user = await this.userService.getProfile(userId);
+     res.json(successResponse("Profile fetched successfully", user as IUser));
+    } catch (error) {
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to fetch profile", err.message));
     }
   }
 }
