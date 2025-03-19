@@ -112,8 +112,24 @@ function getNotificationTypeColor(type: string) {
 }
 
 function formatTimeAgo(date: Date) {
-  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(
-    -Math.round((Date.now() - new Date(date).getTime()) / 1000 / 60),
-    "minute"
-  );
-} 
+  const now = Date.now();
+  const past = new Date(date).getTime();
+  const diffInSeconds = Math.round((past - now) / 1000);
+
+  const units: { [key: string]: number } = {
+    year: 60 * 60 * 24 * 365,
+    month: 60 * 60 * 24 * 30,
+    week: 60 * 60 * 24 * 7,
+    day: 60 * 60 * 24,
+    hour: 60 * 60,
+    minute: 60,
+    second: 1,
+  };
+
+  for (const [unit, secondsInUnit] of Object.entries(units)) {
+    if (Math.abs(diffInSeconds) >= secondsInUnit || unit === "second") {
+      const value = Math.round(diffInSeconds / secondsInUnit);
+      return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(value, unit as Intl.RelativeTimeFormatUnit);
+    }
+  }
+}
