@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  PaymentElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useCreateTransactionMutation } from "@/state/redux";
@@ -16,23 +12,30 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [createTransaction] = useCreateTransactionMutation();
   const userId = Cookies.get("userId");
 
   useEffect(() => {
-    if (stripe && elements) {
-      setIsLoading(false);
-    }
-  }, [stripe, elements]);
+    const paymentChannel = new BroadcastChannel("payment_channel");
+
+    paymentChannel.onmessage = (event) => {
+      if (event.data.type === "payment_success" && event.data.courseId === courseId) {
+        setIsProcessing(true);
+        toast.success("Payment is completed, redirecting to course...");
+        router.push(`/payment/success/${courseId}`);
+      }
+    };
+
+    return () => paymentChannel.close();
+  }, [courseId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements || !userId) {
-      setErrorMessage("Payment initialization failed. Please refresh the page.");
+      setErrorMessage("Payment setup failed. Please refresh the page.");
       return;
     }
 
@@ -51,7 +54,7 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
 
       if (error) {
         setErrorMessage(error.message);
-        toast.error(error.message, { id: toastId });
+        toast.error(error.message || "Payment confirmation failed.", { id: toastId });
         return;
       }
 
@@ -65,23 +68,19 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
         }).unwrap();
 
         toast.success("Payment successful!", { id: toastId });
+        const paymentChannel = new BroadcastChannel("payment_channel");
+        paymentChannel.postMessage({ type: "payment_success", courseId });
+        paymentChannel.close();
         router.push(`/payment/success/${courseId}`);
       }
-    } catch (error) {
-      setErrorMessage("Payment failed. Please try again.");
-      toast.error("Payment failed. Please try again.", { id: toastId });
+    } catch (error: any) {
+      const errorMsg = error.data?.message || "Payment failed. Please try again.";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg, { id: toastId });
     } finally {
       setIsProcessing(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[200px] flex items-center justify-center">
-        <p>Loading payment form...</p>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="payment-form">
@@ -98,4 +97,4 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
       </Button>
     </form>
   );
-} 
+}

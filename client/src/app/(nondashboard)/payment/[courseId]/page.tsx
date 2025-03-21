@@ -2,40 +2,44 @@
 
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import CheckoutForm from "./CheckoutForm";
-import { useGetCourseQuery } from "@/state/redux";
-import { useCreatePaymentIntentMutation } from "@/state/redux";
+import { useGetCourseQuery, useCreatePaymentIntentMutation } from "@/state/redux";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import Cookies from "js-cookie";
 
-// Initialize Stripe outside the component
+// Lazy load CheckoutForm
+const CheckoutForm = lazy(() => import("./CheckoutForm"));
+
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const PaymentPage = () => {
   const params = useParams();
   const courseId = params.courseId as string;
+  const userId = Cookies.get("userId");
   const [clientSecret, setClientSecret] = useState<string>();
-  
   const { data: courseData, isLoading: courseLoading } = useGetCourseQuery(courseId);
   const [createPaymentIntent] = useCreatePaymentIntentMutation();
-  
   const course = courseData?.data;
 
   useEffect(() => {
-    const initializePayment = async () => {
-      if (course?.price) {
-        try {
-          const result = await createPaymentIntent({ amount: course.price }).unwrap();
-          setClientSecret(result.data.clientSecret);
-        } catch (error) {
-          console.error("Error creating payment intent:", error);
-        }
+    const initializePaymentIntent = async () => {
+      if (!userId || !course?.price) return;
+
+      try {
+        const paymentIntentResponse = await createPaymentIntent({
+          amount: course.price,
+          userId,
+          courseId,
+        }).unwrap();
+        setClientSecret(paymentIntentResponse.data.clientSecret);
+      } catch (error) {
+        console.error("Error creating payment intent:", error);
       }
     };
 
-    initializePayment();
-  }, [course?.price, createPaymentIntent]);
+    initializePaymentIntent();
+  }, [course?.price, userId, courseId, createPaymentIntent]);
 
   if (courseLoading || !clientSecret) {
     return (
@@ -54,15 +58,15 @@ const PaymentPage = () => {
   }
 
   const options = {
-    clientSecret,
+    clientSecret, // Pass clientSecret to Elements
     appearance: {
-      theme: 'night',
+      theme: "night",
       variables: {
-        colorPrimary: '#6366F1',
-        colorBackground: '#1B1C22',
-        colorText: '#FFFFFF',
-        colorDanger: '#EF4444',
-        fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+        colorPrimary: "#6366F1",
+        colorBackground: "#1B1C22",
+        colorText: "#FFFFFF",
+        colorDanger: "#EF4444",
+        fontFamily: "ui-sans-serif, system-ui, sans-serif",
       },
     },
   };
@@ -84,7 +88,9 @@ const PaymentPage = () => {
         </div>
       </div>
       <Elements stripe={stripePromise} options={options}>
-        <CheckoutForm courseId={courseId} amount={course.price} />
+        <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><Loading /></div>}>
+          <CheckoutForm courseId={courseId} amount={course.price} />
+        </Suspense>
       </Elements>
     </div>
   );

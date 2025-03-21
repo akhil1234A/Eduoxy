@@ -7,7 +7,8 @@ import { ITransactionService } from "../interfaces/transaction.service";
 import { ITransaction } from "../models/transaction.model";
 import { NotificationService } from "./notification.service";
 import { IAuthService } from "../interfaces/auth.service";
-
+import { IRedisClient } from "../config/redis";
+import { CacheUtil } from "../utils/cache";
 @injectable()
 export class TransactionService implements ITransactionService {
   constructor(
@@ -15,7 +16,8 @@ export class TransactionService implements ITransactionService {
     @inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository,
     @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository,
     @inject(TYPES.IAuthService) private _authService: IAuthService,
-    private _notificationService: NotificationService
+    @inject(TYPES.IRedisClient) private _redisClient:IRedisClient,
+    private _notificationService: NotificationService,
   ) {}
 
   async listTransactions(userId?: string): Promise<ITransaction[]> {
@@ -29,6 +31,22 @@ export class TransactionService implements ITransactionService {
     amount: number,
     paymentProvider: "stripe"
   ): Promise<ITransaction> {
+
+    const lockKey = `lock:transaction:${userId}:${courseId}`;
+    const lockExpiration = 60;
+
+    const lock = await this._redisClient.set(lockKey, "locked", { EX: lockExpiration });
+    if((lock !== "OK")){
+      throw new Error("Transaction already in progress. Please wait for it to complete.");
+    }
+
+    try {
+
+    const existingTransaction = await this._transactionRepository.findByUserId(userId);
+    if(existingTransaction.some(t => t.courseId === courseId)){
+      throw new Error("You have already enrolled in this course.");
+    }
+
     const course = await this._courseRepository.findById(courseId);
     if (!course) throw new Error("Course not found");
 
@@ -63,6 +81,8 @@ export class TransactionService implements ITransactionService {
 
     await this._courseRepository.addEnrollment(courseId, userId);
 
+    await CacheUtil.invalidateCourseListCaches();
+
     // Send notification to course teacher
     await this._notificationService.createNotification({
       userId: course.teacherId,
@@ -73,5 +93,8 @@ export class TransactionService implements ITransactionService {
     });
 
     return savedTransaction;
+    } finally {
+      await this._redisClient.del(lockKey);
+    }
   }
 }

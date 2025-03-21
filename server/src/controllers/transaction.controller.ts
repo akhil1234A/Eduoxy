@@ -25,15 +25,26 @@ export class TransactionController {
   }
 
   async createStripePaymentIntent(req: Request, res: Response): Promise<void> {
-    let { amount } = req.body;
-    if (!amount || amount <= 0) amount = 50;
+    console.log("Request body:", req.body);
+    const { amount, userId, courseId } = req.body;
+
+    if (!amount || amount <= 0 || !userId || !courseId) {
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Invalid request parameters"));
+      return;
+    }
 
     try {
+
+      const idempotencyKey = `${userId}:${courseId}`;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100,
         currency: "inr",
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-      });
+        metadata: {
+          userId,
+          courseId,
+        },
+      }, { idempotencyKey });
       res.json(successResponse("Stripe payment intent created successfully", { clientSecret: paymentIntent.client_secret }));
     } catch (error) {
       const err = error as Error;

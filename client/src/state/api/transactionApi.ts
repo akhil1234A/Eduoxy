@@ -8,7 +8,7 @@ export const transactionApi = createApi({
   endpoints: (builder) => ({
     createPaymentIntent: builder.mutation<
       { clientSecret: string },
-      { amount: number }
+      { amount: number; userId: string; courseId: string } 
     >({
       query: (data) => ({
         url: "/transactions/stripe/payment-intent",
