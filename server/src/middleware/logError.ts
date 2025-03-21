@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { logger } from "../utils/logger";
+import { apiLogger } from "../utils/logger";
 
 export const logErrors = (err: any, req: Request, res: Response, next: NextFunction) => {
-  logger.error({
+  apiLogger.error({
     message: err.message,
     stack: err.stack,
     method: req.method,

@@ -8,30 +8,29 @@ if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
 }
 
-const errorTransport = new DailyRotateFile({
-  filename: path.join(logDir, "error-%DATE%.log"),
-  datePattern: "YYYY-MM-DD",
-  maxSize: "10m",
-  maxFiles: "7d",
-  zippedArchive: true,
-});
 
-const infoTransport = new DailyRotateFile({
-  filename: path.join(logDir, "info-%DATE%.log"),
-  datePattern: "YYYY-MM-DD",
-  maxSize: "10m",
-  maxFiles: "7d",
-  zippedArchive: true,
-});
-
-export const logger = winston.createLogger({
+export const apiLogger = winston.createLogger({
   format: winston.format.combine(
-    winston.format.timestamp(),
+    winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
     winston.format.json()
   ),
   transports: [
-    new winston.transports.Console({ level: "debug" }), 
-    infoTransport, 
-    errorTransport, 
+    new winston.transports.Console({ level: "debug" }),
+    new DailyRotateFile({
+      filename: path.join(logDir, "api-info-%DATE%.log"),
+      datePattern: "YYYY-MM-DD",
+      maxSize: "10m",
+      maxFiles: "7d",
+      zippedArchive: true,
+      level: "info",
+    }),
+    new DailyRotateFile({
+      filename: path.join(logDir, "api-error-%DATE%.log"),
+      datePattern: "YYYY-MM-DD",
+      maxSize: "10m",
+      maxFiles: "7d",
+      zippedArchive: true,
+      level: "error",
+    }),
   ],
 });
