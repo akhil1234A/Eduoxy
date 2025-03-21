@@ -1,8 +1,14 @@
 import * as z from "zod";
 
 export const profileSchema = z.object({
-  title: z.string().max(100, "Title must be 100 characters or less").optional(),
-  bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
+  name: z
+  .string()
+  .trim()
+  .min(1, "Name is required")
+  .max(50, "Name must be 50 characters or less")
+  .regex(/^[A-Za-z\s]+$/, "Name can only contain letters and spaces"),
+  title: z.string().trim().max(100, "Title must be 100 characters or less").optional(),
+  bio: z.string().trim().max(500, "Bio must be 500 characters or less").optional(),
   profileImage: z
     .union([
       z.string().url("Invalid image URL").optional(), 

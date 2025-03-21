@@ -4,7 +4,16 @@ import React, { useState } from "react";
 import Header from "@/components/Header";
 import { useGetStudentsQuery, useBlockUserMutation, useUnblockUserMutation } from "@/state/api/adminApi";
 import { toast } from "sonner";
-import UserManagementTable from "@/components/UserManagementTable";
+import DynamicTable from "@/components/DynamicTable";
+import { Button } from "@/components/ui/button";
+
+interface Student {
+  _id: string;
+  name: string;
+  email: string;
+  isBlocked: boolean;
+  isVerified: boolean;
+}
 
 const ManageUsers = () => {
   const { data, isLoading } = useGetStudentsQuery();
@@ -34,20 +43,52 @@ const ManageUsers = () => {
     }
   };
 
+  const columns = [
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    {
+      key: "isBlocked",
+      label: "Status",
+      render: (value: boolean) => (value ? "Blocked" : "Active"),
+    },
+    {
+      key: "isVerified",
+      label: "Verified",
+      render: (value: boolean) => (value ? "Yes" : "No"),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (_: any, student: Student) => (
+        <Button
+          onClick={() => (student.isBlocked ? handleUnblock(student._id) : handleBlock(student._id))}
+          variant="outline"
+          size="sm"
+          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+        >
+          {student.isBlocked ? "Unblock" : "Block"}
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="manage-users w-full h-full">
       <Header title="Manage Users" subtitle="View and manage student accounts" />
-      <UserManagementTable
-        users={students}
+      <DynamicTable
+        items={students}
+        columns={columns}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onBlock={handleBlock}
-        onUnblock={handleUnblock}
         isLoading={isLoading}
-        title="Manage Users"
-        subtitle="View and manage student accounts"
+        rowKeyExtractor={(student) => student._id}
+        filterFn={(student, term) =>
+          [student.name, student.email].some((field) =>
+            field.toLowerCase().includes(term.toLowerCase())
+          )
+        }
         searchPlaceholder="Search students by name or email..."
-        noResultsMessage="No students found"
+        noResultsComponent={<div>No students found</div>}
       />
     </div>
   );

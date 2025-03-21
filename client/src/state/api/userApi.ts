@@ -13,6 +13,7 @@ export interface UpdatePasswordResponse {
 
 export interface UpdateProfileRequest {
   userId: string;
+  name: string;
   title?: string;
   bio?: string;
   profileImage?: File;
@@ -39,6 +40,7 @@ export const userApi = createApi({
       query: (data) => {
         const formData = new FormData();
         formData.append("userId", data.userId);
+        formData.append("name", data.name);
         if (data.title) formData.append("title", data.title);
         if (data.bio) formData.append("bio", data.bio);
         if (data.profileImage) formData.append("profileImage", data.profileImage);

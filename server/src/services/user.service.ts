@@ -33,12 +33,13 @@ export class UserService implements IUserService {
     await this._userRepository.update(userId, { password: hashedNewPassword });
   }
 
-  async updateInstructorProfile(userId: string, title?: string, bio?: string, profileImage?: Express.Multer.File): Promise<IUser> {
+  async updateInstructorProfile(userId: string, name?: string, title?: string, bio?: string, profileImage?: Express.Multer.File): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
 
     const updates: Partial<IUser> = {};
 
+    if (name) updates.name = name;
     if (title) updates.title = title;
     if (bio) updates.bio = bio;
     if (profileImage) {

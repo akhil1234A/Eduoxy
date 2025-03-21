@@ -30,7 +30,7 @@ export class UserController {
 
   async updateInstructorProfile(req: Request, res: Response): Promise<void> {
     
-    const { userId, title, bio } = req.body;
+    const { userId, name, title, bio } = req.body;
     const profileImage = req.file;
     
     if (!userId) {
@@ -39,7 +39,7 @@ export class UserController {
     }
 
     try {
-      const updatedUser = await this._userService.updateInstructorProfile(userId, title, bio, profileImage);
+      const updatedUser = await this._userService.updateInstructorProfile(userId, name, title, bio, profileImage);
       res.json(successResponse("Instructor profile updated successfully", updatedUser as IUser));
     } catch (error) {
       const err = error as Error;

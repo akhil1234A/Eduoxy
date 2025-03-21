@@ -4,7 +4,16 @@ import React, { useState } from "react";
 import Header from "@/components/Header";
 import { useGetTeachersQuery, useBlockUserMutation, useUnblockUserMutation } from "@/state/api/adminApi";
 import { toast } from "sonner";
-import UserManagementTable from "@/components/UserManagementTable";
+import DynamicTable from "@/components/DynamicTable";
+import { Button } from "@/components/ui/button";
+
+interface Teacher {
+  _id: string;
+  name: string;
+  email: string;
+  isBlocked: boolean;
+  isVerified: boolean;
+}
 
 const ManageInstructors = () => {
   const { data, isLoading } = useGetTeachersQuery();
@@ -32,20 +41,52 @@ const ManageInstructors = () => {
     }
   };
 
+  const columns = [
+    { key: "name", label: "Name" },
+    { key: "email", label: "Email" },
+    {
+      key: "isBlocked",
+      label: "Status",
+      render: (value: boolean) => (value ? "Blocked" : "Active"),
+    },
+    {
+      key: "isVerified",
+      label: "Verified",
+      render: (value: boolean) => (value ? "Yes" : "No"),
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (_: any, teacher: Teacher) => (
+        <Button
+          onClick={() => (teacher.isBlocked ? handleUnblock(teacher._id) : handleBlock(teacher._id))}
+          variant="outline"
+          size="sm"
+          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+        >
+          {teacher.isBlocked ? "Unblock" : "Block"}
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="manage-instructors w-full h-full">
       <Header title="Manage Instructors" subtitle="View and manage teacher accounts" />
-      <UserManagementTable
-        users={teachers}
+      <DynamicTable
+        items={teachers}
+        columns={columns}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        onBlock={handleBlock}
-        onUnblock={handleUnblock}
         isLoading={isLoading}
-        title="Manage Instructors"
-        subtitle="View and manage teacher accounts"
+        rowKeyExtractor={(teacher) => teacher._id}
+        filterFn={(teacher, term) =>
+          [teacher.name, teacher.email].some((field) =>
+            field.toLowerCase().includes(term.toLowerCase())
+          )
+        }
         searchPlaceholder="Search instructors by name or email..."
-        noResultsMessage="No instructors found"
+        noResultsComponent={<div>No instructors found</div>}
       />
     </div>
   );
