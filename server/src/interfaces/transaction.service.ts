@@ -1,7 +1,6 @@
 import { ITransaction } from "../models/transaction.model";
 
 export interface ITransactionService {
-  listTransactions(userId?: string): Promise<ITransaction[]>;
   createTransaction(
     userId: string,
     courseId: string,
@@ -9,4 +8,7 @@ export interface ITransactionService {
     amount: number,
     paymentProvider: "stripe"
   ): Promise<ITransaction>;
+  getAdminEarnings(): Promise<any[]>;  
+  getTeacherEarnings(teacherId: string): Promise<any[]>;
+  getStudentPurchases(userId: string): Promise<any[]>; 
 }

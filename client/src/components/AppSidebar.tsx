@@ -42,18 +42,19 @@ const userType = Cookies.get('userType');
   const navLinks = {
     student: [
       { icon: BookOpen, label: "Courses", href: "/user/courses" },
-      { icon: Briefcase, label: "Billing", href: "/user/billing" },
+      { icon: Briefcase, label: "Purchases", href: "/user/purchases" },
       { icon: User, label: "Profile", href: "/user/profile" },
       { icon: Settings, label: "Settings", href: "/user/settings" },
     ],
     teacher: [
       { icon: BookOpen, label: "Courses", href: "/teacher/courses" },
-      { icon: DollarSign, label: "Billing", href: "/teacher/billing" },
+      { icon: DollarSign, label: "Earnings", href: "/teacher/earnings" },
       { icon: User, label: "Profile", href: "/teacher/profile" },
       { icon: Settings, label: "Settings", href: "/teacher/settings" },
     ],
     admin: [
       { icon: BarChart, label: "Dashboard", href: "/admin/dashboard" },
+      { icon: DollarSign, label: "Earnings", href: "/admin/earnings" },
       { icon: Users, label: "Users", href: "/admin/users" },
       { icon: User, label: "Instructors", href: "/admin/instructors" },
       { icon: BookOpen, label: "Courses", href: "/admin/courses" },

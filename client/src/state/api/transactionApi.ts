@@ -8,7 +8,7 @@ export const transactionApi = createApi({
   endpoints: (builder) => ({
     createPaymentIntent: builder.mutation<
       { clientSecret: string },
-      { amount: number; userId: string; courseId: string } 
+      { amount: number; userId: string; courseId: string }
     >({
       query: (data) => ({
         url: "/transactions/stripe/payment-intent",
@@ -19,7 +19,7 @@ export const transactionApi = createApi({
     }),
 
     createTransaction: builder.mutation<
-      { message: string; data: Transaction },
+      { message: string; data: any },
       {
         userId: string;
         courseId: string;
@@ -35,10 +35,37 @@ export const transactionApi = createApi({
       }),
       invalidatesTags: ["Courses", "Transactions"],
     }),
+
+    getAdminEarnings: builder.query<{ message: string; data: any[] }, void>({
+      query: () => ({
+        url: "/transactions/admin/earnings",
+        method: "GET",
+      }),
+      providesTags: ["Transactions"],
+    }),
+
+    getTeacherEarnings: builder.query<{ message: string; data: any[] }, string>({
+      query: (teacherId) => ({
+        url: `/transactions/teacher/earnings/${teacherId}`,
+        method: "GET",
+      }),
+      providesTags: ["Transactions"],
+    }),
+
+    getStudentPurchases: builder.query<{ message: string; data: any[] }, string>({
+      query: (userId) => ({
+        url: `/transactions/student/purchases/${userId}`,
+        method: "GET",
+      }),
+      providesTags: ["Transactions"],
+    }),
   }),
 });
 
 export const {
   useCreatePaymentIntentMutation,
   useCreateTransactionMutation,
+  useGetAdminEarningsQuery,
+  useGetTeacherEarningsQuery,
+  useGetStudentPurchasesQuery,
 } = transactionApi;
