@@ -22,7 +22,6 @@ import {
   User,
   Users,
   BarChart,
-  Code,
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
@@ -47,6 +46,7 @@ const userType = Cookies.get('userType');
       { icon: Settings, label: "Settings", href: "/user/settings" },
     ],
     teacher: [
+      { icon: BarChart, label: "Dashboard", href: "/teacher/dashboard" },
       { icon: BookOpen, label: "Courses", href: "/teacher/courses" },
       { icon: DollarSign, label: "Earnings", href: "/teacher/earnings" },
       { icon: User, label: "Profile", href: "/teacher/profile" },

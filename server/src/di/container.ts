@@ -40,6 +40,10 @@ import { NotificationService } from "../services/notification.service";
 import { IUserService } from "../interfaces/user.service";
 import { UserService } from "../services/user.service";
 import { UserController } from "../controllers/user.controller";
+import { IDashboardService } from "../interfaces/dashboard.service";
+import { DashboardService } from "../services/dashboard.service";
+import { DashboardController } from "../controllers/dashboard.controller";
+
 const container = new Container();
 
 // Repositories
@@ -67,6 +71,7 @@ container.bind<IUserCourseProgressService>(TYPES.IUserCourseProgressService).to(
 container.bind<ITransactionService>(TYPES.ITransactionService).to(TransactionService).inSingletonScope();
 container.bind<NotificationService>(NotificationService).toSelf();
 container.bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScope();
+container.bind<IDashboardService>(TYPES.IDashboardService).to(DashboardService).inSingletonScope();
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
@@ -75,6 +80,7 @@ container.bind<CourseController>(TYPES.ICourseController).to(CourseController).i
 container.bind<UserCourseProgressController>(TYPES.IUserCourseProgressController).to(UserCourseProgressController).inSingletonScope();
 container.bind<TransactionController>(TYPES.ITransactionController).to(TransactionController).inSingletonScope();
 container.bind<UserController>(TYPES.IUserController).to(UserController).inSingletonScope();
+container.bind<DashboardController>(TYPES.IDashboardController).to(DashboardController).inSingletonScope();
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
 export const adminController = container.get<AdminController>(TYPES.IAdminController);
@@ -82,4 +88,6 @@ export const courseController = container.get<CourseController>(TYPES.ICourseCon
 export const userCourseProgressController = container.get<UserCourseProgressController>(TYPES.IUserCourseProgressController);
 export const transactionController = container.get<TransactionController>(TYPES.ITransactionController);
 export const userController = container.get<UserController>(TYPES.IUserController);
+export const dashboardController = container.get<DashboardController>(TYPES.IDashboardController);
+
 export default container;
