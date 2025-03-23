@@ -1,6 +1,16 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { customBaseQuery } from "./baseQuery";
 
+
+export interface IMessage {
+  courseId: string;
+  senderId: string; 
+  receiverId: string; 
+  message: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
 export interface UpdatePasswordRequest {
   userId: string;
   currentPassword: string;
@@ -28,6 +38,7 @@ export interface UpdateProfileResponse {
 export const userApi = createApi({
   reducerPath: "userApi",
   baseQuery: customBaseQuery,
+  tagTypes: ["Chat"],
   endpoints: (builder) => ({
     updatePassword: builder.mutation<UpdatePasswordResponse, UpdatePasswordRequest>({
       query: ({ userId, currentPassword, newPassword }) => ({
@@ -59,7 +70,17 @@ export const userApi = createApi({
         method: "GET",
       }),
     }),
+    getChatHistory: builder.query<
+      { message: string; data: IMessage[] },
+      { courseId: string; userId: string; instructorId: string }
+    >({
+      query: ({ courseId, userId, instructorId }) => ({
+        url: `/chat/history?courseId=${courseId}&userId=${userId}&instructorId=${instructorId}`,
+        method: "GET",
+      }),
+      providesTags: ["Chat"],
+    }),
   }),
 });
 
-export const { useUpdatePasswordMutation, useUpdateProfileMutation, useGetProfileQuery } = userApi;
+export const { useUpdatePasswordMutation, useUpdateProfileMutation, useGetProfileQuery, useGetChatHistoryQuery } = userApi;

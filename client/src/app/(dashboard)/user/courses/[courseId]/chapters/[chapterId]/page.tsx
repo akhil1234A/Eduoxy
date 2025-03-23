@@ -141,10 +141,10 @@ const Course = () => {
             <TabsContent className="course__tab-content" value="Quiz">
               <Card className="course__tab-card">
                 <CardHeader className="course__tab-header">
-                  <CardTitle>Quiz Content</CardTitle>
+                  <CardTitle>Quiz</CardTitle>
                 </CardHeader>
                 <CardContent className="course__tab-body">
-                  {/* Add quiz content here */}
+                  
                 </CardContent>
               </Card>
             </TabsContent>

@@ -4,7 +4,8 @@ const TYPES = {
   ICourseRepository: Symbol.for("ICourseRepository"),
   IUserCourseProgressRepository: Symbol.for("IUserCourseProgressRepository"),
   ITransactionRepository: Symbol.for("ITransactionRepository"),
-
+  IChatRepository: Symbol.for("IChatRepository"),
+  
   //Services
   IAuthService: Symbol.for("IAuthService"),
   IAdminService: Symbol.for("IAdminService"),
@@ -13,6 +14,7 @@ const TYPES = {
   ITransactionService: Symbol.for("ITransactionService"),
   IUserService: Symbol.for("IUserService"),
   IDashboardService: Symbol.for("IDashboardService"),
+  IChatService: Symbol.for("IChatService"),
 
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
@@ -22,7 +24,8 @@ const TYPES = {
   ITransactionController: Symbol.for("ITransactionController"),
   IUserController: Symbol.for("IUserController"),
   IDashboardController: Symbol.for("IDashboardController"),
-  
+  IChatController: Symbol.for("IChatController"),
+
   //Utils
   IMailService: Symbol.for("IMailService"),
   IJwtService: Symbol.for("IJwtService"),
@@ -33,6 +36,7 @@ const TYPES = {
   UserModel: Symbol.for("UserModel"),
   UserCourseProgressModel: Symbol.for("UserCourseProgressModel"),
   TransactionModel: Symbol.for("TransactionModel"),
+  MessageModel: Symbol.for("MessageModel"),
 
 };
 

@@ -22,6 +22,7 @@ import {
   User,
   Users,
   BarChart,
+  MessageCircle,
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ const userType = Cookies.get('userType');
       { icon: Briefcase, label: "Purchases", href: "/user/purchases" },
       { icon: User, label: "Profile", href: "/user/profile" },
       { icon: Settings, label: "Settings", href: "/user/settings" },
+      { icon: MessageCircle, label: "Chat", href: "/user/chat" },
     ],
     teacher: [
       { icon: BarChart, label: "Dashboard", href: "/teacher/dashboard" },
@@ -51,6 +53,7 @@ const userType = Cookies.get('userType');
       { icon: DollarSign, label: "Earnings", href: "/teacher/earnings" },
       { icon: User, label: "Profile", href: "/teacher/profile" },
       { icon: Settings, label: "Settings", href: "/teacher/settings" },
+      { icon: MessageCircle, label: "Chat", href: "/teacher/chat" },
     ],
     admin: [
       { icon: BarChart, label: "Dashboard", href: "/admin/dashboard" },

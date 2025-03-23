@@ -43,6 +43,13 @@ import { UserController } from "../controllers/user.controller";
 import { IDashboardService } from "../interfaces/dashboard.service";
 import { DashboardService } from "../services/dashboard.service";
 import { DashboardController } from "../controllers/dashboard.controller";
+import { ChatService } from "../services/chat.service";
+import { IChatService } from "../interfaces/chat.service";
+import { ChatController } from "../controllers/chat.controller";
+import { IMessage } from "../models/chat.model";
+import Message from "../models/chat.model";
+import { ChatRepository } from "../repositories/chat.repository";
+import { IChatRepository } from "../interfaces/chat.repository";
 
 const container = new Container();
 
@@ -51,12 +58,14 @@ container.bind<IUserRepository>(TYPES.IUserRepository).to(UserRepository).inSing
 container.bind<ICourseRepository>(TYPES.ICourseRepository).to(CourseRepository).inSingletonScope();
 container.bind<IUserCourseProgressRepository>(TYPES.IUserCourseProgressRepository).to(UserCourseProgressRepository).inSingletonScope();
 container.bind<ITransactionRepository>(TYPES.ITransactionRepository).to(TransactionRepository).inSingletonScope();
+container.bind<IChatRepository>(TYPES.IChatRepository).to(ChatRepository).inSingletonScope();
 
 // Model
 container.bind<typeof User>(TYPES.UserModel).toConstantValue(User)
 container.bind<Model<ICourseDocument>>(TYPES.CourseModel).toConstantValue(Course);
 container.bind<typeof UserCourseProgress>(TYPES.UserCourseProgressModel).toConstantValue(UserCourseProgress);
 container.bind<typeof Transaction>(TYPES.TransactionModel).toConstantValue(Transaction);
+container.bind<Model<IMessage>>(TYPES.MessageModel).toConstantValue(Message);
 
 // Utilities
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
@@ -72,6 +81,7 @@ container.bind<ITransactionService>(TYPES.ITransactionService).to(TransactionSer
 container.bind<NotificationService>(NotificationService).toSelf();
 container.bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScope();
 container.bind<IDashboardService>(TYPES.IDashboardService).to(DashboardService).inSingletonScope();
+container.bind<IChatService>(TYPES.IChatService).to(ChatService).inSingletonScope();
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
@@ -81,6 +91,7 @@ container.bind<UserCourseProgressController>(TYPES.IUserCourseProgressController
 container.bind<TransactionController>(TYPES.ITransactionController).to(TransactionController).inSingletonScope();
 container.bind<UserController>(TYPES.IUserController).to(UserController).inSingletonScope();
 container.bind<DashboardController>(TYPES.IDashboardController).to(DashboardController).inSingletonScope();
+container.bind<ChatController>(TYPES.IChatController).to(ChatController).inSingletonScope();
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
 export const adminController = container.get<AdminController>(TYPES.IAdminController);
@@ -89,5 +100,6 @@ export const userCourseProgressController = container.get<UserCourseProgressCont
 export const transactionController = container.get<TransactionController>(TYPES.ITransactionController);
 export const userController = container.get<UserController>(TYPES.IUserController);
 export const dashboardController = container.get<DashboardController>(TYPES.IDashboardController);
+export const chatController = container.get<ChatController>(TYPES.IChatController);
 
 export default container;
