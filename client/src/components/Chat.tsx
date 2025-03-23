@@ -21,23 +21,22 @@ interface ChatMessage {
 
 interface ChatProps {
   courseId: string;
-  userId: string;
-  instructorId: string;
-  studentId?: string;
+  senderId: string; // Current user (student or instructor)
+  receiverId: string; // Other party (instructor or student)
 }
 
-const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
-  const { data, isLoading, isError } = useGetChatHistoryQuery({ courseId, userId, instructorId });
+const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
+  const { data, isLoading, isError } = useGetChatHistoryQuery({ courseId, senderId, receiverId });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  console.log("Chat props - userId:", userId, "instructorId:", instructorId, "studentId:", studentId);
+  console.log("Chat props - senderId:", senderId, "receiverId:", receiverId, "courseId:", courseId);
 
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
-      query: { userId },
+      query: { userId: senderId }, // Use senderId for socket connection
       path: "/socket.io/",
     });
     setSocket(socketInstance);
@@ -64,7 +63,7 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
       socketInstance.emit("leaveChat", { courseId });
       socketInstance.disconnect();
     };
-  }, [courseId, userId]);
+  }, [courseId, senderId]);
 
   useEffect(() => {
     if (data?.data) {
@@ -72,6 +71,7 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
       setMessages(data.data);
     }
     if (isError) {
+      console.error("Chat history fetch error:", isError);
       toast.error("Failed to load chat history");
     }
   }, [data, isError]);
@@ -85,15 +85,11 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
 
     const payload = {
       courseId,
-      receiverId: userId === instructorId ? studentId : instructorId,
+      senderId, // Current user sending the message
+      receiverId, // Recipient of the message
       message: newMessage.trim(),
     };
     console.log("Sending message payload:", payload);
-    if (!payload.receiverId) {
-      console.error("Receiver ID is undefined. userId:", userId, "instructorId:", instructorId, "studentId:", studentId);
-      toast.error("Please select a recipient to send a message.");
-      return;
-    }
 
     socket.emit("sendMessage", payload);
     setNewMessage("");
@@ -110,17 +106,17 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
           <div className="text-center text-gray-400">No messages yet. Start the conversation!</div>
         ) : (
           messages.map((msg, index) => {
-            console.log(`Rendering msg ${index}: senderId=${msg.senderId}, userId=${userId}, aligns ${msg.senderId === userId ? "right" : "left"}`);
+            console.log(`Rendering msg ${index}: senderId=${msg.senderId}, userId=${senderId}, aligns ${msg.senderId === senderId ? "right" : "left"}`);
             return (
               <div
                 key={index}
                 className={`mb-4 flex ${
-                  msg.senderId === userId ? "justify-end" : "justify-start"
+                  msg.senderId === senderId ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
                   className={`max-w-xs p-3 rounded-lg shadow-sm ${
-                    msg.senderId === userId
+                    msg.senderId === senderId
                       ? "bg-[#6366F1] text-white ml-4"
                       : "bg-[#3A3B45] text-gray-300 mr-4"
                   }`}

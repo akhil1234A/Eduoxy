@@ -10,15 +10,15 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function StudentChatPage() {
-  const userId = Cookies.get("userId"); // Student ID: 67c5f17c6fffa8e9b21034b9
+  const senderId = Cookies.get("userId"); // Student ID: 67c5f17c6fffa8e9b21034b9
   const [selectedCourse, setSelectedCourse] = useState<{
     courseId: string;
-    instructorId: string;
+    receiverId: string; // Instructor ID
     title: string;
   } | null>(null);
 
-  const { data: courses, isLoading } = useGetUserEnrolledCoursesQuery(userId || "", {
-    skip: !userId,
+  const { data: courses, isLoading } = useGetUserEnrolledCoursesQuery(senderId || "", {
+    skip: !senderId,
   });
 
   if (isLoading) {
@@ -48,8 +48,8 @@ export default function StudentChatPage() {
                     className="w-full text-left justify-start py-3 mb-2 text-gray-300 hover:bg-[#3A3B45]"
                     onClick={() =>
                       setSelectedCourse({
-                        courseId: course.courseId, // Use courseId from response
-                        instructorId: course.teacherId,
+                        courseId: course.courseId,
+                        receiverId: course.teacherId, // Instructor ID as receiver
                         title: course.title,
                       })
                     }
@@ -76,8 +76,8 @@ export default function StudentChatPage() {
               <CardContent>
                 <Chat
                   courseId={selectedCourse.courseId}
-                  userId={userId || ""}
-                  instructorId={selectedCourse.instructorId}
+                  senderId={senderId || ""} // Student ID
+                  receiverId={selectedCourse.receiverId} // Instructor ID
                 />
               </CardContent>
             </Card>

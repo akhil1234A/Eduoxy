@@ -74,8 +74,8 @@ export const userApi = createApi({
       { message: string; data: IMessage[] },
       { courseId: string; userId: string; instructorId: string }
     >({
-      query: ({ courseId, userId, instructorId }) => ({
-        url: `/chat/history?courseId=${courseId}&userId=${userId}&instructorId=${instructorId}`,
+      query: ({ courseId, senderId, receiverId }) => ({
+        url: `/chat/history?courseId=${courseId}&senderId=${senderId}&receiverId=${receiverId}`,
         method: "GET",
       }),
       providesTags: ["Chat"],

@@ -10,16 +10,16 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function InstructorChatPage() {
-  const userId = Cookies.get("userId"); // Instructor ID: 67c675a73b43d65521864e0b
+  const senderId = Cookies.get("userId"); // Instructor ID: 67c675a73b43d65521864e0b
   const [selectedChat, setSelectedChat] = useState<{
     courseId: string;
-    studentId: string;
+    receiverId: string; // Student ID
     courseTitle: string;
     studentName: string;
   } | null>(null);
 
-  const { data: courses, isLoading } = useGetTeacherCoursesQuery(userId || "", {
-    skip: !userId,
+  const { data: courses, isLoading } = useGetTeacherCoursesQuery(senderId || "", {
+    skip: !senderId,
   });
 
   const students = courses?.data?.reduce((acc: any[], course) => {
@@ -27,7 +27,7 @@ export default function InstructorChatPage() {
       if (!acc.find((s) => s.userId === student.userId && s.courseId === course.courseId)) {
         acc.push({
           ...student,
-          courseId: course.courseId, // Use courseId from response
+          courseId: course.courseId,
           courseTitle: course.title,
           name: student.name || "Unknown", // Adjust if name isn’t in enrollments
         });
@@ -62,7 +62,7 @@ export default function InstructorChatPage() {
                   <Button
                     key={`${student.userId}-${student.courseId}`}
                     variant={
-                      selectedChat?.studentId === student.userId &&
+                      selectedChat?.receiverId === student.userId &&
                       selectedChat?.courseId === student.courseId
                         ? "default"
                         : "ghost"
@@ -71,7 +71,7 @@ export default function InstructorChatPage() {
                     onClick={() =>
                       setSelectedChat({
                         courseId: student.courseId,
-                        studentId: student.userId,
+                        receiverId: student.userId, // Student ID as receiver
                         courseTitle: student.courseTitle,
                         studentName: student.name,
                       })
@@ -99,9 +99,8 @@ export default function InstructorChatPage() {
               <CardContent>
                 <Chat
                   courseId={selectedChat.courseId}
-                  userId={userId || ""} // Instructor ID
-                  instructorId={userId || ""}
-                  studentId={selectedChat.studentId}
+                  senderId={senderId || ""} // Instructor ID
+                  receiverId={selectedChat.receiverId} // Student ID
                 />
               </CardContent>
             </Card>

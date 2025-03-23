@@ -17,43 +17,42 @@ export class ChatService implements IChatService {
     @inject(TYPES.IChatRepository) private _chatRepository: IChatRepository
   ) {}
 
-  async getChatHistory(courseId: string, userId: string, instructorId: string): Promise<IMessage[]> {
-    const transactions = await this._transactionRepository.findByUserId(userId);
-    const isStudent = transactions.some((txn) => txn.courseId === courseId);
-
+  async getChatHistory(courseId: string, senderId: string, receiverId: string): Promise<IMessage[]> {
     const course = await this._courseRepository.findByCourseId(courseId);
     if (!course) {
       throw new Error("Course not found.");
     }
-
-    const isInstructor = course.teacherId === userId;
-
-    if (!isStudent && !isInstructor) {
+  
+    const isInstructor = course.teacherId === senderId || course.teacherId === receiverId;
+  
+    let isStudent = false;
+    if (!isInstructor) {
+      const transactions = await this._transactionRepository.findByUserId(senderId);
+      isStudent = transactions.some((txn) => txn.courseId === courseId);
+    }
+  
+    if (!isInstructor && !isStudent) {
       throw new Error("You must purchase the course or be the instructor to access this chat.");
     }
+  
 
-    if (isInstructor && instructorId !== userId) {
-      throw new Error("Invalid instructor for this course.");
+    if (!isInstructor) {
+      throw new Error("You must purchase the course to chat with the instructor.");
     }
-
-    const cacheKey = `chat:${courseId}:${userId}:${instructorId}`;
+  
+    const cacheKey = `chat:${courseId}:${senderId}:${receiverId}`;
     const cachedMessages = await this._redisClient.get(cacheKey);
     if (cachedMessages) {
       return JSON.parse(cachedMessages);
     }
-
-    let messages: IMessage[];
-    if (isInstructor) {
-      // Instructors only see messages sent to them
-      messages = await this._chatRepository.findMessagesByCourseAndUsers(courseId, instructorId, userId);
-    } else {
-      // Students see full conversation with instructor
-      messages = await this._chatRepository.findMessagesByCourseAndUsers(courseId, userId, instructorId);
-    }
-
+  
+    const messages = await this._chatRepository.findMessagesByCourseAndUsers(courseId, senderId, receiverId);
+  
     await this._redisClient.set(cacheKey, JSON.stringify(messages), { EX: 3600 });
+  
     return messages;
   }
+  
 
   async sendMessage(courseId: string, senderId: string, receiverId: string, message: string): Promise<IMessage> {
 

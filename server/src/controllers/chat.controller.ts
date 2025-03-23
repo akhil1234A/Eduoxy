@@ -12,9 +12,9 @@ export class ChatController {
   ) {}
 
   async getChatHistory(req: Request, res: Response): Promise<void> {
-    const { courseId, userId, instructorId } = req.query;
+    const { courseId, senderId, receiverId } = req.query;
 
-    if (!courseId || !userId || !instructorId) {
+    if (!courseId || !senderId || !receiverId) {
       res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Missing required query parameters"));
       return;
     }
@@ -22,8 +22,8 @@ export class ChatController {
     try {
       const messages = await this._chatService.getChatHistory(
         courseId as string,
-        userId as string,
-        instructorId as string
+        senderId as string,
+        receiverId as string
       );
       res.json(successResponse("Chat history retrieved successfully", messages));
     } catch (error) {
