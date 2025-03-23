@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { useGetChatHistoryQuery } from "@/state/redux";
+import { useGetChatHistoryQuery } from "@/state/redux"; 
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
   const [newMessage, setNewMessage] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  console.log("Chat props - userId:", userId, "instructorId:", instructorId, "studentId:", studentId);
 
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
@@ -107,27 +109,30 @@ const Chat = ({ courseId, userId, instructorId, studentId }: ChatProps) => {
         ) : messages.length === 0 ? (
           <div className="text-center text-gray-400">No messages yet. Start the conversation!</div>
         ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`mb-4 flex ${
-                msg.senderId === userId ? "justify-end" : "justify-start"
-              }`}
-            >
+          messages.map((msg, index) => {
+            console.log(`Rendering msg ${index}: senderId=${msg.senderId}, userId=${userId}, aligns ${msg.senderId === userId ? "right" : "left"}`);
+            return (
               <div
-                className={`max-w-xs p-3 rounded-lg shadow-sm ${
-                  msg.senderId === userId
-                    ? "bg-[#6366F1] text-white ml-4" // Sender (right)
-                    : "bg-[#3A3B45] text-gray-300 mr-4" // Receiver (left)
+                key={index}
+                className={`mb-4 flex ${
+                  msg.senderId === userId ? "justify-end" : "justify-start"
                 }`}
               >
-                <p className="text-sm">{msg.message}</p>
-                <span className="text-xs text-gray-400 block mt-1">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </span>
+                <div
+                  className={`max-w-xs p-3 rounded-lg shadow-sm ${
+                    msg.senderId === userId
+                      ? "bg-[#6366F1] text-white ml-4"
+                      : "bg-[#3A3B45] text-gray-300 mr-4"
+                  }`}
+                >
+                  <p className="text-sm">{msg.message}</p>
+                  <span className="text-xs text-gray-400 block mt-1">
+                    {new Date(msg.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
         <div ref={messagesEndRef} />
       </ScrollArea>
