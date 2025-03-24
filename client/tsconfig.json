@@ -29,6 +29,6 @@
       
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/cloudinary-signature/route.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/api/s3-presigned-url/route.js", "src/app/api/proxy-subtitles/route.js"],
   "exclude": ["node_modules"]
 }

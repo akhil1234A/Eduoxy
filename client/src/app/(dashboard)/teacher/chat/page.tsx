@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useGetTeacherCoursesQuery } from "@/state/redux"; // Update path
+import { useGetTeacherCoursesQuery } from "@/state/redux"; 
 import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,10 +10,10 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function InstructorChatPage() {
-  const senderId = Cookies.get("userId"); // Instructor ID: 67c675a73b43d65521864e0b
+  const senderId = Cookies.get("userId"); 
   const [selectedChat, setSelectedChat] = useState<{
     courseId: string;
-    receiverId: string; // Student ID
+    receiverId: string; 
     courseTitle: string;
     studentName: string;
   } | null>(null);
@@ -29,14 +29,13 @@ export default function InstructorChatPage() {
           ...student,
           courseId: course.courseId,
           courseTitle: course.title,
-          name: student.name || "Unknown", // Adjust if name isn’t in enrollments
+          name: student.name || "Unknown", 
         });
       }
     });
     return acc;
   }, []);
 
-  console.log("Students:", students);
 
   if (isLoading) {
     return (
@@ -71,7 +70,7 @@ export default function InstructorChatPage() {
                     onClick={() =>
                       setSelectedChat({
                         courseId: student.courseId,
-                        receiverId: student.userId, // Student ID as receiver
+                        receiverId: student.userId, 
                         courseTitle: student.courseTitle,
                         studentName: student.name,
                       })
@@ -99,8 +98,8 @@ export default function InstructorChatPage() {
               <CardContent>
                 <Chat
                   courseId={selectedChat.courseId}
-                  senderId={senderId || ""} // Instructor ID
-                  receiverId={selectedChat.receiverId} // Student ID
+                  senderId={senderId || ""} 
+                  receiverId={selectedChat.receiverId} 
                 />
               </CardContent>
             </Card>

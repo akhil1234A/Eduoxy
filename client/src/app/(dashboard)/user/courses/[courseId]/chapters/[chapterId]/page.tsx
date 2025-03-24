@@ -4,10 +4,10 @@ import { useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import ReactPlayer from "react-player";
 import Loading from "@/components/Loading";
 import { useCourseProgressData } from "@/hooks/useCourseProgressData";
-
 
 const Course = () => {
   const {
@@ -22,7 +22,6 @@ const Course = () => {
     hasMarkedComplete,
     setHasMarkedComplete,
   } = useCourseProgressData();
-  // console.log("currentChapter.video:", currentChapter);
 
   const playerRef = useRef<ReactPlayer>(null);
 
@@ -48,7 +47,9 @@ const Course = () => {
   if (!userId) return <div>Please sign in to view this course.</div>;
   if (!course || !userProgress) return <div>Error loading course</div>;
 
- 
+  const subtitleProxyUrl = currentChapter?.subtitle
+    ? `/api/proxy-subtitles?url=${encodeURIComponent(currentChapter.subtitle)}`
+    : null;
 
   return (
     <div className="course">
@@ -79,21 +80,39 @@ const Course = () => {
         <Card className="course__video">
           <CardContent className="course__video-container">
             {currentChapter?.video ? (
-              <ReactPlayer
-                ref={playerRef}
-                url={currentChapter.video as string}
-                controls
-                width="100%"
-                height="100%"
-                onProgress={handleProgress}
-                config={{
-                  file: {
-                    attributes: {
-                      controlsList: "nodownload",
+              <>
+                {console.log("Video URL:", currentChapter.video)}
+                {console.log("Original Subtitle URL:", currentChapter.subtitle)}
+                {console.log("Proxied Subtitle URL:", subtitleProxyUrl)}
+                <ReactPlayer
+                  ref={playerRef}
+                  url={currentChapter.video as string}
+                  controls
+                  width="100%"
+                  height="100%"
+                  onProgress={handleProgress}
+                  onError={(e) => console.log("ReactPlayer Error:", e)}
+                  onReady={() => console.log("ReactPlayer Ready")}
+                  config={{
+                    file: {
+                      attributes: {
+                        controlsList: "nodownload",
+                      },
+                      tracks: subtitleProxyUrl
+                        ? [
+                            {
+                              kind: "subtitles",
+                              src: subtitleProxyUrl,
+                              srcLang: "en",
+                              default: true,
+                              label: "English",
+                            },
+                          ]
+                        : [],
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+              </>
             ) : (
               <div className="course__no-video">
                 No video available for this chapter.
@@ -122,7 +141,7 @@ const Course = () => {
                   <CardTitle>Notes Content</CardTitle>
                 </CardHeader>
                 <CardContent className="course__tab-body">
-                  {currentChapter?.content}
+                  {currentChapter?.content || "No notes available."}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -133,7 +152,18 @@ const Course = () => {
                   <CardTitle>Resources Content</CardTitle>
                 </CardHeader>
                 <CardContent className="course__tab-body">
-                  {/* Add resources content here */}
+                  {currentChapter?.pdf ? (
+                    <div>
+                      <p>PDF Resource:</p>
+                      <Button asChild variant="link">
+                        <a href={currentChapter.pdf} target="_blank" rel="noopener noreferrer">
+                          Download PDF ({currentChapter.pdf.split("/").pop()})
+                        </a>
+                      </Button>
+                    </div>
+                  ) : (
+                    <p>No PDF available.</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -144,7 +174,7 @@ const Course = () => {
                   <CardTitle>Quiz</CardTitle>
                 </CardHeader>
                 <CardContent className="course__tab-body">
-                  
+                  <p>No quiz available yet.</p>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -160,9 +190,7 @@ const Course = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="course__instructor-details">
-                  <h4 className="course__instructor-name">
-                    {course.teacherName}
-                  </h4>
+                  <h4 className="course__instructor-name">{course.teacherName}</h4>
                   <p className="course__instructor-title">Senior UX Designer</p>
                 </div>
               </div>

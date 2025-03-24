@@ -6,16 +6,9 @@ import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { courseSchema, CourseFormData } from "@/lib/schema";
-import {
-  createCourseFormData,
-  uploadAllVideos,
-  uploadImageToCloudinary,
-} from "@/lib/utils";
+import { createCourseFormData, uploadAllVideos, uploadToS3 } from "@/lib/utils"; // Updated import
 import { openSectionModal, setSections, setCourseId } from "@/state";
-import {
-  useGetCourseQuery,
-  useUpdateCourseMutation,
-} from "@/state/api/coursesApi";
+import { useGetCourseQuery, useUpdateCourseMutation } from "@/state/api/coursesApi";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Plus, Upload } from "lucide-react";
@@ -40,9 +33,7 @@ const CourseEditor = () => {
   const course = useMemo(() => data?.data || {}, [data?.data]);
 
   const dispatch = useAppDispatch();
-  const sections = useAppSelector(
-    (state) => state.global.courseEditor.sections
-  ) || [];
+  const sections = useAppSelector((state) => state.global.courseEditor.sections) || [];
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
@@ -68,7 +59,7 @@ const CourseEditor = () => {
       });
       setImagePreview(course.image || "");
       dispatch(setSections(course.sections || []));
-      dispatch(setCourseId(id))
+      dispatch(setCourseId(id));
     }
   }, [course, methods, dispatch, id]);
 
@@ -82,13 +73,12 @@ const CourseEditor = () => {
 
     setIsUploading(true);
     try {
-      const imageUrl = await uploadImageToCloudinary(file);
+      const imageUrl = await uploadToS3(file, "image"); // Updated to S3
       methods.setValue("courseImage", imageUrl);
       setImagePreview(imageUrl);
     } catch (error) {
       console.error("Image upload error:", error);
       toast.error("Failed to upload image");
-      // Reset the form field and preview on error
       methods.setValue("courseImage", "");
       setImagePreview("");
     } finally {
@@ -98,7 +88,6 @@ const CourseEditor = () => {
 
   const onSubmit = async (data: CourseFormData) => {
     try {
-      // Check if there's a pending image upload
       if (isUploading) {
         toast.error("Please wait for the image to finish uploading");
         return;
@@ -154,15 +143,11 @@ const CourseEditor = () => {
                   <>
                     <CustomFormField
                       name="courseStatus"
-                      label={
-                        methods.watch("courseStatus") ? "Published" : "Draft"
-                      }
+                      label={methods.watch("courseStatus") ? "Published" : "Draft"}
                       type="switch"
                       className="flex items-center space-x-2"
                       labelClassName={`text-sm font-medium ${
-                        methods.watch("courseStatus")
-                          ? "text-green-500"
-                          : "text-yellow-500"
+                        methods.watch("courseStatus") ? "text-green-500" : "text-yellow-500"
                       }`}
                       inputClassName="data-[state=checked]:bg-green-500"
                     />
@@ -170,9 +155,7 @@ const CourseEditor = () => {
                       type="submit"
                       className="bg-primary-700 hover:bg-primary-600"
                     >
-                      {methods.watch("courseStatus")
-                        ? "Update Published Course"
-                        : "Save Draft"}
+                      {methods.watch("courseStatus") ? "Update Published Course" : "Save Draft"}
                     </Button>
                   </>
                 )}
@@ -270,9 +253,7 @@ const CourseEditor = () => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    dispatch(openSectionModal({ sectionIndex: null }))
-                  }
+                  onClick={() => dispatch(openSectionModal({ sectionIndex: null }))}
                   className="border-none text-primary-700 group"
                   disabled={course?.status === "Unlisted"}
                 >

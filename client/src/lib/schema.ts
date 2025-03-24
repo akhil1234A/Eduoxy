@@ -100,6 +100,8 @@ export const chapterSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   content: z.string().min(10, "Content must be at least 10 characters"),
   video: z.union([z.string(), z.instanceof(File)]).optional(),
+  pdf: z.union([z.instanceof(File), z.string()]).optional(),
+  subtitle: z.union([z.instanceof(File), z.string()]).optional(),
 });
 
 export type ChapterFormData = z.infer<typeof chapterSchema>;

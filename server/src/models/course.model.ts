@@ -29,6 +29,8 @@ export interface ICourse {
         timestamp: string;
       }[];
       video?: string;
+      pdf?: string;
+      subtitle?: string;
     }[];
   }[];
   enrollments: {
@@ -54,6 +56,8 @@ const chapterSchema = new mongoose.Schema({
   content: { type: String, required: true },
   comments: [commentSchema],
   video: { type: String },
+  pdf: { type: String },
+  subtitle: { type: String },
 });
 
 const sectionSchema = new mongoose.Schema({

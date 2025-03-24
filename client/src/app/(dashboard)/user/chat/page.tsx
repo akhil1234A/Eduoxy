@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useGetUserEnrolledCoursesQuery } from "@/state/redux"; // Update path
+import { useGetUserEnrolledCoursesQuery } from "@/state/redux"; 
 import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,10 +10,10 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function StudentChatPage() {
-  const senderId = Cookies.get("userId"); // Student ID: 67c5f17c6fffa8e9b21034b9
+  const senderId = Cookies.get("userId"); 
   const [selectedCourse, setSelectedCourse] = useState<{
     courseId: string;
-    receiverId: string; // Instructor ID
+    receiverId: string; 
     title: string;
   } | null>(null);
 
@@ -49,7 +49,7 @@ export default function StudentChatPage() {
                     onClick={() =>
                       setSelectedCourse({
                         courseId: course.courseId,
-                        receiverId: course.teacherId, // Instructor ID as receiver
+                        receiverId: course.teacherId, 
                         title: course.title,
                       })
                     }
@@ -76,8 +76,8 @@ export default function StudentChatPage() {
               <CardContent>
                 <Chat
                   courseId={selectedCourse.courseId}
-                  senderId={senderId || ""} // Student ID
-                  receiverId={selectedCourse.receiverId} // Instructor ID
+                  senderId={senderId || ""} 
+                  receiverId={selectedCourse.receiverId} 
                 />
               </CardContent>
             </Card>

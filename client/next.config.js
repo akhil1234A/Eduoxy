@@ -17,6 +17,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
+      {
+        protocol: "https",
+        hostname: "eduoxy.s3.ap-south-1.amazonaws.com",
+      }
     ],
   },
 };
