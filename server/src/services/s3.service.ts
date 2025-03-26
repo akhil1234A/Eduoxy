@@ -60,6 +60,17 @@ export class S3Service {
 
     await this.s3Client.send(command);
   }
+
+  extractKeyFromUrl(url: string | undefined | null): string | null {
+    if (!url) return null;
+    const bucketUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/`;
+    if (!url.startsWith(bucketUrl)) {
+      console.warn(`URL does not match expected bucket format: ${url}`);
+      return null;
+    }
+    return url.split(bucketUrl)[1];
+  }
+  
 }
 
 export const s3Service = new S3Service();

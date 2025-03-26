@@ -6,6 +6,7 @@ import { CacheUtil } from "../utils/cache";
 import { v4 as uuidv4, v4 } from "uuid";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
+import { s3Service } from "./s3.service";
 @injectable()
 export class CourseService implements ICourseService {
   constructor(@inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository) {}
@@ -115,13 +116,56 @@ export class CourseService implements ICourseService {
   
 
   async deleteCourse(courseId: string, teacherId: string): Promise<ICourseDocument | null> {
-    const course = await this._courseRepository.deleteByCourseId(courseId, teacherId);
-    if (course) {
+
+    const course = await this._courseRepository.findByCourseId(courseId);
+    
+    if (!course) {
+      throw new Error("Course not found");
+    }
+
+    const s3KeysToDelete: string[] = [];
+
+    const courseImageKey = s3Service.extractKeyFromUrl(course.image);
+    if (courseImageKey) {
+      s3KeysToDelete.push(courseImageKey);
+    }
+
+    course.sections.forEach((section: any) => {
+      section.chapters.forEach((chapter: any) => {
+        const videoKey = s3Service.extractKeyFromUrl(chapter.video);
+        const imageKey = s3Service.extractKeyFromUrl(chapter.image);
+        const subtitleKey = s3Service.extractKeyFromUrl(chapter.subtitle);
+
+        if (videoKey) {
+          s3KeysToDelete.push(videoKey);
+        }
+        if (imageKey) {
+          s3KeysToDelete.push(imageKey);
+        }
+        if (subtitleKey) {
+          s3KeysToDelete.push(subtitleKey);
+        }
+      });
+    });
+
+    await Promise.all(
+      s3KeysToDelete.map(async (key) => {
+        try {
+          await s3Service.deleteObject(key);
+          console.log(`Deleted S3 resource: ${key}`);
+        } catch (error) {
+          console.error(`Failed to delete S3 resource ${key}:`, error);
+        }
+      })
+    );
+    
+    const deletedCourse = await this._courseRepository.deleteByCourseId(courseId, teacherId);
+    if (deletedCourse) {
       await CacheUtil.del(CacheUtil.getCourseCacheKey(courseId));
       await CacheUtil.invalidateCourseListCaches();
       await CacheUtil.del(CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`));
     }
-    return course;
+    return deletedCourse;
   }
 
   async unlistCourse(courseId: string): Promise<ICourseDocument | null> {
