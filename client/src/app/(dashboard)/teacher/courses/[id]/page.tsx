@@ -6,7 +6,7 @@ import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { courseSchema, CourseFormData } from "@/lib/schema";
-import { createCourseFormData, uploadAllVideos, uploadToS3 } from "@/lib/utils"; // Updated import
+import { createCourseFormData, uploadAllVideos, updateS3Resource } from "@/lib/utils";
 import { openSectionModal, setSections, setCourseId } from "@/state";
 import { useGetCourseQuery, useUpdateCourseMutation } from "@/state/api/coursesApi";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
@@ -29,6 +29,7 @@ const CourseEditor = () => {
   const [updateCourse] = useUpdateCourseMutation();
   const [imagePreview, setImagePreview] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
 
   const course = useMemo(() => data?.data || {}, [data?.data]);
 
@@ -63,6 +64,7 @@ const CourseEditor = () => {
     }
   }, [course, methods, dispatch, id]);
 
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -73,17 +75,44 @@ const CourseEditor = () => {
 
     setIsUploading(true);
     try {
-      const imageUrl = await uploadToS3(file, "image"); // Updated to S3
-      methods.setValue("courseImage", imageUrl);
-      setImagePreview(imageUrl);
+      const { publicUrl, key } = await updateS3Resource(course.image, file, "image");
+      methods.setValue("courseImage", publicUrl);
+      setImagePreview(publicUrl);
+      setUploadedKeys((prev) => [...prev, key]); // Store the new key
+      toast.success("Image uploaded successfully");
     } catch (error) {
       console.error("Image upload error:", error);
       toast.error("Failed to upload image");
-      methods.setValue("courseImage", "");
-      setImagePreview("");
+      methods.setValue("courseImage", course.image || "");
+      setImagePreview(course.image || "");
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const cleanupUploadedFiles = async () => {
+    for (const key of uploadedKeys) {
+      try {
+        const response = await fetch("http://localhost:8000/api/upload/delete", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key }),
+        });
+        if (response.ok) {
+          console.log(`Cleaned up orphaned file: ${key}`);
+        } else {
+          console.error(`Failed to clean up: ${key}`);
+        }
+      } catch (error) {
+        console.error(`Error cleaning up ${key}:`, error);
+      }
+    }
+    setUploadedKeys([]); // Clear keys after cleanup
+  };
+
+  const handleCancel = () => {
+    cleanupUploadedFiles();
+    router.push("/teacher/courses", { scroll: false });
   };
 
   const onSubmit = async (data: CourseFormData) => {
@@ -96,17 +125,16 @@ const CourseEditor = () => {
       toast.loading("Uploading videos and updating course...");
       const updatedSections = await uploadAllVideos(sections, id);
       const formData = await createCourseFormData(data, updatedSections);
-      await updateCourse({
-        courseId: id,
-        formData,
-      }).unwrap();
+      await updateCourse({ courseId: id, formData }).unwrap();
 
       toast.dismiss();
       toast.success("Course updated successfully!");
+      setUploadedKeys([]); // Clear keys on success
       router.push("/teacher/courses", { scroll: false });
     } catch (error) {
       console.error("Failed to update course:", error);
       toast.error("Failed to update course");
+      await cleanupUploadedFiles(); // Cleanup on failure
     }
   };
 
@@ -117,7 +145,7 @@ const CourseEditor = () => {
       <div className="flex items-center gap-5 mb-5">
         <button
           className="flex items-center border border-customgreys-dirtyGrey rounded-lg p-2 gap-2 cursor-pointer hover:bg-customgreys-dirtyGrey hover:text-white-100 text-customgreys-dirtyGrey"
-          onClick={() => router.push("/teacher/courses", { scroll: false })}
+          onClick={handleCancel}
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Courses</span>

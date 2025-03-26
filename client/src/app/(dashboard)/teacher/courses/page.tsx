@@ -67,7 +67,7 @@ const Courses = () => {
         teacherId: userId,
         teacherName: userName || "Unknown Teacher",
       }).unwrap();
-      router.push(`/teacher/courses/${result.courseId}`, { scroll: false });
+
     } catch (error) {
       toast.error("Failed to create course");
     }

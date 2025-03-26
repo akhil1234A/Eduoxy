@@ -16,7 +16,7 @@ export const customBaseQuery: BaseQueryFn<
   CustomBaseQueryExtraOptions 
 > = async (args, api, extraOptions = {}) => {
   const baseQuery = fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api",
     credentials: "include", // Send cookies
   });
 

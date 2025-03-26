@@ -14,9 +14,9 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { uploadToS3 } from "@/lib/utils";
+import { updateS3Resource } from "@/lib/utils";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB in bytes
+const MAX_FILE_SIZE = 100 * 1024 * 1024; 
 
 interface Chapter extends ChapterFormData {
   chapterId: string;
@@ -45,6 +45,7 @@ const ChapterModal = () => {
   });
 
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
 
   useEffect(() => {
     if (chapter) {
@@ -66,7 +67,29 @@ const ChapterModal = () => {
     }
   }, [chapter, methods]);
 
+
+  const cleanupUploadedFiles = async () => {
+    for (const key of uploadedKeys) {
+      try {
+        const response = await fetch("http://localhost:8000/api/upload/delete", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key }),
+        });
+        if (response.ok) {
+          console.log(`Cleaned up orphaned file: ${key}`);
+        } else {
+          console.error(`Failed to clean up: ${key}`);
+        }
+      } catch (error) {
+        console.error(`Error cleaning up ${key}:`, error);
+      }
+    }
+    setUploadedKeys([]); // Clear keys after cleanup
+  };
+
   const onClose = () => {
+    cleanupUploadedFiles();
     dispatch(closeChapterModal());
   };
 
@@ -86,99 +109,98 @@ const ChapterModal = () => {
     let pdfUrl = "";
     let subtitleUrl = "";
 
-    // Handle video upload
-    if (data.video instanceof File) {
-      if (!validateFileSize(data.video)) {
-        setIsUploading(false);
-        return;
+    try {
+      if (data.video) {
+        if (data.video instanceof File && !validateFileSize(data.video)) {
+          setIsUploading(false);
+          return;
+        }
+        const toastId = toast.loading("Uploading video...");
+        try {
+          const { publicUrl, key } = await updateS3Resource(
+            chapter?.video,
+            data.video instanceof File ? data.video : undefined,
+            "video"
+          );
+          videoUrl = publicUrl;
+          setUploadedKeys((prev) => [...prev, key]);
+          toast.success("Video uploaded successfully", { id: toastId });
+        } catch (error) {
+          toast.error("Failed to upload video", { id: toastId });
+          throw error;
+        }
       }
-      const toastId = toast.loading("Uploading video...");
-      try {
-        videoUrl = await uploadToS3(data.video, "video");
-        toast.success("Video uploaded successfully", { id: toastId });
-      } catch (error) {
-        toast.error("Failed to upload video", { id: toastId });
-        console.error("Video upload error:", error);
-        setIsUploading(false);
-        return;
+
+      if (data.pdf) {
+        if (data.pdf instanceof File && !validateFileSize(data.pdf)) {
+          setIsUploading(false);
+          return;
+        }
+        const toastId = toast.loading("Uploading PDF...");
+        try {
+          const { publicUrl, key } = await updateS3Resource(
+            chapter?.pdf,
+            data.pdf instanceof File ? data.pdf : undefined,
+            "pdf"
+          );
+          pdfUrl = publicUrl;
+          setUploadedKeys((prev) => [...prev, key]);
+          toast.success("PDF uploaded successfully", { id: toastId });
+        } catch (error) {
+          toast.error("Failed to upload PDF", { id: toastId });
+          throw error;
+        }
       }
-    } else if (typeof data.video === "string") {
-      videoUrl = data.video;
+
+      if (data.subtitle) {
+        if (data.subtitle instanceof File && !validateFileSize(data.subtitle)) {
+          setIsUploading(false);
+          return;
+        }
+        const toastId = toast.loading("Uploading subtitle...");
+        try {
+          const { publicUrl, key } = await updateS3Resource(
+            chapter?.subtitle,
+            data.subtitle instanceof File ? data.subtitle : undefined,
+            "subtitle"
+          );
+          subtitleUrl = publicUrl;
+          setUploadedKeys((prev) => [...prev, key]);
+          toast.success("Subtitle uploaded successfully", { id: toastId });
+        } catch (error) {
+          toast.error("Failed to upload subtitle", { id: toastId });
+          throw error;
+        }
+      }
+
+      const newChapter: Chapter = {
+        chapterId: chapter?.chapterId || uuidv4(),
+        title: data.title,
+        content: data.content,
+        type: videoUrl ? "Video" : pdfUrl ? "PDF" : "Text",
+        video: videoUrl,
+        pdf: pdfUrl,
+        subtitle: subtitleUrl,
+      };
+
+      if (selectedChapterIndex === null) {
+        dispatch(addChapter({ sectionIndex: selectedSectionIndex, chapter: newChapter }));
+      } else {
+        dispatch(editChapter({ sectionIndex: selectedSectionIndex, chapterIndex: selectedChapterIndex, chapter: newChapter }));
+      }
+
+      toast.success("Chapter added/updated successfully but you need to save the course to apply the changes");
+      setUploadedKeys([]); // Clear keys on success
+      setIsUploading(false);
+      onClose();
+    } catch (error) {
+      console.error("Error in chapter submission:", error);
+      setIsUploading(false);
+      await cleanupUploadedFiles(); // Cleanup on failure
     }
-
-    // Handle PDF upload
-    if (data.pdf instanceof File) {
-      if (!validateFileSize(data.pdf)) {
-        setIsUploading(false);
-        return;
-      }
-      const toastId = toast.loading("Uploading PDF...");
-      try {
-        pdfUrl = await uploadToS3(data.pdf, "pdf");
-        toast.success("PDF uploaded successfully", { id: toastId });
-      } catch (error) {
-        toast.error("Failed to upload PDF", { id: toastId });
-        console.error("PDF upload error:", error);
-        setIsUploading(false);
-        return;
-      }
-    } else if (typeof data.pdf === "string") {
-      pdfUrl = data.pdf;
-    }
-
-    // Handle subtitle upload (now .vtt)
-    if (data.subtitle instanceof File) {
-      if (!validateFileSize(data.subtitle)) {
-        setIsUploading(false);
-        return;
-      }
-      const toastId = toast.loading("Uploading subtitle...");
-      try {
-        subtitleUrl = await uploadToS3(data.subtitle, "subtitle");
-        toast.success("Subtitle uploaded successfully", { id: toastId });
-      } catch (error) {
-        toast.error("Failed to upload subtitle", { id: toastId });
-        console.error("Subtitle upload error:", error);
-        setIsUploading(false);
-        return;
-      }
-    } else if (typeof data.subtitle === "string") {
-      subtitleUrl = data.subtitle;
-    }
-
-    const newChapter: Chapter = {
-      chapterId: chapter?.chapterId || uuidv4(),
-      title: data.title,
-      content: data.content,
-      type: videoUrl ? "Video" : pdfUrl ? "PDF" : "Text",
-      video: videoUrl,
-      pdf: pdfUrl,
-      subtitle: subtitleUrl,
-    };
-
-    if (selectedChapterIndex === null) {
-      dispatch(
-        addChapter({
-          sectionIndex: selectedSectionIndex,
-          chapter: newChapter,
-        })
-      );
-    } else {
-      dispatch(
-        editChapter({
-          sectionIndex: selectedSectionIndex,
-          chapterIndex: selectedChapterIndex,
-          chapter: newChapter,
-        })
-      );
-    }
-
-    toast.success(
-      `Chapter added/updated successfully but you need to save the course to apply the changes`
-    );
-    setIsUploading(false);
-    onClose();
   };
+
+
 
   return (
     <CustomModal isOpen={isChapterModalOpen} onClose={onClose}>

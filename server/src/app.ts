@@ -18,6 +18,7 @@ import notificationRoutes from "./routes/notification.routes";
 import userRoutes from "./routes/user.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import chatRoutes from "./routes/chat.routes";
+import s3Routes from "./routes/s3.routes";
 
 const app = express();
 const server = http.createServer(app);
@@ -50,6 +51,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/upload", s3Routes);
 // Error Handling Middleware
 app.use(logErrors);
 app.use(errorHandler);
