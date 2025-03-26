@@ -1,4 +1,3 @@
-// src/services/chat.service.ts
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { IChatService } from "../interfaces/chat.service";

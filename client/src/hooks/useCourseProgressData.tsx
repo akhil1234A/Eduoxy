@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
@@ -7,27 +9,29 @@ import {
   useUpdateUserCourseProgressMutation,
 } from "@/state/redux";
 
-export const useCourseProgressData = () => {
-  const { courseId, chapterId } = useParams();
+export const useCourseProgressData = (propCourseId?: string) => {
+  const { courseId: paramCourseId, chapterId } = useParams();
+  const courseId = propCourseId || (paramCourseId as string) || ""; 
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
   const [updateProgress] = useUpdateUserCourseProgressMutation();
 
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || null;
 
-  const { data: courseResponse, isLoading: courseLoading, isFetching: courseFetching } = useGetCourseQuery(
-    (courseId as string) ?? "",
-    { skip: !courseId }
-  );
+  const {
+    data: courseResponse,
+    isLoading: courseLoading,
+    isFetching: courseFetching,
+  } = useGetCourseQuery(courseId, { skip: !courseId });
   const course = useMemo(() => courseResponse?.data || null, [courseResponse]);
 
-  const { data: userProgressResponse, isLoading: progressLoading, isFetching: progressFetching } =
-    useGetUserCourseProgressQuery(
-      {
-        userId: userId ?? "",
-        courseId: (courseId as string) ?? "",
-      },
-      { skip: !userId || !courseId }
-    );
+  const {
+    data: userProgressResponse,
+    isLoading: progressLoading,
+    isFetching: progressFetching,
+  } = useGetUserCourseProgressQuery(
+    { userId: userId ?? "", courseId },
+    { skip: !userId || !courseId }
+  );
   const userProgress = useMemo(() => userProgressResponse?.data || null, [userProgressResponse]);
 
   const isLoading = useMemo(
@@ -35,7 +39,6 @@ export const useCourseProgressData = () => {
     [courseLoading, progressLoading, courseFetching, progressFetching]
   );
 
-  // Initialize progress if none exists
   useEffect(() => {
     if (!isLoading && course && userId && userProgress === null) {
       const initialSections = course.sections.map((section: any) => ({
@@ -48,13 +51,15 @@ export const useCourseProgressData = () => {
 
       updateProgress({
         userId,
-        courseId: (courseId as string) ?? "",
+        courseId,
         progressData: { sections: initialSections },
-      }).then(() => {
-        console.log("Initial progress saved");
-      }).catch((err) => {
-        console.error("Failed to save initial progress:", err);
-      });
+      })
+        .then(() => {
+          console.log("Initial progress saved");
+        })
+        .catch((err) => {
+          console.error("Failed to save initial progress:", err);
+        });
     }
   }, [isLoading, course, userId, userProgress, updateProgress, courseId]);
 
@@ -92,7 +97,7 @@ export const useCourseProgressData = () => {
 
     updateProgress({
       userId,
-      courseId: (courseId as string) ?? "",
+      courseId,
       progressData: { sections: updatedSections },
     });
   };

@@ -78,7 +78,7 @@ export class TransactionService implements ITransactionService {
       };
       await this._userCourseProgressRepository.saveUserCourseProgress(initialProgress);
 
-      await this._courseRepository.addEnrollment(courseId, userId);
+      await this._courseRepository.addEnrollment(courseId, userId, user.name);
 
       
       await this._redisClient.del("admin:earnings");

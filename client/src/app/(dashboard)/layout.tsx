@@ -23,14 +23,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [isCoursePage, pathname]);
 
-  // console.log("courseId", courseId);
-
   return (
     <SidebarProvider>
       <div className="dashboard">
         <AppSidebar />
         <div className="dashboard__content">
-          {courseId && <ChaptersSidebar />}
+          {courseId && <ChaptersSidebar courseId={courseId} />} 
           <div
             className={cn("dashboard__main", isCoursePage && "dashboard__main--not-course")}
             style={{ height: "100vh" }}

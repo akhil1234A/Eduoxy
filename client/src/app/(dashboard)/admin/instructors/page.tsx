@@ -58,14 +58,14 @@ const ManageInstructors = () => {
       key: "actions",
       label: "Actions",
       render: (_: any, teacher: Teacher) => (
-        <Button
+                        <Button
           onClick={() => (teacher.isBlocked ? handleUnblock(teacher._id) : handleBlock(teacher._id))}
-          variant="outline"
-          size="sm"
-          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
-        >
+                          variant="outline"
+                          size="sm"
+                          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+                        >
           {teacher.isBlocked ? "Unblock" : "Block"}
-        </Button>
+                        </Button>
       ),
     },
   ];
@@ -88,7 +88,7 @@ const ManageInstructors = () => {
         searchPlaceholder="Search instructors by name or email..."
         noResultsComponent={<div>No instructors found</div>}
       />
-    </div>
+      </div>
   );
 };
 

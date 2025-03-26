@@ -24,18 +24,17 @@ export default function InstructorChatPage() {
 
   const students = courses?.data?.reduce((acc: any[], course) => {
     course.enrollments.forEach((student: any) => {
-      if (!acc.find((s) => s.userId === student.userId && s.courseId === course.courseId)) {
+      if (!acc.find((s) => s.userId === student.userId)) {
         acc.push({
           ...student,
           courseId: course.courseId,
           courseTitle: course.title,
-          name: student.name || "Unknown", 
+          name: student.studentName || "Unknown",
         });
       }
     });
     return acc;
   }, []);
-
 
   if (isLoading) {
     return (
@@ -76,7 +75,7 @@ export default function InstructorChatPage() {
                       })
                     }
                   >
-                    {student.name} - {student.courseTitle}
+                    {student.name}
                   </Button>
                 ))
               ) : (
@@ -92,7 +91,7 @@ export default function InstructorChatPage() {
             <Card className="bg-[#2D2E36] shadow-lg">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-gray-200">
-                  Chat with {selectedChat.studentName} about {selectedChat.courseTitle}
+                  Chat with {selectedChat.studentName}
                 </CardTitle>
               </CardHeader>
               <CardContent>

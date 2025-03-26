@@ -112,10 +112,10 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return result !== null;
   }
 
-  async addEnrollment(courseId: string, userId: string): Promise<ICourseDocument | null> {
+  async addEnrollment(courseId: string, userId: string, studentName: string): Promise<ICourseDocument | null> {
     return this.model.findOneAndUpdate(
       { courseId },
-      { $addToSet: { enrollments: { userId } } },
+      { $addToSet: { enrollments: { userId, studentName } } },
       { new: true }
     ).exec();
   }

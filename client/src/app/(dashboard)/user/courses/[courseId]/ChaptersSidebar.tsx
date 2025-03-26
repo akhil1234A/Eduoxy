@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
@@ -12,7 +14,11 @@ import { useSidebar } from "@/components/ui/sidebar";
 import Loading from "@/components/Loading";
 import { useCourseProgressData } from "@/hooks/useCourseProgressData";
 
-const ChaptersSidebar = () => {
+interface ChaptersSidebarProps {
+  courseId: string; 
+}
+
+const ChaptersSidebar = ({ courseId: propCourseId }: ChaptersSidebarProps) => {
   const router = useRouter();
   const { setOpen } = useSidebar();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
@@ -25,13 +31,13 @@ const ChaptersSidebar = () => {
     courseId,
     isLoading,
     updateChapterProgress,
-  } = useCourseProgressData();
+  } = useCourseProgressData(propCourseId);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOpen(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); 
 
   if (isLoading) return <Loading />;
   if (!userId) return <div>Please sign in to view course progress.</div>;
@@ -264,7 +270,6 @@ const Chapter = ({
 
   const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-
     updateChapterProgress(sectionId, chapter.chapterId, !isCompleted);
   };
 

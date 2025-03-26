@@ -60,14 +60,14 @@ const ManageUsers = () => {
       key: "actions",
       label: "Actions",
       render: (_: any, student: Student) => (
-        <Button
+                        <Button
           onClick={() => (student.isBlocked ? handleUnblock(student._id) : handleBlock(student._id))}
-          variant="outline"
-          size="sm"
-          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
-        >
+                          variant="outline"
+                          size="sm"
+                          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+                        >
           {student.isBlocked ? "Unblock" : "Block"}
-        </Button>
+                        </Button>
       ),
     },
   ];
@@ -90,7 +90,7 @@ const ManageUsers = () => {
         searchPlaceholder="Search students by name or email..."
         noResultsComponent={<div>No students found</div>}
       />
-    </div>
+      </div>
   );
 };
 

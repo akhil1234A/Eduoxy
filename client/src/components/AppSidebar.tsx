@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -27,17 +27,21 @@ import {
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useLogoutMutation } from "@/state/api/authApi"; 
+import { useLogoutMutation } from "@/state/api/authApi";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie"
+import Cookies from "js-cookie";
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const router = useRouter();
+  const [userType, setUserType] = useState<string | null>(null); 
 
-const userType = Cookies.get('userType');
+  useEffect(() => {
+    const type = Cookies.get("userType") || "student"; 
+    setUserType(type);
+  }, []);
 
   const navLinks = {
     student: [
@@ -68,17 +72,16 @@ const userType = Cookies.get('userType');
   const handleSignOut = async () => {
     try {
       await logout().unwrap();
-      router.push("/signin"); 
+      router.push("/signin");
     } catch (error) {
       console.error("Logout error:", error);
     }
   };
 
- 
   if (isLoggingOut) return <Loading />;
+  if (!userType) return <Loading />; 
 
-  const currentUserType = userType || "student";
-  const currentNavLinks = navLinks[currentUserType as keyof typeof navLinks];
+  const currentNavLinks = navLinks[userType as keyof typeof navLinks] || navLinks.student;
 
   return (
     <Sidebar

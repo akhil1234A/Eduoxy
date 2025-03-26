@@ -35,6 +35,7 @@ export interface ICourse {
   }[];
   enrollments: {
     userId: string;
+    studentName: string;
   }[];
   createdAt?: Date;
   updatedAt?: Date;
@@ -69,6 +70,7 @@ const sectionSchema = new mongoose.Schema({
 
 const enrollmentSchema = new mongoose.Schema({
   userId: { type: String, required: true },
+  studentName: { type: String, required: true },
 });
 
 const courseSchema = new mongoose.Schema(

@@ -21,9 +21,7 @@ interface NotificationContextType {
   markAllAsRead: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -33,7 +31,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     if (userId) {
-      const wsUrl = `${process.env.NEXT_PUBLIC_API_URL!.replace('http', 'ws')}/ws?userId=${userId}`;
+      const wsUrl = `${process.env.NEXT_PUBLIC_API_URL!.replace("http", "ws")}/ws?userId=${userId}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -43,16 +41,35 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === 'notification') {
+        if (data.type === "notification") {
           const notification = data.data;
           console.log("Received notification:", notification);
           setNotifications((prev) => [notification, ...prev]);
           setUnreadCount((prev) => prev + 1);
-          toast({
-            title: notification.title,
-            description: notification.message,
-            variant: notification.type as any,
-          });
+  
+          switch (notification.type) {
+            case "success":
+              toast.success(notification.title, {
+                description: notification.message,
+              });
+              break;
+            case "error":
+              toast.error(notification.title, {
+                description: notification.message,
+              });
+              break;
+            case "warning":
+              toast.warning(notification.title, {
+                description: notification.message,
+              });
+              break;
+            case "info":
+            default:
+              toast.info(notification.title, {
+                description: notification.message,
+              });
+              break;
+          }
         }
       };
 
@@ -77,12 +94,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/notifications`,
-        {
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
+        credentials: "include",
+      });
       const data = await response.json();
       setNotifications(data.notifications);
       setUnreadCount(data.notifications.filter((n: Notification) => !n.isRead).length);
@@ -93,17 +107,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notificationId}/read`,
-        {
-          method: "PUT",
-          credentials: "include",
-        }
-      );
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notificationId}/read`, {
+        method: "PUT",
+        credentials: "include",
+      });
       setNotifications((prev) =>
-        prev.map((n) =>
-          n._id === notificationId ? { ...n, isRead: true } : n
-        )
+        prev.map((n) => (n._id === notificationId ? { ...n, isRead: true } : n))
       );
       setUnreadCount((prev) => prev - 1);
     } catch (error) {
@@ -117,9 +126,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         method: "PUT",
         credentials: "include",
       });
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, isRead: true }))
-      );
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
@@ -141,4 +148,4 @@ export const useNotifications = () => {
     throw new Error("useNotifications must be used within a NotificationProvider");
   }
   return context;
-}; 
+};

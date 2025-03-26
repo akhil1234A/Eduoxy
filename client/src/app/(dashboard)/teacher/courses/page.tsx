@@ -19,9 +19,6 @@ const Courses = () => {
   const router = useRouter();
   const userId = Cookies.get("userId");
   const userName = Cookies.get("userName");
-
-  
-
   const {
     data, 
     isLoading,
@@ -76,43 +73,38 @@ const Courses = () => {
     }
   };
 
-  if (isLoading) return <Loading />;
-  if (isError || !courses.length) {
-    return (
-      <div className="teacher-courses">
-        <Header title="Courses" subtitle="Browse your courses" />
-        <div>Error loading courses or no courses available.</div>
-      </div>
-    );
-  }
-
+ 
   return (
     <div className="teacher-courses">
       <Header
         title="Courses"
         subtitle="Browse your courses"
         rightElement={
-          <Button
-            onClick={handleCreateCourse}
-            className="teacher-courses__header"
-            
-          >
+          <Button onClick={handleCreateCourse} className="teacher-courses__header">
             Create Course
           </Button>
         }
       />
-      <Toolbar onSearch={setSearchTerm} onCategoryChange={setSelectedCategory} />
-      <div className="teacher-courses__grid">
-        {filteredCourses.map((course) => (
-          <TeacherCourseCard
-            key={course.courseId}
-            course={course}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isOwner={course.teacherId === userId}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <Loading />
+      ) : isError || !courses.length ? (
+        <div className="text-center py-10">No courses found.</div>
+      ) : (
+        <>
+          <Toolbar onSearch={setSearchTerm} onCategoryChange={setSelectedCategory} />
+          <div className="teacher-courses__grid">
+            {filteredCourses.map((course) => (
+              <TeacherCourseCard
+                key={course.courseId}
+                course={course}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isOwner={course.teacherId === userId}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

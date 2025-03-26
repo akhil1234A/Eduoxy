@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useGetUserEnrolledCoursesQuery } from "@/state/redux"; 
+import React, { useState, useMemo } from "react";
+import { useGetUserEnrolledCoursesQuery } from "@/state/redux";
 import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,16 +10,35 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function StudentChatPage() {
-  const senderId = Cookies.get("userId"); 
+  const senderId = Cookies.get("userId");
   const [selectedCourse, setSelectedCourse] = useState<{
     courseId: string;
-    receiverId: string; 
-    title: string;
+    receiverId: string;
+    teacherName: string;
   } | null>(null);
 
   const { data: courses, isLoading } = useGetUserEnrolledCoursesQuery(senderId || "", {
     skip: !senderId,
   });
+
+
+
+  const uniqueTeachers = useMemo(() => {
+    if (!courses?.data?.length) return [];
+
+    const teacherMap = new Map<string, { courseId: string; receiverId: string; teacherName: string }>();
+    courses.data.forEach((course) => {
+      if (!teacherMap.has(course.teacherName)) {
+        teacherMap.set(course.teacherName, {
+          courseId: course.courseId,
+          receiverId: course.teacherId,
+          teacherName: course.teacherName,
+        });
+      }
+    });
+    const teachers = Array.from(teacherMap.values());
+    return teachers;
+  }, [courses]);
 
   if (isLoading) {
     return (
@@ -33,32 +52,32 @@ export default function StudentChatPage() {
     <div className="container mx-auto p-6 bg-[#1B1C22] min-h-screen text-white">
       <h1 className="text-3xl font-bold mb-6">Chat with Instructors</h1>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Course List */}
+        {/* Teacher List */}
         <Card className="md:col-span-1 bg-[#2D2E36] shadow-lg">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-200">Your Enrolled Courses</CardTitle>
+            <CardTitle className="text-xl font-semibold text-gray-200">Your Instructors</CardTitle>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px]">
-              {courses?.data?.length > 0 ? (
-                courses.data.map((course) => (
+              {uniqueTeachers.length > 0 ? (
+                uniqueTeachers.map((teacher) => (
                   <Button
-                    key={course._id}
-                    variant={selectedCourse?.courseId === course.courseId ? "default" : "ghost"}
+                    key={teacher.receiverId}
+                    variant={selectedCourse?.receiverId === teacher.receiverId ? "default" : "ghost"}
                     className="w-full text-left justify-start py-3 mb-2 text-gray-300 hover:bg-[#3A3B45]"
                     onClick={() =>
                       setSelectedCourse({
-                        courseId: course.courseId,
-                        receiverId: course.teacherId, 
-                        title: course.title,
+                        courseId: teacher.courseId,
+                        receiverId: teacher.receiverId,
+                        teacherName: teacher.teacherName,
                       })
                     }
                   >
-                    {course.title}
+                    {teacher.teacherName}
                   </Button>
                 ))
               ) : (
-                <p className="text-gray-400 text-center">No enrolled courses found.</p>
+                <p className="text-gray-400 text-center">No instructors found.</p>
               )}
             </ScrollArea>
           </CardContent>
@@ -70,21 +89,21 @@ export default function StudentChatPage() {
             <Card className="bg-[#2D2E36] shadow-lg">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold text-gray-200">
-                  Chat for {selectedCourse.title}
+                  Chat with {selectedCourse.teacherName}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <Chat
                   courseId={selectedCourse.courseId}
-                  senderId={senderId || ""} 
-                  receiverId={selectedCourse.receiverId} 
+                  senderId={senderId || ""}
+                  receiverId={selectedCourse.receiverId}
                 />
               </CardContent>
             </Card>
           ) : (
             <Card className="bg-[#2D2E36] shadow-lg">
               <CardContent className="p-6 text-center text-gray-400">
-                <p>Select a course from the list to start chatting with your instructor.</p>
+                <p>Select an instructor from the list to start chatting.</p>
               </CardContent>
             </Card>
           )}
