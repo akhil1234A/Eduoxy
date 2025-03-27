@@ -9,5 +9,6 @@ export interface IUserRepository extends IBaseRepository<IUser> {
   blockUser(id: string): Promise<boolean>;
   unblockUser(id: string): Promise<boolean>;
   listByUserType(userType: UserRole): Promise<IUser[]>
-  
+  findById(id: string, select?: string): Promise<IUser | null>;
+  update(id: string, user: Partial<IUser>, select?: string): Promise<IUser | null>;
 }

@@ -21,8 +21,8 @@ interface ChatMessage {
 
 interface ChatProps {
   courseId: string;
-  senderId: string; // Current user (student or instructor)
-  receiverId: string; // Other party (instructor or student)
+  senderId: string; 
+  receiverId: string; 
 }
 
 const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
@@ -36,7 +36,7 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
 
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
-      query: { userId: senderId }, // Use senderId for socket connection
+      query: { userId: senderId }, 
       path: "/socket.io/",
     });
     setSocket(socketInstance);
@@ -85,8 +85,8 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
 
     const payload = {
       courseId,
-      senderId, // Current user sending the message
-      receiverId, // Recipient of the message
+      senderId, 
+      receiverId,
       message: newMessage.trim(),
     };
     console.log("Sending message payload:", payload);

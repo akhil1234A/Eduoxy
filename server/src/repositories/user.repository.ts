@@ -46,11 +46,11 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
       .exec();
   }
 
-  async findById(id: string): Promise<IUser | null> {
-    return this._userModel.findById(id).exec();
+  async findById(id: string, select="-password"): Promise<IUser | null> {
+    return this._userModel.findById(id).select(select).exec();
   }
 
-  async update(id: string, user: Partial<IUser>): Promise<IUser | null> {
-    return this._userModel.findByIdAndUpdate(id, user, { new: true }).exec();
+  async update(id: string, user: Partial<IUser>, select=""): Promise<IUser | null> {
+    return this._userModel.findByIdAndUpdate(id, user, { new: true }).select(select).exec();
   }
 }

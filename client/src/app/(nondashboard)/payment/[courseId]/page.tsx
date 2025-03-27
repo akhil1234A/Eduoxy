@@ -8,7 +8,6 @@ import Loading from "@/components/Loading";
 import { lazy, Suspense, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 
-// Lazy load CheckoutForm
 const CheckoutForm = lazy(() => import("./CheckoutForm"));
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -58,7 +57,7 @@ const PaymentPage = () => {
   }
 
   const options = {
-    clientSecret, // Pass clientSecret to Elements
+    clientSecret, 
     appearance: {
       theme: "night",
       variables: {

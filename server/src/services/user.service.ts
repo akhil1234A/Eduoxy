@@ -6,16 +6,16 @@ import bcrypt from "bcryptjs";
 import cloudinary from "cloudinary";
 import { IUser } from "../models/user.model";
 import fs from "fs";
+import { S3Service } from "./s3.service";
 @injectable()
 export class UserService implements IUserService {
+
+  private s3Service: S3Service;
   constructor(
-    @inject(TYPES.IUserRepository) private _userRepository: IUserRepository
+    @inject(TYPES.IUserRepository) private _userRepository: IUserRepository,
+    
   ) {
-     cloudinary.v2.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+    this.s3Service = new S3Service();
   }
 
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -42,29 +42,52 @@ export class UserService implements IUserService {
     if (name) updates.name = name;
     if (title) updates.title = title;
     if (bio) updates.bio = bio;
+    
     if (profileImage) {
       try {
-        const result = await cloudinary.v2.uploader.upload(profileImage.path, {
-          folder: "profile-images",
-          public_id: `${user._id}-profile`,
-          transformation: [{ width: 500, height: 500, crop: "fill" }],
-          overwrite: true,
-      });
-      updates.profileImage = result.secure_url;
-    } finally {
-      fs.unlink(profileImage.path, (err) => {
-        if (err) console.error("Error deleting profile image", err);
-      });
-    }
+        if (user.profileImage) {
+          const previousKey = this.s3Service.extractKeyFromUrl(user.profileImage);
+          if (previousKey) {
+            await this.s3Service.deleteObject(previousKey);
+          } else {
+            console.warn(`Could not extract key from previous profile image URL: ${user.profileImage}`);
+          }
+        }
+
+        
+        const fileName = `${user._id}-profile-${Date.now()}.${profileImage.originalname.split(".").pop()}`;
+        const { url: presignedUrl, publicUrl } = await this.s3Service.generatePresignedUrl("image", fileName);
+
+        
+        const response = await fetch(presignedUrl, {
+          method: "PUT",
+          body: fs.readFileSync(profileImage.path),
+          headers: {
+            "Content-Type": profileImage.mimetype,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image to S3");
+        }
+
+        
+        updates.profileImage = publicUrl;
+      } finally {
+        
+        fs.unlink(profileImage.path, (err) => {
+          if (err) console.error("Error deleting profile image", err);
+        });
+      }
     }
 
-    const updatedUser = await this._userRepository.update(userId, updates);
+    const updatedUser = await this._userRepository.update(userId, updates, "-password");
     if (!updatedUser) throw new Error("Failed to update profile");
     return updatedUser as IUser;
   }
 
   async getProfile(userId: string): Promise<IUser> {
-    const user = await this._userRepository.findById(userId);
+    const user = await this._userRepository.findById(userId, "-password");
     if(!user) throw new Error("User not found");
     return user as IUser; 
   }

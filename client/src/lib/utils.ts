@@ -65,7 +65,6 @@ export const customDataGridStyles = {
   },
 };
 
-// lib/utils.ts
 export const uploadToS3 = async (
   file: File,
   type: "image" | "video" | "pdf" | "subtitle"
@@ -174,7 +173,6 @@ export const uploadAllVideos = async (localSections: Section[], courseId: string
 };
 
 
-// lib/utils.ts
 export const updateS3Resource = async (
   oldUrl: string | undefined,
   newFile: File | undefined,

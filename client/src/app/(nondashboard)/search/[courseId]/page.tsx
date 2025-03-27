@@ -60,11 +60,9 @@ const CourseView = () => {
   const courseId = params.courseId as string;
   const userId = Cookies.get("userId");
 
-  // Fetch course details
   const { data: coursesData, isLoading: isCourseLoading, isError: isCourseError } = useGetPublicCoursesQuery({});
   const course = coursesData?.data?.find((c) => c.courseId === courseId);
 
-  // Fetch instructor details
   const { data: instructorData, isLoading: isInstructorLoading } = useGetProfileQuery(course?.teacherId || "", {
     skip: !course?.teacherId,
   });
@@ -95,7 +93,7 @@ const CourseView = () => {
     if (newReview.rating > 0 && newReview.comment.trim()) {
       const review: Review = {
         id: Date.now().toString(),
-        userName: "Current User", // Replace with actual user name if available
+        userName: "Current User", 
         rating: newReview.rating,
         comment: newReview.comment,
         date: new Date().toISOString().split("T")[0],

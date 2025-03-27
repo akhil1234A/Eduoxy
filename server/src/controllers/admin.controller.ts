@@ -5,11 +5,11 @@ import { HttpStatus } from "../utils/httpStatus";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 export class AdminController {
-  constructor(@inject(TYPES.IAdminService) private adminService: IAdminService) {}
+  constructor(@inject(TYPES.IAdminService) private _adminService: IAdminService) {}
 
   async listStudents(req: Request, res: Response): Promise<void> {
     try {
-      const students = await this.adminService.listStudents();
+      const students = await this._adminService.listStudents();
       res.json(successResponse("Students retrieved successfully", students));
     } catch (error) {
       const err = error as Error
@@ -19,7 +19,7 @@ export class AdminController {
 
   async listTeachers(req: Request, res: Response): Promise<void> {
     try {
-      const teachers = await this.adminService.listTeachers();
+      const teachers = await this._adminService.listTeachers();
       res.json(successResponse("Teachers retrieved successfully", teachers));
     } catch (error) {
       const err = error as Error; 
@@ -30,7 +30,7 @@ export class AdminController {
   async blockUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const updatedUser = await this.adminService.blockUser(userId);
+      const updatedUser = await this._adminService.blockUser(userId);
       res.json(successResponse("User blocked successfully", updatedUser));
     } catch (error) {
       const err = error as Error;
@@ -41,7 +41,7 @@ export class AdminController {
   async unblockUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const updatedUser = await this.adminService.unblockUser(userId);
+      const updatedUser = await this._adminService.unblockUser(userId);
       res.json(successResponse("User unblocked successfully", updatedUser));
     } catch (error) {
       const err = error as Error;

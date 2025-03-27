@@ -46,7 +46,6 @@ const DynamicTable = <T,>({
     transition: { duration: 0.5 },
   },
 }: DynamicTableProps<T>) => {
-  // Default filter function if none provided
   const defaultFilterFn = (item: T, term: string) =>
     Object.values(item as any).some((value) =>
       String(value).toLowerCase().includes(term.toLowerCase())
