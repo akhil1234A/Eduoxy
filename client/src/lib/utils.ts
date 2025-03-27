@@ -67,13 +67,23 @@ export const customDataGridStyles = {
 
 export const uploadToS3 = async (
   file: File,
-  type: "image" | "video" | "pdf" | "subtitle"
+  type: "image" | "video" | "pdf" | "subtitle" | "chat_file" 
 ): Promise<{ publicUrl: string; key: string }> => {
   try {
     console.log(`Fetching presigned URL for ${type}: ${file.name}`);
     const res = await fetch(
-      `http://localhost:8000/api/upload/presigned-url?type=${type}&fileName=${encodeURIComponent(file.name)}`
+      `http://localhost:8000/api/upload/presigned-url?type=${type}&fileName=${encodeURIComponent(file.name)}`,
+      {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, fileName: file.name }), 
+      }
     );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch presigned URL: ${res.statusText}`);
+    }
+
     const { url, key, publicUrl } = await res.json();
     console.log(`Presigned URL received: ${url}`);
 
@@ -101,7 +111,7 @@ export const uploadToS3 = async (
     }
 
     console.log(`Upload successful: ${publicUrl}`);
-    return { publicUrl, key }; // Return both publicUrl and key
+    return { publicUrl, key }; 
   } catch (error) {
     console.error(`${type} upload error:`, error);
     throw error;

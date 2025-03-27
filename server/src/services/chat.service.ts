@@ -53,7 +53,7 @@ export class ChatService implements IChatService {
   }
   
 
-  async sendMessage(courseId: string, senderId: string, receiverId: string, message: string): Promise<IMessage> {
+  async sendMessage(courseId: string, senderId: string, receiverId: string, message: string, isFile: boolean, fileName?: string): Promise<IMessage> {
 
     console.log(courseId, senderId, receiverId, message);
 
@@ -82,6 +82,8 @@ export class ChatService implements IChatService {
       message,
       timestamp: new Date().toISOString(),
       isRead: false,
+      isFile,
+      fileName,
     };
 
     const savedMessage = await this._chatRepository.createMessage(chatMessage as IMessage);

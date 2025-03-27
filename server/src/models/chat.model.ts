@@ -7,6 +7,8 @@ export interface IMessage extends Document {
   message: string;
   timestamp: string;
   isRead: boolean;
+  isFile?: boolean;
+  fileName?: string;
 }
 
 export interface IMessageInput {
@@ -16,6 +18,8 @@ export interface IMessageInput {
   message: string;
   timestamp: string;
   isRead: boolean;
+  isFile?: boolean;
+  fileName?: string;
 }
 
 const messageSchema = new Schema<IMessage>({
@@ -25,6 +29,8 @@ const messageSchema = new Schema<IMessage>({
   message: { type: String, required: true },
   timestamp: { type: String, default: () => new Date().toISOString() },
   isRead: { type: Boolean, default: false },
+  isFile: { type: Boolean, default: false },
+  fileName: { type: String, default: null },
 });
 
 export default model<IMessage>("Message", messageSchema);

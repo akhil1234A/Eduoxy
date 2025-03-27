@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { useGetChatHistoryQuery } from "@/state/redux"; 
+import { useGetChatHistoryQuery } from "@/state/redux";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Paperclip } from "lucide-react";
+import { uploadToS3 } from "@/lib/utils";
 
 interface ChatMessage {
   courseId: string;
@@ -17,12 +18,14 @@ interface ChatMessage {
   message: string;
   timestamp: string;
   isRead: boolean;
+  isFile?: boolean;
+  fileName?: string;
 }
 
 interface ChatProps {
   courseId: string;
-  senderId: string; 
-  receiverId: string; 
+  senderId: string;
+  receiverId: string;
 }
 
 const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
@@ -30,13 +33,13 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  console.log("Chat props - senderId:", senderId, "receiverId:", receiverId, "courseId:", courseId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const socketInstance = io("http://localhost:8000", {
-      query: { userId: senderId }, 
+      query: { userId: senderId },
       path: "/socket.io/",
     });
     setSocket(socketInstance);
@@ -71,7 +74,6 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
       setMessages(data.data);
     }
     if (isError) {
-      console.error("Chat history fetch error:", isError);
       toast.error("Failed to load chat history");
     }
   }, [data, isError]);
@@ -85,14 +87,35 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
 
     const payload = {
       courseId,
-      senderId, 
+      senderId,
       receiverId,
       message: newMessage.trim(),
+      isFile: false,
     };
-    console.log("Sending message payload:", payload);
-
     socket.emit("sendMessage", payload);
     setNewMessage("");
+  };
+
+  const handleFileUpload = async () => {
+    if (!file || !socket) return;
+
+    try {
+      const { publicUrl } = await uploadToS3(file, "chat_file"); 
+      const payload = {
+        courseId,
+        senderId,
+        receiverId,
+        message: publicUrl,
+        isFile: true,
+        fileName: file.name,
+      };
+      socket.emit("sendMessage", payload);
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("File sent successfully!");
+    } catch (error) {
+      toast.error("Failed to send file: " + (error as Error).message);
+    }
   };
 
   return (
@@ -105,30 +128,36 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
         ) : messages.length === 0 ? (
           <div className="text-center text-gray-400">No messages yet. Start the conversation!</div>
         ) : (
-          messages.map((msg, index) => {
-            console.log(`Rendering msg ${index}: senderId=${msg.senderId}, userId=${senderId}, aligns ${msg.senderId === senderId ? "right" : "left"}`);
-            return (
+          messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`mb-4 flex ${msg.senderId === senderId ? "justify-end" : "justify-start"}`}
+            >
               <div
-                key={index}
-                className={`mb-4 flex ${
-                  msg.senderId === senderId ? "justify-end" : "justify-start"
+                className={`max-w-xs p-3 rounded-lg shadow-sm ${
+                  msg.senderId === senderId
+                    ? "bg-[#6366F1] text-white ml-4"
+                    : "bg-[#3A3B45] text-gray-300 mr-4"
                 }`}
               >
-                <div
-                  className={`max-w-xs p-3 rounded-lg shadow-sm ${
-                    msg.senderId === senderId
-                      ? "bg-[#6366F1] text-white ml-4"
-                      : "bg-[#3A3B45] text-gray-300 mr-4"
-                  }`}
-                >
+                {msg.isFile ? (
+                  <a
+                    href={msg.message}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-300 underline"
+                  >
+                    {msg.fileName || "Download File"}
+                  </a>
+                ) : (
                   <p className="text-sm">{msg.message}</p>
-                  <span className="text-xs text-gray-400 block mt-1">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
+                )}
+                <span className="text-xs text-gray-400 block mt-1">
+                  {new Date(msg.timestamp).toLocaleTimeString()}
+                </span>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
         <div ref={messagesEndRef} />
       </ScrollArea>
@@ -144,6 +173,24 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
         <Button onClick={sendMessage} className="bg-[#6366F1] hover:bg-[#4f46e5]">
           <Send className="w-4 h-4" />
         </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="hidden"
+        />
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          className="bg-[#6366F1] hover:bg-[#4f46e5]"
+          disabled={!!file}
+        >
+          <Paperclip className="w-4 h-4" />
+        </Button>
+        {file && (
+          <Button onClick={handleFileUpload} className="bg-[#6366F1] hover:bg-[#4f46e5]">
+            Upload
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

@@ -3,9 +3,14 @@ import { s3Service } from "../services/s3.service";
 
 const router = express.Router();
 
-router.get("/presigned-url", async (req: Request, res: Response) => {
+router.post("/presigned-url", async (req: Request, res: Response) => {
   try {
-    const { type, fileName } = req.query as { type: string; fileName: string };
+    // const { type, fileName } = req.query as { type: string; fileName: string };
+    const { type, fileName } = req.body;
+    if (!type || !fileName) {
+      res.status(400).json({ message: "Type and fileName are required" });
+      return;
+    }
     const result = await s3Service.generatePresignedUrl(type, fileName);
     res.json(result);
   } catch (error) {

@@ -42,22 +42,21 @@ export function initializeSocket(httpServer: HttpServer) {
       socket.join(chatRoom);
       console.log(`User ${userId} joined chat room ${chatRoom}`);
 
-      // Optionally, notify instructor/student of the join
+      //notify instructor/ of the join
       io.to(chatRoom).emit("userJoined", { userId, courseId });
     });
 
-    socket.on("sendMessage", async ({ courseId, receiverId, message }) => {
+    socket.on("sendMessage", async ({ courseId, receiverId, message, isFile = false, fileName }) => {
       if (!courseId || !receiverId || !message) {
         socket.emit("error", { message: "Missing required fields: courseId, receiverId, or message" });
         return;
       }
 
       try {
-        const savedMessage = await chatService.sendMessage(courseId, userId, receiverId, message);
+        const savedMessage = await chatService.sendMessage(courseId, userId, receiverId, message, isFile, fileName);
         const senderRoom = `chat:${courseId}:${userId}`;
         const receiverRoom = `chat:${courseId}:${receiverId}`;
 
-        // Emit to both sender and receiver rooms
         io.to(senderRoom).to(receiverRoom).emit("newMessage", savedMessage);
         console.log(`Message sent from ${userId} to ${receiverId} in course ${courseId}`);
       } catch (error) {
@@ -84,8 +83,7 @@ export function sendNotification(io: Server, userId: string, notification: any) 
   console.log(`Notification sent to user ${userId}:`, notification);
 }
 
-// Optional: Broadcast to all users in a course chat
 export function broadcastToCourseChat(io: Server, courseId: string, event: string, data: any) {
-  io.to(`chat:${courseId}:*`).emit(event, data); // Wildcard support might need adjustment based on Socket.IO version
+  io.to(`chat:${courseId}:*`).emit(event, data);
   console.log(`Broadcasted ${event} to course ${courseId}:`, data);
 }
