@@ -16,7 +16,7 @@ export interface IJwtService {
 export class JwtService implements IJwtService {
   constructor(@inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
   generateAccessToken(userId: string, userType: string): string {
-    return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "30m" });
+    return jwt.sign({ userId, userType }, process.env.JWT_SECRET!, { expiresIn: "12h" });
   }
 
   generateRefreshToken(userId: string, userType: string): string {

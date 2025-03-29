@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useGetPublicCoursesQuery, useGetProfileQuery } from "@/state/redux";
+import { useGetCourseQuery, useGetProfileQuery } from "@/state/redux";
 import Cookies from "js-cookie";
 import Loading from "@/components/Loading";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ import { formatPrice } from "@/lib/utils";
 import AccordionSections from "@/components/AccordionSections";
 import Image from "next/image";
 import { Star } from "lucide-react";
+import { toast } from "sonner";
 
 interface Instructor {
   _id: string;
@@ -30,28 +31,20 @@ interface Review {
   date: string;
 }
 
+interface LiveClass {
+  _id: string; // Changed from "id" to "_id" to match API
+  courseId: string;
+  teacherId: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
 const dummyReviews: Review[] = [
-  {
-    id: "1",
-    userName: "Sarah J.",
-    rating: 5,
-    comment: "Amazing course! The instructor explains everything so clearly.",
-    date: "2025-03-15",
-  },
-  {
-    id: "2",
-    userName: "Michael R.",
-    rating: 4,
-    comment: "Great content, though I wish there were more practical examples.",
-    date: "2025-03-10",
-  },
-  {
-    id: "3",
-    userName: "Priya K.",
-    rating: 5,
-    comment: "Loved the structure and pace. Highly recommend!",
-    date: "2025-03-05",
-  },
+  { id: "1", userName: "Sarah J.", rating: 5, comment: "Amazing course!", date: "2025-03-15" },
+  { id: "2", userName: "Michael R.", rating: 4, comment: "Great content.", date: "2025-03-10" },
+  { id: "3", userName: "Priya K.", rating: 5, comment: "Highly recommend!", date: "2025-03-05" },
 ];
 
 const CourseView = () => {
@@ -59,21 +52,38 @@ const CourseView = () => {
   const router = useRouter();
   const courseId = params.courseId as string;
   const userId = Cookies.get("userId");
+  const userType = Cookies.get("userType");
 
-  const { data: coursesData, isLoading: isCourseLoading, isError: isCourseError } = useGetPublicCoursesQuery({});
-  const course = coursesData?.data?.find((c) => c.courseId === courseId);
+  const { data: courseData, isLoading: isCourseLoading, isError: isCourseError } = useGetCourseQuery(courseId);
+  const course = courseData?.data;
 
   const { data: instructorData, isLoading: isInstructorLoading } = useGetProfileQuery(course?.teacherId || "", {
     skip: !course?.teacherId,
   });
   const instructor: Instructor | undefined = instructorData?.data;
 
-  // Review state
   const [reviews, setReviews] = useState<Review[]>(dummyReviews);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ rating: 0, comment: "" });
+  const [liveClasses, setLiveClasses] = useState<LiveClass[]>([]);
 
+  const isTeacher = course?.teacherId === userId;
   const isEnrolled = course?.enrollments?.some((enrollment) => enrollment.userId === userId);
+
+  useEffect(() => {
+    if (courseId) {
+      fetch(`http://localhost:8000/api/live-classes/${courseId}`, { credentials: "include" })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Live classes response:", data);
+          setLiveClasses(Array.isArray(data) ? data : []);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch live classes:", err);
+          setLiveClasses([]);
+        });
+    }
+  }, [courseId]);
 
   const handleCourseAction = () => {
     if (isEnrolled) {
@@ -93,7 +103,7 @@ const CourseView = () => {
     if (newReview.rating > 0 && newReview.comment.trim()) {
       const review: Review = {
         id: Date.now().toString(),
-        userName: "Current User", 
+        userName: "Current User",
         rating: newReview.rating,
         comment: newReview.comment,
         date: new Date().toISOString().split("T")[0],
@@ -101,6 +111,35 @@ const CourseView = () => {
       setReviews([review, ...reviews]);
       setNewReview({ rating: 0, comment: "" });
       setShowReviewForm(false);
+    }
+  };
+
+  const handleJoinClass = (liveClassId: string) => {
+    router.push(`/live/${liveClassId}?userId=${userId}&courseId=${courseId}&teacherId=${course?.teacherId}`);
+  };
+
+  const handleStartClass = async (liveClassId: string) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/live-classes/${liveClassId}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teacherId: userId }),
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        setLiveClasses((prev) =>
+          prev.map((cls) => (cls._id === liveClassId ? { ...cls, isActive: true } : cls))
+        );
+        toast.success("Class started successfully!");
+        handleJoinClass(liveClassId);
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to start class.");
+      }
+    } catch (err) {
+      console.error("Error starting class:", err);
+      toast.error("An error occurred while starting the class.");
     }
   };
 
@@ -114,7 +153,7 @@ const CourseView = () => {
       transition={{ duration: 0.5 }}
       className="course-view bg-[#1B1C22] text-white min-h-screen py-8 px-4 md:px-6"
     >
-      {/* Course Header with Image */}
+      {/* Course Header */}
       <div className="relative bg-[#2D2E36] rounded-lg overflow-hidden mb-8">
         <Image
           src={course.image || "/placeholder.png"}
@@ -154,6 +193,58 @@ const CourseView = () => {
             <AccordionSections sections={course.sections} />
           </section>
 
+          {/* Live Classes */}
+          <section className="mb-10 ml-4 md:ml-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold text-white">Upcoming Live Classes</h2>
+              {isTeacher && (
+                <Button
+                  onClick={() => router.push(`/teacher/schedule/${courseId}`)}
+                  className="bg-[#6366F1] hover:bg-[#4f46e5]"
+                >
+                  Schedule a Class
+                </Button>
+              )}
+            </div>
+            {liveClasses.length === 0 ? (
+              <p className="text-gray-400">No upcoming live classes.</p>
+            ) : (
+              liveClasses.map((cls) => {
+                const now = new Date();
+                const start = new Date(cls.startTime);
+                const end = new Date(cls.endTime);
+                const canJoin = now >= start && now <= end && cls.isActive;
+                const canStart = isTeacher && now >= start && now <= end && !cls.isActive;
+
+                return (
+                  <div key={cls._id} className="mb-4 p-4 bg-[#3A3B45] rounded-lg">
+                    <h3 className="text-white">{cls.title}</h3>
+                    <p className="text-gray-300">
+                      {start.toLocaleString()} - {end.toLocaleString()}
+                    </p>
+                    <p className="text-gray-400">{cls.isActive ? "Active" : "Scheduled"}</p>
+                    {canJoin && (
+                      <Button
+                        onClick={() => handleJoinClass(cls._id)}
+                        className="mt-2 bg-[#6366F1] hover:bg-[#4f46e5]"
+                      >
+                        Join Class
+                      </Button>
+                    )}
+                    {canStart && (
+                      <Button
+                        onClick={() => handleStartClass(cls._id)}
+                        className="mt-2 bg-green-600 hover:bg-green-700"
+                      >
+                        Start Class
+                      </Button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </section>
+
           {/* Reviews */}
           <section className="ml-4 md:ml-6">
             <div className="flex justify-between items-center mb-4">
@@ -166,13 +257,11 @@ const CourseView = () => {
                 {showReviewForm ? "Cancel" : "Add Review"}
               </Button>
             </div>
-
-            {/* Review Form */}
             {showReviewForm && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
+                exit={{ opacityusers: 0, height: 0 }}
                 className="mb-6 bg-[#2D2E36] p-4 rounded-lg"
               >
                 <form onSubmit={handleAddReview}>
@@ -199,8 +288,6 @@ const CourseView = () => {
                 </form>
               </motion.div>
             )}
-
-            {/* Existing Reviews */}
             <div className="space-y-6">
               {reviews.map((review) => (
                 <div key={review.id} className="border-b border-gray-700 pb-4">
@@ -227,7 +314,6 @@ const CourseView = () => {
 
         {/* Sidebar */}
         <div className="md:col-span-3 space-y-8">
-          {/* Pricing Card */}
           <div className="bg-[#2D2E36] p-8 rounded-lg shadow-md sticky top-4 border border-gray-700">
             <span className="text-3xl font-bold text-white block mb-6">{formatPrice(course.price)}</span>
             <Button
@@ -237,8 +323,6 @@ const CourseView = () => {
               {isEnrolled ? "Continue Learning" : "Purchase Course"}
             </Button>
           </div>
-
-          {/* Instructor Card */}
           <div className="bg-[#2D2E36] p-8 rounded-lg shadow-md border border-gray-700">
             <h3 className="text-xl font-semibold mb-6 text-white">About the Instructor</h3>
             {instructor ? (
