@@ -6,6 +6,7 @@ const TYPES = {
   ITransactionRepository: Symbol.for("ITransactionRepository"),
   IChatRepository: Symbol.for("IChatRepository"),
   ILiveClassRepository: Symbol.for("ILiveClassRepository"),
+  IForumRepository: Symbol.for("IForumRepository"),
 
   //Services
   IAuthService: Symbol.for("IAuthService"),
@@ -17,6 +18,7 @@ const TYPES = {
   IDashboardService: Symbol.for("IDashboardService"),
   IChatService: Symbol.for("IChatService"),
   ILiveClassService: Symbol.for("ILiveClassService"),
+  IForumService: Symbol.for("IForumService"),
 
   //Controllers
   IAuthController: Symbol.for("IAuthController"),

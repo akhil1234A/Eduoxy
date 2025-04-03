@@ -23,6 +23,7 @@ import {
   Users,
   BarChart,
   MessageCircle,
+  MessageSquareMore 
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ const AppSidebar = () => {
       { icon: User, label: "Profile", href: "/user/profile" },
       { icon: Settings, label: "Settings", href: "/user/settings" },
       { icon: MessageCircle, label: "Chat", href: "/user/chat" },
+      { icon: MessageSquareMore, label: "Forum", href: "/user/forum" },
     ],
     teacher: [
       { icon: BarChart, label: "Dashboard", href: "/teacher/dashboard" },

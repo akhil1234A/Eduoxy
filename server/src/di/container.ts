@@ -56,6 +56,10 @@ import { LiveClassService } from "../services/liveClass.service";
 import { ILiveClassService } from "../interfaces/liveClass.service";
 import { LiveClassController } from "../controllers/liveClass.controller";
 import LiveClass, { ILiveClass } from "../models/liveClass.model";
+import { ForumRepository } from "../repositories/forum.repository";
+import { IForumRepository } from "../interfaces/forum.repository";
+import { ForumService } from "../services/forum.service";
+import { IForumService } from "../interfaces/forum.service";
 
 const container = new Container();
 
@@ -66,7 +70,7 @@ container.bind<IUserCourseProgressRepository>(TYPES.IUserCourseProgressRepositor
 container.bind<ITransactionRepository>(TYPES.ITransactionRepository).to(TransactionRepository).inSingletonScope();
 container.bind<IChatRepository>(TYPES.IChatRepository).to(ChatRepository).inSingletonScope();
 container.bind<ILiveClassRepository>(TYPES.ILiveClassRepository).to(LiveClassRepository).inSingletonScope();
-
+container.bind<IForumRepository>(TYPES.IForumRepository).to(ForumRepository).inSingletonScope();
 
 // Model
 container.bind<typeof User>(TYPES.UserModel).toConstantValue(User)
@@ -75,7 +79,6 @@ container.bind<typeof UserCourseProgress>(TYPES.UserCourseProgressModel).toConst
 container.bind<typeof Transaction>(TYPES.TransactionModel).toConstantValue(Transaction);
 container.bind<Model<IMessage>>(TYPES.MessageModel).toConstantValue(Message);
 container.bind<Model<ILiveClass>>(TYPES.LiveClassModel).toConstantValue(LiveClass);
-
 
 // Utilities
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
@@ -93,6 +96,14 @@ container.bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScop
 container.bind<IDashboardService>(TYPES.IDashboardService).to(DashboardService).inSingletonScope();
 container.bind<IChatService>(TYPES.IChatService).to(ChatService).inSingletonScope();
 container.bind<ILiveClassService>(TYPES.ILiveClassService).to(LiveClassService).inSingletonScope();
+container.bind<IForumService>(TYPES.IForumService).toDynamicValue(() => {
+  return new ForumService(
+    container.get<IForumRepository>(TYPES.IForumRepository),
+    container.get<IUserService>(TYPES.IUserService)
+  );
+}).inSingletonScope();
+
+  
 
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();

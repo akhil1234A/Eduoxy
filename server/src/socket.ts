@@ -2,13 +2,17 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { IChatService } from "./interfaces/chat.service";
 import { ILiveClassService } from "./interfaces/liveClass.service";
-import { IUserService } from "./interfaces/user.service"; 
+import { IUserService } from "./interfaces/user.service";
 import TYPES from "./di/types";
 import container from "./di/container";
+import { IForumService } from "./interfaces/forum.service";
 
 const chatService = container.get<IChatService>(TYPES.IChatService);
 const liveClassService = container.get<ILiveClassService>(TYPES.ILiveClassService);
 const userService = container.get<IUserService>(TYPES.IUserService);
+const forumService = container.get<IForumService>(TYPES.IForumService);
+
+const DEFAULT_FORUM_ID = "general";
 
 export function initializeSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -21,7 +25,6 @@ export function initializeSocket(httpServer: HttpServer) {
     transports: ["polling", "websocket"],
   });
 
-  // In-memory live chat storage (temporary, per live class)
   const liveChats: { [liveClassId: string]: { senderId: string; senderName: string; message: string; timestamp: string }[] } = {};
 
   io.on("connection", (socket) => {
@@ -33,10 +36,9 @@ export function initializeSocket(httpServer: HttpServer) {
       socket.disconnect();
       return;
     }
-    socket.join(userId); // Personal room for notifications
+    socket.join(userId);
     console.log(`User ${userId} joined their room`);
 
-    // Regular Chat Events (unchanged)
     socket.on("joinChat", ({ courseId }) => {
       if (!courseId) {
         socket.emit("error", { message: "Course ID is required to join chat" });
@@ -70,7 +72,6 @@ export function initializeSocket(httpServer: HttpServer) {
       console.log(`User ${userId} left chat room ${chatRoom}`);
     });
 
-    // Live Class Events
     socket.on("joinLiveClass", async ({ liveClassId }) => {
       if (!liveClassId) {
         socket.emit("error", { message: "Live class ID is required" });
@@ -78,11 +79,10 @@ export function initializeSocket(httpServer: HttpServer) {
       }
       try {
         const liveClass = await liveClassService.joinLiveClass(liveClassId, userId);
-        const user = await userService.getProfile(userId); 
+        const user = await userService.getProfile(userId);
         const liveRoom = `live:${liveClassId}`;
         socket.join(liveRoom);
 
-        // Map participants to include usernames
         const participantsWithNames = await Promise.all(
           liveClass.participants.map(async (id) => ({
             userId: id,
@@ -97,16 +97,15 @@ export function initializeSocket(httpServer: HttpServer) {
         });
         console.log(`User ${userId} joined ${liveRoom}, participants:`, participantsWithNames);
 
-        // Only the teacher signals peers
         if (userId === liveClass.teacherId) {
           socket.to(liveRoom).emit("peerConnected", { peerId: userId });
           console.log(`Teacher ${userId} triggered peerConnected for room ${liveRoom}`);
         }
 
-        // Send existing chat messages to the joining user
         socket.emit("chatHistory", liveChats[liveClassId] || []);
         console.log(`User ${userId} joined live class ${liveClassId}`);
       } catch (error) {
+        console.error(`Error joining live class ${liveClassId}:`, error);
         socket.emit("error", { message: (error as Error).message });
       }
     });
@@ -172,7 +171,76 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("disconnect", async () => {
+    // Forum Events
+    socket.on("joinForum", async () => {
+      const forumRoom = `forum:${DEFAULT_FORUM_ID}`;
+      socket.join(forumRoom);
+      try {
+        const posts = await forumService.getPosts(DEFAULT_FORUM_ID);
+        socket.emit("forumPosts", posts);
+        console.log(`User ${userId} joined forum ${DEFAULT_FORUM_ID}, sent ${posts.length} posts`);
+      } catch (error) {
+        console.error(`Error joining forum ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("createPost", async ({ content, topic }) => {
+      try {
+        const post = await forumService.createPost(DEFAULT_FORUM_ID, userId, content, topic);
+        io.to(`forum:${DEFAULT_FORUM_ID}`).emit("newPost", post);
+        console.log(`Post created by ${userId} in ${DEFAULT_FORUM_ID}: ${content}`);
+      } catch (error) {
+        console.error(`Error creating post in ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("createReply", async ({ postId, content }) => {
+      try {
+        const reply = await forumService.createReply(DEFAULT_FORUM_ID, postId, userId, content);
+        io.to(`forum:${DEFAULT_FORUM_ID}`).emit("newReply", { postId, reply });
+        console.log(`Reply by ${userId} to post ${postId} in ${DEFAULT_FORUM_ID}`);
+      } catch (error) {
+        console.error(`Error creating reply in ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("deletePost", async ({ postId }) => {
+      try {
+        await forumService.deletePost(DEFAULT_FORUM_ID, postId, userId); 
+        io.to(`forum:${DEFAULT_FORUM_ID}`).emit("postDeleted", postId);
+        console.log(`Post ${postId} deleted by ${userId} in ${DEFAULT_FORUM_ID}`)
+      } catch (error) {
+        console.error(`Error deleting post ${postId} in ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("filterByTopic", async ({ topic }) => {
+      try {
+        const posts = await forumService.getPostsByTopic(DEFAULT_FORUM_ID, topic);
+        socket.emit("forumPosts", posts);
+        console.log(`Filtered posts by topic ${topic} for ${userId} in ${DEFAULT_FORUM_ID}`);
+      } catch (error) {
+        console.error(`Error filtering posts by topic in ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("searchPosts", async ({ query }) => {
+      try {
+        const posts = await forumService.searchPosts(DEFAULT_FORUM_ID, query);
+        socket.emit("forumPosts", posts);
+        console.log(`Searched posts with query ${query} for ${userId} in ${DEFAULT_FORUM_ID}`);
+      } catch (error) {
+        console.error(`Error searching posts in ${DEFAULT_FORUM_ID}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
     });
   });
