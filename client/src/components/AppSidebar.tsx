@@ -23,7 +23,8 @@ import {
   Users,
   BarChart,
   MessageCircle,
-  MessageSquareMore 
+  MessageSquareMore,
+  Code
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,7 @@ const AppSidebar = () => {
       { icon: Settings, label: "Settings", href: "/user/settings" },
       { icon: MessageCircle, label: "Chat", href: "/user/chat" },
       { icon: MessageSquareMore, label: "Forum", href: "/user/forum" },
+      { icon: Code, label: "Code Runner", href: "/user/code-runner" },
     ],
     teacher: [
       { icon: BarChart, label: "Dashboard", href: "/teacher/dashboard" },
@@ -68,6 +70,7 @@ const AppSidebar = () => {
       { icon: User, label: "Instructors", href: "/admin/instructors" },
       { icon: BookOpen, label: "Courses", href: "/admin/courses" },
       { icon: Settings, label: "Settings", href: "/admin/settings" },
+      { icon: Code, label: "Code Runner", href: "/admin/code-runner" },
     ],
   };
 

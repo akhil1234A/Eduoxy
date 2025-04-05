@@ -20,6 +20,7 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import chatRoutes from "./routes/chat.routes";
 import s3Routes from "./routes/s3.routes";
 import liveClassRoutes from "./routes/liveClass.routes";
+import codeRunnerRoutes from "./routes/codeRunner.routes";
 
 const app = express();
 const server = http.createServer(app);
@@ -54,6 +55,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/upload", s3Routes);
 app.use("/api/live-classes", liveClassRoutes);
+app.use("/api/code-runner", codeRunnerRoutes);
+
 // Error Handling Middleware
 app.use(logErrors);
 app.use(errorHandler);

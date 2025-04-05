@@ -7,6 +7,7 @@ const TYPES = {
   IChatRepository: Symbol.for("IChatRepository"),
   ILiveClassRepository: Symbol.for("ILiveClassRepository"),
   IForumRepository: Symbol.for("IForumRepository"),
+  ICodeRunnerRepository: Symbol.for("ICodeRunnerRepository"),
 
   //Services
   IAuthService: Symbol.for("IAuthService"),
@@ -19,6 +20,7 @@ const TYPES = {
   IChatService: Symbol.for("IChatService"),
   ILiveClassService: Symbol.for("ILiveClassService"),
   IForumService: Symbol.for("IForumService"),
+  ICodeRunnerService: Symbol.for("ICodeRunnerService"),
 
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
@@ -30,6 +32,7 @@ const TYPES = {
   IDashboardController: Symbol.for("IDashboardController"),
   IChatController: Symbol.for("IChatController"),
   ILiveClassController: Symbol.for("ILiveClassController"),
+  ICodeRunnerController: Symbol.for("ICodeRunnerController"),
 
   //Utils
   IMailService: Symbol.for("IMailService"),
@@ -43,6 +46,7 @@ const TYPES = {
   TransactionModel: Symbol.for("TransactionModel"),
   MessageModel: Symbol.for("MessageModel"),
   LiveClassModel: Symbol.for("LiveClassModel"),
+  ProblemModel: Symbol.for("ProblemModel"),
 };
 
 export default TYPES;
