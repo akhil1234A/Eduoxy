@@ -5,6 +5,7 @@ import { ITransactionService } from "../interfaces/transaction.service";
 import Stripe from "stripe";
 import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
+import { apiLogger } from "../utils/logger";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: "2025-02-24.acacia" });
 
@@ -17,14 +18,16 @@ export class TransactionController {
   async createStripePaymentIntent(req: Request, res: Response): Promise<void> {
     console.log("Request body:", req.body);
     const { amount, userId, courseId } = req.body;
-
+    apiLogger.info("Creating stripe payment intent", { amount, userId, courseId });
     if (!amount || amount <= 0 || !userId || !courseId) {
       res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Invalid request parameters"));
+      apiLogger.error("Invalid request parameters", { amount, userId, courseId });
       return;
     }
 
     try {
       const idempotencyKey = `${userId}:${courseId}`;
+      apiLogger.info("Creating stripe payment intent", { idempotencyKey });
       const paymentIntent = await stripe.paymentIntents.create(
         {
           amount: amount * 100,
@@ -37,15 +40,18 @@ export class TransactionController {
         },
         { idempotencyKey }
       );
+      apiLogger.info("Stripe payment intent created successfully", { paymentIntent });
       res.json(successResponse("Stripe payment intent created successfully", { clientSecret: paymentIntent.client_secret }));
     } catch (error) {
       const err = error as Error;
+      apiLogger.error("Error creating stripe payment intent", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating stripe payment intent", err));
     }
   }
 
   async createTransaction(req: Request, res: Response): Promise<void> {
     const { userId, courseId, transactionId, amount, paymentProvider } = req.body;
+    apiLogger.info("Creating transaction", { userId, courseId, transactionId, amount, paymentProvider });
     try {
       const transaction = await this._transactionService.createTransaction(
         userId,
@@ -54,9 +60,11 @@ export class TransactionController {
         amount,
         paymentProvider
       );
+      apiLogger.info("Transaction created successfully", { transaction });
       res.json(successResponse("Purchased Course successfully", { transaction }));
     } catch (error) {
       const err = error as Error;
+      apiLogger.error("Error creating transaction", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating transaction", err));
     }
   }

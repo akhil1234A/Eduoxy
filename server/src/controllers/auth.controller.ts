@@ -8,7 +8,7 @@ import { setAuthCookies } from "../utils/setAuthCookies";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import IAuthController from "../interfaces/auth.controller";
-
+import { apiLogger } from "../utils/logger";
 @injectable()
 export class AuthController implements IAuthController {
   constructor(@inject(TYPES.IAuthService) private _authService: IAuthService, @inject(TYPES.IJwtService) private _jwtService: IJwtService, @inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
@@ -29,16 +29,20 @@ export class AuthController implements IAuthController {
       const { email, password } = req.body;
       const result = await this._authService.login(email, password);
 
+
       if (result.needsVerification) {
         res.json(successResponse("User not verified. OTP sent to email.", result));
+        apiLogger.info("User not verified. OTP sent to email.", { result });
         return;
       }
 
       setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
       res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
+      apiLogger.info("Login successful", { result });
     } catch (error) {
       const err = error as Error; 
       res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Login failed", err.message));
+      apiLogger.error("Login failed", { error: err.message });
     }
   }
 
@@ -71,8 +75,10 @@ export class AuthController implements IAuthController {
 
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Token refreshed", { accessToken, user }));
+      apiLogger.info("Token refreshed", {});
     } catch (error) {
       const err = error as Error; 
+      apiLogger.error("Refresh failed", { error: err.message });
       res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Refresh failed", err.message));
     }
   }
@@ -100,12 +106,15 @@ export class AuthController implements IAuthController {
     try {
       const { idToken } = req.body;
       if (!idToken) throw new Error("No ID token provided");
+      apiLogger.info("Google authentication started", {});
 
       const { accessToken, refreshToken, user } = await this._authService.googleAuth(idToken);
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: refreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       res.json(successResponse("Google login successful", { accessToken, user }));
+      apiLogger.info("Google login successful", { });
     } catch (error) {
       const err = error as Error; 
+      apiLogger.error("Google authentication failed", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Google authentication failed", err.message));
     }
   }

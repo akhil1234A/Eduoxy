@@ -4,6 +4,7 @@ import { successResponse, errorResponse, AuthenticatedRequest } from "../types/t
 import { HttpStatus } from "../utils/httpStatus";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
+import { apiLogger } from "../utils/logger";
 @injectable()
 export class CourseController {
   constructor(@inject(TYPES.ICourseService) private _courseService: ICourseService) {}
@@ -26,6 +27,7 @@ export class CourseController {
 
   async publishCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
+    apiLogger.info("Publishing course", { courseId });
 
     try {
       const course = await this._courseService.publishCourse(courseId);
@@ -42,12 +44,15 @@ export class CourseController {
 
   async listPublicCourses(req: Request, res: Response): Promise<void> {
     const { category } = req.query;
+    apiLogger.info("Listing public courses", { category });
 
     try {
       const courses = await this._courseService.listPublicCourses(category as string);
       res.json(successResponse("Courses retrieved successfully", courses));
+      
     } catch (error) {
       const err = error as Error;
+      apiLogger.error("Error retrieving courses", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving courses", err.message));
     }
   }
@@ -109,9 +114,11 @@ export class CourseController {
 
       const course = await this._courseService.createCourse(teacherId, teacherName);
       res.json(successResponse("Course created successfully", course));
+      apiLogger.info("Course created successfully", { course });
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating course", err.message));
+      apiLogger.error("Error creating course", { error: err.message });
     }
   }
 
@@ -146,6 +153,7 @@ export class CourseController {
     } catch (error) {
       const err = error as Error;
       res.status(500).json(errorResponse("Error updating course", err.message));
+      apiLogger.error("Error updating course", { error: err.message });
     }
   }
   
@@ -169,7 +177,7 @@ export class CourseController {
 
   async searchCourses(req: Request, res: Response): Promise<void> {
     const { q: searchTerm, category } = req.query;
-
+    apiLogger.info("Searching courses", { searchTerm, category });
     try {
       if (!searchTerm || typeof searchTerm !== 'string') {
         res.json(successResponse("Courses retrieved successfully", []));
@@ -181,8 +189,10 @@ export class CourseController {
         category as string
       );
       res.json(successResponse("Courses retrieved successfully", courses));
+      apiLogger.info("Courses retrieved successfully", { courses });
     } catch (error) {
       const err = error as Error;
+      apiLogger.error("Error searching courses", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
         errorResponse("Error searching courses", err.message)
       );

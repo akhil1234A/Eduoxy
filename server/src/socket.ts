@@ -6,6 +6,7 @@ import { IUserService } from "./interfaces/user.service";
 import TYPES from "./di/types";
 import container from "./di/container";
 import { IForumService } from "./interfaces/forum.service";
+import { socketLogger } from "./utils/socketLogger";
 
 const chatService = container.get<IChatService>(TYPES.IChatService);
 const liveClassService = container.get<ILiveClassService>(TYPES.ILiveClassService);
@@ -29,6 +30,7 @@ export function initializeSocket(httpServer: HttpServer) {
 
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
+    socketLogger.info("Client connected", { socketId: socket.id });
     const userId = socket.handshake.query.userId as string;
 
     if (!userId) {
