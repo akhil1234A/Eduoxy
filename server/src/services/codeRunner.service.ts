@@ -45,7 +45,7 @@ export class CodeRunnerService implements ICodeRunnerService {
       'cpp': 54,
       'c': 50,
     };
-    return languageMap[language.toLowerCase()] || 71; // Default to Python
+    return languageMap[language.toLowerCase()] || 63; 
   }
 
   private async submitToJudge0(sourceCode: string, languageId: number, stdin: string): Promise<string> {
