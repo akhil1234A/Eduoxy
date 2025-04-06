@@ -5,6 +5,7 @@ import { adminApi } from "./api/adminApi";
 import { userApi } from "./api/userApi";
 import { transactionApi } from "./api/transactionApi";
 import { codeRunnerApi } from "./api/codeRunnerApi";
+import { roadmapApi } from "./api/roadmapApi";
 
 // import authReducer from './reducer/auth.reducer';
 import globalReducer from '@/state/index'
@@ -17,6 +18,7 @@ export const rootReducer = combineReducers({
   [transactionApi.reducerPath]: transactionApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
   [codeRunnerApi.reducerPath]: codeRunnerApi.reducer,
+  [roadmapApi.reducerPath]: roadmapApi.reducer,
   // auth:authReducer,
   global: globalReducer
 });
@@ -29,7 +31,7 @@ export const setupApiStore = () => {
         serializableCheck: {
           ignoredPaths: ["global.courseEditor.sections"],
         },
-      }).concat(authApi.middleware, coursesApi.middleware, adminApi.middleware, transactionApi.middleware, userApi.middleware, codeRunnerApi.middleware),
+      }).concat(authApi.middleware, coursesApi.middleware, adminApi.middleware, transactionApi.middleware, userApi.middleware, codeRunnerApi.middleware, roadmapApi.middleware),
   });
 };
 
@@ -45,4 +47,6 @@ export * from './api/adminApi'
 export * from './api/transactionApi'
 export * from './api/userApi'
 export * from './api/codeRunnerApi'
-export { authApi, coursesApi, adminApi, transactionApi, userApi, codeRunnerApi};
+export * from './api/roadmapApi'
+
+export { authApi, coursesApi, adminApi, transactionApi, userApi, codeRunnerApi, roadmapApi};
