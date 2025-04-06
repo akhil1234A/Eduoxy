@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useGetRoadmapsQuery, useDeleteRoadmapMutation } from "@/state/api/roadmapApi";
@@ -28,7 +28,7 @@ const RoadmapsPage = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this roadmap?")) {
       try {
-        await deleteRoadmap(id);
+      await deleteRoadmap(id);
       } catch (error) {
         console.error("Failed to delete roadmap:", error);
       }

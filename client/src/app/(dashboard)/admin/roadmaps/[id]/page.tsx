@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -44,7 +44,8 @@ interface RoadmapFormData {
 }
 
 export default function EditRoadmapPage({ params }: { params: { id: string } }) {
-  const { data, isLoading: isLoadingRoadmap } = useGetRoadmapByIdQuery(params.id)
+  const resolvedParams = React.use(params)
+  const { data, isLoading: isLoadingRoadmap } = useGetRoadmapByIdQuery(resolvedParams.id)
   const [updateRoadmap, { isLoading: isUpdating }] = useUpdateRoadmapMutation()
   const router = useRouter()
 
@@ -148,11 +149,7 @@ export default function EditRoadmapPage({ params }: { params: { id: string } }) 
 
   const removeSection = (sectionId: string) => {
     if (formData.sections.length === 1) {
-      toast({
-        title: "Cannot remove",
-        description: "A roadmap must have at least one section",
-        variant: "destructive",
-      })
+      toast.error("A roadmap must have at least one section")
       return
     }
 
@@ -189,11 +186,7 @@ export default function EditRoadmapPage({ params }: { params: { id: string } }) 
     const section = formData.sections.find((s) => s.id === sectionId)
 
     if (section && section.topics.length === 1) {
-      toast({
-        title: "Cannot remove",
-        description: "A section must have at least one topic",
-        variant: "destructive",
-      })
+      toast.error("A section must have at least one topic")
       return
     }
 
@@ -293,43 +286,27 @@ export default function EditRoadmapPage({ params }: { params: { id: string } }) 
 
     // Validate form
     if (!formData.title.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Roadmap title is required",
-        variant: "destructive",
-      })
+      toast.error("Roadmap title is required")
       return
     }
 
     // Validate sections and topics
     for (const section of formData.sections) {
       if (!section.title.trim()) {
-        toast({
-          title: "Validation Error",
-          description: "All section titles are required",
-          variant: "destructive",
-        })
+        toast.error("All section titles are required")
         return
       }
 
       for (const topic of section.topics) {
         if (!topic.title.trim()) {
-          toast({
-            title: "Validation Error",
-            description: "All topic titles are required",
-            variant: "destructive",
-          })
+          toast.error("All topic titles are required")
           return
         }
 
         // Validate resources
         for (const resource of topic.resources) {
           if (!resource.title.trim() || !resource.url.trim()) {
-            toast({
-              title: "Validation Error",
-              description: "All resource titles and URLs are required",
-              variant: "destructive",
-            })
+            toast.error("All resource titles and URLs are required")
             return
           }
         }
@@ -338,27 +315,16 @@ export default function EditRoadmapPage({ params }: { params: { id: string } }) 
 
     try {
       await updateRoadmap({ id: params.id, roadmap: formData }).unwrap()
-      toast({
-        title: "Success",
-        description: "Roadmap updated successfully",
-      })
+      toast.success("Roadmap updated successfully");
       router.push("/admin/roadmaps")
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update roadmap",
-        variant: "destructive",
-      })
+      toast.error("Failed to update roadmap")
     }
   }
 
   if (isLoadingRoadmap) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-700" />
-          <p className="text-muted-foreground">Loading roadmap...</p>
-        </div>
       </div>
     )
   }
