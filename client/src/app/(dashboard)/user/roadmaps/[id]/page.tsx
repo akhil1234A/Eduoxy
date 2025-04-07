@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useGetRoadmapByIdQuery, useUpdateTopicProgressMutation } from "@/state/api/roadmapApi"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,7 +41,8 @@ interface Roadmap {
 }
 
 export default function RoadmapDetailPage({ params }: { params: { id: string } }) {
-  const { data, isLoading } = useGetRoadmapByIdQuery(params.id)
+  const resolvedParams = React.use(params);
+  const { data, isLoading } = useGetRoadmapByIdQuery(resolvedParams.id)
   const [updateTopicProgress, { isLoading: isUpdating }] = useUpdateTopicProgressMutation()
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<string | null>(null)

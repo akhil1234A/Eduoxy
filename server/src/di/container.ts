@@ -69,7 +69,13 @@ import { RoadmapController } from "../controllers/roadmap.controller";
 import { IRoadmapService } from "../interfaces/roadmap.service";
 import Roadmap, { IRoadmapDocument } from "../models/roadmap.model";
 
-
+import { Review } from "../models/review.model";
+import { ReviewRepository } from "../repositories/review.repository";
+import { ReviewController } from "../controllers/review.controller";
+import { IReviewDocument } from "../interfaces/review.interface";
+import { ReviewService } from "../services/review.service";
+import { IReviewService } from "../interfaces/review.service";
+import { IReviewRepository } from "../interfaces/review.repository";
 
 const container = new Container();
 
@@ -82,6 +88,7 @@ container.bind<IChatRepository>(TYPES.IChatRepository).to(ChatRepository).inSing
 container.bind<ILiveClassRepository>(TYPES.ILiveClassRepository).to(LiveClassRepository).inSingletonScope();
 container.bind<IForumRepository>(TYPES.IForumRepository).to(ForumRepository).inSingletonScope();
 container.bind<IRoadmapRepository>(TYPES.IRoadmapRepository).to(RoadmapRepository).inSingletonScope();
+container.bind<IReviewRepository>(TYPES.IReviewRepository).to(ReviewRepository).inSingletonScope();
 
 // Model
 container.bind<typeof User>(TYPES.UserModel).toConstantValue(User)
@@ -91,6 +98,7 @@ container.bind<typeof Transaction>(TYPES.TransactionModel).toConstantValue(Trans
 container.bind<Model<IMessage>>(TYPES.MessageModel).toConstantValue(Message);
 container.bind<Model<ILiveClass>>(TYPES.LiveClassModel).toConstantValue(LiveClass);
 container.bind<Model<IRoadmapDocument>>(TYPES.RoadmapModel).toConstantValue(Roadmap);
+container.bind<Model<IReviewDocument>>(TYPES.ReviewModel).toConstantValue(Review);
 
 // Utilities
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
@@ -108,6 +116,8 @@ container.bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScop
 container.bind<IDashboardService>(TYPES.IDashboardService).to(DashboardService).inSingletonScope();
 container.bind<IChatService>(TYPES.IChatService).to(ChatService).inSingletonScope();
 container.bind<ILiveClassService>(TYPES.ILiveClassService).to(LiveClassService).inSingletonScope();
+container.bind<IReviewService>(TYPES.IReviewService).to(ReviewService).inSingletonScope();
+container.bind<ReviewService>(TYPES.ReviewService).to(ReviewService).inSingletonScope();
 
 container.bind<IForumService>(TYPES.IForumService).toDynamicValue(() => {
   return new ForumService(
@@ -128,6 +138,9 @@ container.bind<DashboardController>(TYPES.IDashboardController).to(DashboardCont
 container.bind<ChatController>(TYPES.IChatController).to(ChatController).inSingletonScope();
 container.bind<LiveClassController>(TYPES.ILiveClassController).to(LiveClassController).inSingletonScope();
 container.bind<RoadmapController>(TYPES.IRoadmapController).to(RoadmapController).inSingletonScope();
+container.bind<ReviewController>(TYPES.ReviewController).to(ReviewController);
+
+
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
 export const adminController = container.get<AdminController>(TYPES.IAdminController);
@@ -139,5 +152,6 @@ export const dashboardController = container.get<DashboardController>(TYPES.IDas
 export const chatController = container.get<ChatController>(TYPES.IChatController);
 export const liveClassController = container.get<LiveClassController>(TYPES.ILiveClassController);
 export const roadmapController = container.get<RoadmapController>(TYPES.IRoadmapController);
+export const reviewController = container.get<ReviewController>(TYPES.ReviewController);
 
 export default container;

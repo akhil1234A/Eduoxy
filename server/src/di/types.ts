@@ -8,6 +8,8 @@ const TYPES = {
   ILiveClassRepository: Symbol.for("ILiveClassRepository"),
   IForumRepository: Symbol.for("IForumRepository"),
   IRoadmapRepository: Symbol.for("IRoadmapRepository"),
+  IReviewRepository: Symbol.for("IReviewRepository"),
+
 
   //Services
   IAuthService: Symbol.for("IAuthService"),
@@ -21,7 +23,7 @@ const TYPES = {
   ILiveClassService: Symbol.for("ILiveClassService"),
   IForumService: Symbol.for("IForumService"),
   IRoadmapService: Symbol.for("IRoadmapService"),
-
+  IReviewService: Symbol.for("IReviewService"),
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
   IAdminController: Symbol.for("IAdminController"),
@@ -33,6 +35,8 @@ const TYPES = {
   IChatController: Symbol.for("IChatController"),
   ILiveClassController: Symbol.for("ILiveClassController"),
   IRoadmapController: Symbol.for("IRoadmapController"),
+  ReviewController: Symbol.for("ReviewController"),
+
 
   //Utils
   IMailService: Symbol.for("IMailService"),
@@ -47,6 +51,9 @@ const TYPES = {
   MessageModel: Symbol.for("MessageModel"),
   LiveClassModel: Symbol.for("LiveClassModel"),
   RoadmapModel: Symbol.for("RoadmapModel"),
+  ReviewModel: Symbol.for("ReviewModel"),
+
+  ReviewService: Symbol.for("ReviewService"),
 };
 
 export default TYPES;
