@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
+import { io, Socket } from "socket.io-client";
 
 interface Notification {
   _id: string;
@@ -26,70 +27,71 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const wsRef = useRef<WebSocket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const userId = Cookies.get("userId");
 
   useEffect(() => {
-    if (userId) {
-      const wsUrl = `${process.env.NEXT_PUBLIC_API_URL!.replace("http", "ws")}/ws?userId=${userId}`;
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
+    if (!userId) return;
 
-      ws.onopen = () => {
-        console.log("WebSocket connected");
-      };
+    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
+      query: { userId },
+      path: "/socket.io/",
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "notification") {
-          const notification = data.data;
-          console.log("Received notification:", notification);
-          setNotifications((prev) => [notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-  
-          switch (notification.type) {
-            case "success":
-              toast.success(notification.title, {
-                description: notification.message,
-              });
-              break;
-            case "error":
-              toast.error(notification.title, {
-                description: notification.message,
-              });
-              break;
-            case "warning":
-              toast.warning(notification.title, {
-                description: notification.message,
-              });
-              break;
-            case "info":
-            default:
-              toast.info(notification.title, {
-                description: notification.message,
-              });
-              break;
-          }
-        }
-      };
+    socketInstance.on("connect", () => {
+      console.log("Notification socket connected:", socketInstance.id);
+      socketInstance.emit("joinNotifications", { userId });
+    });
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+    socketInstance.on("notification", (notification: Notification) => {
+      console.log("Received notification:", notification);
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
 
-      ws.onclose = () => {
-        console.log("WebSocket disconnected");
-      };
+      switch (notification.type) {
+        case "success":
+          toast.success(notification.title, {
+            description: notification.message,
+          });
+          break;
+        case "error":
+          toast.error(notification.title, {
+            description: notification.message,
+          });
+          break;
+        case "warning":
+          toast.warning(notification.title, {
+            description: notification.message,
+          });
+          break;
+        case "info":
+        default:
+          toast.info(notification.title, {
+            description: notification.message,
+          });
+          break;
+      }
+    });
 
-      // Fetch existing notifications
-      fetchNotifications();
+    socketInstance.on("connect_error", (err) => {
+      console.error("Notification socket error:", err);
+      toast.error("Failed to connect to notification server");
+    });
 
-      return () => {
-        if (wsRef.current) {
-          wsRef.current.close();
-        }
-      };
-    }
+    setSocket(socketInstance);
+
+    // Fetch existing notifications
+    fetchNotifications();
+
+    return () => {
+      if (socketInstance.connected) {
+        socketInstance.disconnect();
+      }
+    };
   }, [userId]);
 
   const fetchNotifications = async () => {

@@ -66,6 +66,7 @@ const Forum = () => {
     const socketInstance = io("http://localhost:8000", {
       query: { userId },
       path: "/socket.io/",
+      transports:["websocket"],
     });
 
     socketInstance.on("connect", () => {

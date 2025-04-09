@@ -6,4 +6,5 @@ export interface ILiveClassService {
   joinLiveClass(liveClassId: string, userId: string): Promise<ILiveClass>;
   leaveLiveClass(liveClassId: string, userId: string): Promise<ILiveClass>;
   startLiveClass(liveClassId: string, teacherId: string): Promise<ILiveClass>;
+  getTeacherId(liveClassId: string): Promise<string | null>;
 }

@@ -1,5 +1,5 @@
 import { Notification } from "../models/notification.model";
-import { getWebSocketManager } from "../utils/socketLogger";
+import { io } from "../app";
 import { apiLogger } from "../utils/logger";
 
 export class NotificationService {
@@ -19,9 +19,8 @@ export class NotificationService {
     try {
       const notification = await Notification.create(data);
       
-      // Send real-time notification via WebSocket
-      const wsManager = getWebSocketManager();
-      wsManager.sendNotification(data.userId, notification);
+      // Send real-time notification via Socket.IO
+      io.to(`notifications:${data.userId}`).emit("notification", notification);
       
       apiLogger.info("Notification created and sent", {
         notificationId: notification._id,
@@ -30,7 +29,7 @@ export class NotificationService {
       
       return notification;
     } catch (error) {
-      const err = error as Error
+      const err = error as Error;
       apiLogger.error("Failed to create notification", {
         error: err.message,
         userId: data.userId,

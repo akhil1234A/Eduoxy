@@ -64,4 +64,9 @@ export class LiveClassService implements ILiveClassService {
     if (!updatedClass) throw new Error("Failed to start live class");
     return updatedClass;
   }
+
+  async getTeacherId(liveClassId: string): Promise<string | null> {
+    const liveClass = await this.liveClassRepository.findById(liveClassId);
+    return liveClass?.teacherId || null;
+  }
 }

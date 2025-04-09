@@ -9,7 +9,13 @@ export interface IRedisClient {
   del(key: string): Promise<number>;
   keys(pattern: string): Promise<string[]>;
   isOpen: boolean;
-  connect(): Promise<void>; 
+  connect(): Promise<void>;
+  
+  // Set operations
+  sAdd(key: string, member: string): Promise<number>;
+  sRem(key: string, member: string): Promise<number>;
+  sMembers(key: string): Promise<string[]>;
+  sIsMember(key: string, member: string): Promise<boolean>;
 }
 
 const redisClient: RedisClientType = createClient({
@@ -24,7 +30,7 @@ redisClient.on("end", () => console.log("Redis Disconnected"));
 async function ensureRedisConnection() {
   if (!redisClient.isOpen) {
     try {
-      await redisClient.connect(); 
+      await redisClient.connect();
       console.log("Redis connection established");
     } catch (err) {
       console.error("Redis Connection Failed:", err);
@@ -45,8 +51,13 @@ const redisClientWrapper: IRedisClient = {
   keys: redisClient.keys.bind(redisClient),
   isOpen: redisClient.isOpen,
   connect: async () => {
-    await redisClient.connect(); 
+    await redisClient.connect();
   },
+  // Set operations
+  sAdd: redisClient.sAdd.bind(redisClient),
+  sRem: redisClient.sRem.bind(redisClient),
+  sMembers: redisClient.sMembers.bind(redisClient),
+  sIsMember: redisClient.sIsMember.bind(redisClient),
 };
 
 export default redisClientWrapper;

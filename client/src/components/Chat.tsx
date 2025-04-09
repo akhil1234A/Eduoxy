@@ -38,19 +38,53 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const socketInstance = io("http://localhost:8000", {
+    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
       query: { userId: senderId },
       path: "/socket.io/",
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+      forceNew: true,
     });
+
     setSocket(socketInstance);
 
-    socketInstance.on("connect", () => console.log("Socket connected:", socketInstance.id));
-    socketInstance.on("connect_error", (err) => console.error("Socket error:", err));
+    socketInstance.on("connect", () => {
+      console.log("Socket connected:", socketInstance.id);
+      socketInstance.emit("joinChat", { courseId });
+    });
 
-    socketInstance.emit("joinChat", { courseId });
+    socketInstance.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+      toast.error("Failed to connect to chat server. Retrying...");
+    });
+
+    socketInstance.on("error", (error: { message: string }) => {
+      console.error("Socket error:", error);
+      toast.error(error.message);
+    });
 
     socketInstance.on("newMessage", (message: ChatMessage) => {
       console.log("New message received:", message);
+      setMessages((prev) => {
+        const messageExists = prev.some(
+          (msg) => 
+            msg.senderId === message.senderId && 
+            msg.receiverId === message.receiverId && 
+            msg.message === message.message && 
+            msg.timestamp === message.timestamp
+        );
+        if (!messageExists) {
+          return [...prev, message];
+        }
+        return prev;
+      });
+    });
+
+    socketInstance.on("messageSent", (message: ChatMessage) => {
+      console.log("Message sent successfully:", message);
       setMessages((prev) => [...prev, message]);
     });
 
@@ -58,13 +92,11 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
       console.log(`${joinedUserId} joined the chat for course ${courseId}`);
     });
 
-    socketInstance.on("error", (error: { message: string }) => {
-      toast.error(error.message);
-    });
-
     return () => {
-      socketInstance.emit("leaveChat", { courseId });
-      socketInstance.disconnect();
+      if (socketInstance.connected) {
+        socketInstance.emit("leaveChat", { courseId });
+        socketInstance.disconnect();
+      }
     };
   }, [courseId, senderId]);
 

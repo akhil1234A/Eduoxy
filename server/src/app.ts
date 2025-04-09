@@ -3,7 +3,6 @@ import cors from "cors";
 import cookieParser from 'cookie-parser'
 import http from 'http';
 import { initializeSocket } from "./socket";
-import { initializeWebSocket } from "./utils/socketLogger";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { logRequests } from "./utils/logRequests";
@@ -26,9 +25,8 @@ import reviewRoutes from "./routes/review.routes";
 const app = express();
 const server = http.createServer(app);
 
-// Initialize both Socket.IO and WebSocket
+// Initialize only Socket.IO
 export const io = initializeSocket(server);
-export const ws = initializeWebSocket(server);
 
 // Middlewares
 app.use(express.json());

@@ -114,9 +114,12 @@ const CourseView = () => {
 
 
   const handleJoinClass = (liveClassId: string) => {
-    router.push(`/live/${liveClassId}?userId=${userId}&courseId=${courseId}&teacherId=${course?.teacherId}`)
-  }
-
+    const route = isTeacher
+      ? `/teacher/liveclass/${liveClassId}`
+      : `/user/liveclass/${liveClassId}`;
+    router.push(`${route}?userId=${userId}&courseId=${courseId}&teacherId=${course?.teacherId}`);
+  };
+  
   const handleStartClass = async (liveClassId: string) => {
     try {
       const response = await fetch(`http://localhost:8000/api/live-classes/${liveClassId}/start`, {
@@ -124,21 +127,21 @@ const CourseView = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacherId: userId }),
         credentials: "include",
-      })
-
+      });
+  
       if (response.ok) {
-        setLiveClasses((prev) => prev.map((cls) => (cls._id === liveClassId ? { ...cls, isActive: true } : cls)))
-        toast.success("Class started successfully!")
-        handleJoinClass(liveClassId)
+        setLiveClasses((prev) => prev.map((cls) => (cls._id === liveClassId ? { ...cls, isActive: true } : cls)));
+        toast.success("Class started successfully!");
+        handleJoinClass(liveClassId);
       } else {
-        const error = await response.json()
-        toast.error(error.message || "Failed to start class.")
+        const error = await response.json();
+        toast.error(error.message || "Failed to start class.");
       }
     } catch (err) {
-      console.error("Error starting class:", err)
-      toast.error("An error occurred while starting the class.")
+      console.error("Error starting class:", err);
+      toast.error("An error occurred while starting the class.");
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
