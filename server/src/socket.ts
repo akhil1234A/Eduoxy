@@ -19,6 +19,7 @@ const LIVE_CLASS_PREFIX = "live:class:";
 const PARTICIPANTS_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}:participants`;
 const TEACHER_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}:teacher`;
 const CHAT_HISTORY_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}:chat`;
+const TEACHER_PEER_ID_KEY = (liveClassId: string) => `peer:${liveClassId}:teacher`;
 
 export function initializeSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -58,7 +59,6 @@ export function initializeSocket(httpServer: HttpServer) {
     socketLogger.error("Socket.IO upgrade error", { error: err });
   });
 
-
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
     socketLogger.info("Client connected", { socketId: socket.id });
@@ -72,7 +72,6 @@ export function initializeSocket(httpServer: HttpServer) {
     socket.join(userId);
     console.log(`User ${userId} joined their room`);
 
-    //Feature: Notifications
     socket.on("joinNotifications", ({ userId }) => {
       if (!userId) {
         socket.emit("error", { message: "User ID is required to join notifications" });
@@ -82,7 +81,6 @@ export function initializeSocket(httpServer: HttpServer) {
       console.log(`User ${userId} joined notifications room`);
     });
 
-    //Feature: Chat with Instructor: Join Chat Room
     socket.on("joinChat", ({ courseId }) => {
       if (!courseId) {
         socket.emit("error", { message: "Course ID is required to join chat" });
@@ -94,7 +92,6 @@ export function initializeSocket(httpServer: HttpServer) {
       io.to(chatRoom).emit("userJoined", { userId, courseId });
     });
 
-    //Feature: Chat with Instructor: Send Message
     socket.on("sendMessage", async ({ courseId, receiverId, message, isFile = false, fileName }) => {
       if (!courseId || !receiverId || !message) {
         socket.emit("error", { message: "Missing required fields: courseId, receiverId, or message" });
@@ -110,14 +107,12 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    //Feature: Chat with Instructor: Leave Chat Room
     socket.on("leaveChat", ({ courseId }) => {
       const chatRoom = `chat:${courseId}`;
       socket.leave(chatRoom);
       console.log(`User ${userId} left chat room ${chatRoom}`);
     });
 
-    //Feature: Live Class: Join Live Class
     socket.on("joinLiveClass", async ({ liveClassId, isTeacher }) => {
       if (!liveClassId) {
         socket.emit("error", { message: "Live class ID is required" });
@@ -131,7 +126,7 @@ export function initializeSocket(httpServer: HttpServer) {
         const liveRoom = `live:${liveClassId}`;
 
         if (isTeacher) {
-          await redisClient.set(TEACHER_KEY(liveClassId), userId, { EX: 3600 }); // Expire in 1 hour
+          await redisClient.set(TEACHER_KEY(liveClassId), userId, { EX: 3600 });
         }
         await redisClient.sAdd(PARTICIPANTS_KEY(liveClassId), userId);
 
@@ -160,12 +155,6 @@ export function initializeSocket(httpServer: HttpServer) {
 
         const chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
         socket.emit("chatHistory", chatHistory ? JSON.parse(chatHistory) : []);
-
-        const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-        if (teacherId && !isTeacher) {
-          socket.emit("requestOffer", { liveClassId, from: userId });
-        }
-
       } catch (error) {
         console.error(`[Socket] Error joining live class ${liveClassId}:`, error);
         socket.emit("error", { message: (error as Error).message });
@@ -214,52 +203,6 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("offer", async ({ liveClassId, userId: studentId, offer }) => {
-      try {
-        const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-        if (teacherId !== userId) {
-          socket.emit("error", { message: "Only teacher can send offers" });
-          return;
-        }
-        console.log(`[Socket] Teacher ${userId} sending offer to ${studentId}`);
-        io.to(studentId).emit("offer", offer);
-      } catch (error) {
-        console.error(`[Socket] Error handling offer:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
-    socket.on("answer", async ({ liveClassId, userId: teacherId, answer }) => {
-      try {
-        const isParticipant = await redisClient.sIsMember(PARTICIPANTS_KEY(liveClassId), userId);
-        if (!isParticipant) {
-          socket.emit("error", { message: "Student not in class" });
-          return;
-        }
-        console.log(`[Socket] Student ${userId} sending answer to ${teacherId}`);
-        io.to(teacherId).emit("answer", { userId, answer });
-      } catch (error) {
-        console.error(`[Socket] Error handling answer:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
-    socket.on("iceCandidate", async ({ liveClassId, userId: targetId, candidate }) => {
-      try {
-        const isParticipant = await redisClient.sIsMember(PARTICIPANTS_KEY(liveClassId), userId);
-        const isTargetParticipant = await redisClient.sIsMember(PARTICIPANTS_KEY(liveClassId), targetId);
-        if (!isParticipant || !isTargetParticipant) {
-          socket.emit("error", { message: "Users not in class" });
-          return;
-        }
-        console.log(`[Socket] Relaying ICE candidate from ${userId} to ${targetId}`);
-        io.to(targetId).emit("iceCandidate", { userId, candidate });
-      } catch (error) {
-        console.error(`[Socket] Error handling ICE candidate:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
     socket.on("leaveLiveClass", async ({ liveClassId }) => {
       if (!liveClassId) {
         socket.emit("error", { message: "Live class ID is required" });
@@ -285,6 +228,7 @@ export function initializeSocket(httpServer: HttpServer) {
 
         if (isTeacher) {
           await redisClient.del(TEACHER_KEY(liveClassId));
+          await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
           io.to(liveRoom).emit("teacherDisconnected");
           console.log(`[Socket] Teacher ${userId} left ${liveClassId}`);
         }
@@ -302,7 +246,6 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    //Feature: Forum: Join Forum
     socket.on("joinForum", async () => {
       const forumRoom = `forum:${DEFAULT_FORUM_ID}`;
       socket.join(forumRoom);
@@ -371,6 +314,43 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
+    socket.on("requestStream", async ({ liveClassId, userId: studentId }) => {
+      try {
+        const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
+        if (!teacherId) {
+          socket.emit("error", { message: "No teacher in this live class" });
+          return;
+        }
+
+        const teacherPeerId = await redisClient.get(TEACHER_PEER_ID_KEY(liveClassId));
+        if (teacherPeerId) {
+          io.to(studentId).emit("teacherPeerId", { peerId: teacherPeerId });
+          console.log(`[Socket] Sent teacher PeerJS ID ${teacherPeerId} to student ${studentId} for live class ${liveClassId}`);
+        } else {
+          io.to(studentId).emit("error", { message: "Teacher not streaming yet" });
+        }
+      } catch (error) {
+        console.error(`[Socket] Error in stream request:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("providePeerId", ({ liveClassId, peerId }) => {
+      redisClient.set(TEACHER_PEER_ID_KEY(liveClassId), peerId, { EX: 3600 });
+      console.log(`[Socket] Teacher ${userId} provided PeerJS ID ${peerId} for live class ${liveClassId}`);
+    });
+
+    socket.on("requestStudentPeerId", ({ liveClassId, studentId }) => {
+      io.to(studentId).emit("provideStudentPeerId", { liveClassId });
+    });
+
+    socket.on("provideStudentPeerId", async ({ liveClassId, peerId }) => {
+      const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
+      if (teacherId) {
+        io.to(teacherId).emit("studentPeerId", { studentId: userId, peerId });
+      }
+    });
+
     socket.on("disconnect", async () => {
       console.log("[Socket] Client disconnected:", socket.id);
       socketLogger.info("Client disconnected", { socketId: socket.id });
@@ -396,6 +376,7 @@ export function initializeSocket(httpServer: HttpServer) {
           const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
           if (userId === teacherId) {
             await redisClient.del(TEACHER_KEY(liveClassId));
+            await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
             io.to(liveRoom).emit("teacherDisconnected");
             console.log(`[Socket] Teacher ${userId} disconnected from ${liveClassId}`);
           }

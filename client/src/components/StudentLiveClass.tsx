@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import Peer, { MediaConnection } from "peerjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,27 +31,25 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isTeacherConnected, setIsTeacherConnected] = useState(false);
-  const [isStreamActive, setIsStreamActive] = useState(false);
+  const [isTeacherConnected, setIsTeacherConnected] = useState(true);
+  const [isStreamActive, setIsStreamActive] = useState(true);
 
   const socketRef = useRef<Socket | null>(null);
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const peerRef = useRef<Peer | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const callRef = useRef<MediaConnection | null>(null);
 
   const initializeWebRTCAndSocket = useCallback(async () => {
-    // Initialize Socket.IO
     const socket = io("http://localhost:8000", {
       query: { userId },
       path: "/socket.io/",
       transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
     });
     socketRef.current = socket;
 
     socket.on("connect", () => {
       socket.emit("joinLiveClass", { liveClassId, isTeacher: false });
+      socket.emit("requestStream", { liveClassId, userId });
       toast.success("Connected to live class");
     });
 
@@ -61,110 +60,85 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
 
     socket.on("teacherStreamStarted", () => {
       setIsTeacherConnected(true);
-      startWebRTCConnection();
+      console.log("Teacher started streaming");
     });
 
-    socket.on("teacherDisconnected", () => {
-      setIsTeacherConnected(false);
-      setIsStreamActive(false);
-      cleanupWebRTC();
+    socket.on("teacherPeerId", ({ peerId }) => {
+      console.log(`Received teacher PeerJS ID: ${peerId}`);
+    });
+
+    socket.on("provideStudentPeerId", ({ liveClassId }) => {
+      if (peerRef.current) {
+        console.log(`Student ${userId} sending PeerJS ID: ${peerRef.current.id}`);
+        socket.emit("provideStudentPeerId", { liveClassId, peerId: peerRef.current.id });
+      }
     });
 
     socket.on("chatHistory", (messages: ChatMessage[]) => setChatMessages(messages));
     socket.on("liveMessage", (message: ChatMessage) => setChatMessages(prev => [...prev, message]));
 
-    socket.on("offer", async (offer: RTCSessionDescriptionInit) => {
-      if (!peerConnectionRef.current) {
-        await createPeerConnection();
-      }
-      await peerConnectionRef.current!.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peerConnectionRef.current!.createAnswer();
-      await peerConnectionRef.current!.setLocalDescription(answer);
-      socket.emit("answer", { liveClassId, answer });
-    });
-
-    socket.on("iceCandidate", (candidate: RTCIceCandidateInit) => {
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      }
-    });
-
     socket.on("error", (error: { message: string }) => toast.error(error.message));
     socket.on("disconnect", () => toast.info("Disconnected from server"));
+
+    peerRef.current = new Peer({
+      host: 'localhost',
+      port: 9000,
+      path: '/myapp',
+      debug: 3
+    });
+
+    peerRef.current.on('open', (id) => {
+      console.log(`Student PeerJS ID: ${id}`);
+    });
+
+    peerRef.current.on('call', (call) => {
+      console.log(`Student ${userId} received call from teacher`);
+      callRef.current = call;
+      call.answer(); // No local stream needed
+      
+      call.on('stream', (remoteStream) => {
+        console.log("Received teacher's stream");
+        if (videoRef.current) {
+          videoRef.current.srcObject = remoteStream;
+          videoRef.current.play().catch(err => console.error("Video play error:", err));
+          setIsStreamActive(true);
+          toast.success("Connected to teacher's stream");
+        }
+      });
+      
+      call.on('error', (err) => {
+        console.error("Call error:", err);
+        toast.error("Failed to connect to stream: " + err.message);
+        setIsStreamActive(false);
+      });
+      
+      call.on('close', () => {
+        console.log("Call closed");
+        setIsStreamActive(false);
+        callRef.current = null;
+      });
+    });
+
+    peerRef.current.on('error', (err) => {
+      console.error("PeerJS error:", err);
+      toast.error("PeerJS error: " + err.message);
+    });
 
     return () => {
       socket.emit("leaveLiveClass", { liveClassId });
       socket.disconnect();
-      cleanupWebRTC();
+      if (callRef.current) {
+        callRef.current.close();
+      }
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
     };
   }, [liveClassId, userId, teacherId]);
 
   useEffect(() => {
     initializeWebRTCAndSocket();
-
-    return () => {
-      cleanupWebRTC();
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
   }, [initializeWebRTCAndSocket]);
-
-  const createPeerConnection = async () => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" }
-      ]
-    });
-    peerConnectionRef.current = pc;
-
-    pc.ontrack = (event) => {
-      console.log("Received track:", event.track.kind);
-      if (videoRef.current) {
-        videoRef.current.srcObject = event.streams[0];
-        setIsStreamActive(true);
-        setIsTeacherConnected(true);
-        toast.success("Teacher's stream connected");
-      }
-    };
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate && socketRef.current) {
-        console.log("Sending ICE candidate to teacher");
-        socketRef.current.emit("iceCandidate", { liveClassId, userId: teacherId, candidate: event.candidate });
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      console.log("Connection state changed:", pc.connectionState);
-      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-        setIsStreamActive(false);
-        toast.error("Stream disconnected");
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      console.log("ICE connection state changed:", pc.iceConnectionState);
-    };
-  };
-
-  const startWebRTCConnection = async () => {
-    if (!peerConnectionRef.current) {
-      await createPeerConnection();
-    }
-  };
-
-  const cleanupWebRTC = () => {
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsStreamActive(false);
-  };
 
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
@@ -177,64 +151,11 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
       socketRef.current.emit("leaveLiveClass", { liveClassId });
       socketRef.current.disconnect();
     }
-    cleanupWebRTC();
+    if (peerRef.current) {
+      peerRef.current.destroy();
+    }
     window.location.href = `/course/${courseId}`;
   };
-
-  // Handle incoming offer
-  useEffect(() => {
-    if (!socketRef.current) return;
-
-    const handleOffer = async (offer: RTCSessionDescriptionInit) => {
-      try {
-        if (!peerConnectionRef.current) {
-          await createPeerConnection();
-        }
-
-        const pc = peerConnectionRef.current;
-        if (!pc) {
-          console.error("Failed to create peer connection");
-          return;
-        }
-
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        console.log("Sending answer to teacher");
-        socketRef.current?.emit("answer", { liveClassId, userId: teacherId, answer });
-      } catch (error) {
-        console.error("Failed to handle offer:", error);
-        toast.error("Failed to connect to teacher's stream");
-      }
-    };
-
-    socketRef.current.on("offer", handleOffer);
-    return () => {
-      socketRef.current?.off("offer", handleOffer);
-    };
-  }, [liveClassId, teacherId]);
-
-  // Handle incoming ICE candidates
-  useEffect(() => {
-    if (!socketRef.current) return;
-
-    const handleIceCandidate = async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
-      try {
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-          console.log("Added ICE candidate from teacher");
-        }
-      } catch (error) {
-        console.error("Failed to add ICE candidate:", error);
-      }
-    };
-
-    socketRef.current.on("iceCandidate", handleIceCandidate);
-    return () => {
-      socketRef.current?.off("iceCandidate", handleIceCandidate);
-    };
-  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
