@@ -34,13 +34,14 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'streaming'>('idle');
 
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<Peer | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const callsRef = useRef<Map<string, MediaConnection>>(new Map());
-  const studentPeerIdsRef = useRef<Map<string, string>>(new Map()); // userId -> peerId
+  const studentPeerIdsRef = useRef<Map<string, string>>(new Map());
 
   const initializeWebRTCAndSocket = useCallback(async () => {
     const socket = io("http://localhost:8000", {
@@ -51,11 +52,13 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log("Socket connected");
       socket.emit("joinLiveClass", { liveClassId, isTeacher: true });
       toast.success("Connected to live class");
     });
 
     socket.on("userJoined", ({ userId: joinedUserId, participants: newParticipants }) => {
+      console.log(`User joined: ${joinedUserId}`);
       setParticipants(newParticipants);
       if (isStreamActive && joinedUserId !== userId) {
         console.log(`Requesting PeerJS ID for new student ${joinedUserId}`);
@@ -67,23 +70,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       console.log(`Received student ${studentId} PeerJS ID: ${peerId}`);
       studentPeerIdsRef.current.set(studentId, peerId);
       if (isStreamActive && localStreamRef.current && peerRef.current) {
-        console.log(`Calling student ${studentId} with PeerJS ID ${peerId}`);
-        const call = peerRef.current.call(peerId, localStreamRef.current);
-        callsRef.current.set(studentId, call);
-        
-        call.on('stream', (remoteStream) => {
-          console.log(`Received stream from student ${studentId}`);
-        });
-        
-        call.on('error', (err) => {
-          console.error(`Call error to student ${studentId}:`, err);
-          toast.error("Failed to send stream to student: " + err.message);
-        });
-        
-        call.on('close', () => {
-          console.log(`Call closed with student ${studentId}`);
-          callsRef.current.delete(studentId);
-        });
+        callStudent(studentId, peerId);
       }
     });
 
@@ -96,7 +83,13 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       host: 'localhost',
       port: 9000,
       path: '/myapp',
-      debug: 3
+      debug: 3,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      },
     });
 
     peerRef.current.on('open', (id) => {
@@ -107,6 +100,11 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     peerRef.current.on('error', (err) => {
       console.error("PeerJS error:", err);
       toast.error("PeerJS error: " + err.message);
+      setConnectionStatus('idle');
+    });
+
+    peerRef.current.on('connection', (conn) => {
+      console.log('New data connection:', conn);
     });
 
     return () => {
@@ -120,13 +118,69 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     initializeWebRTCAndSocket();
   }, [initializeWebRTCAndSocket]);
 
+  const callStudent = (studentId: string, peerId: string, retries = 3) => {
+    if (!peerRef.current || !localStreamRef.current) return;
+
+    const attemptCall = (attempt: number) => {
+      console.log(`Calling student ${studentId} with PeerJS ID ${peerId} (Attempt ${4 - attempt})`);
+      const call = peerRef.current!.call(peerId, localStreamRef.current!, {
+        metadata: { studentId, teacherId: userId, liveClassId },
+      });
+      callsRef.current.set(studentId, call);
+
+      call.on('stream', () => {
+        console.log(`Stream established with student ${studentId}`);
+      });
+
+      call.on('error', (err) => {
+        console.error(`Call error to student ${studentId}:`, err);
+        toast.error("Failed to send stream to student: " + err.message);
+        callsRef.current.delete(studentId);
+        if (attempt > 1) {
+          setTimeout(() => attemptCall(attempt - 1), 2000); // Retry after 2s
+        }
+      });
+
+      call.on('close', () => {
+        console.log(`Call closed with student ${studentId}`);
+        callsRef.current.delete(studentId);
+      });
+
+      call.on('iceStateChanged', (state) => {
+        console.log(`ICE connection state changed for student ${studentId}:`, state);
+      });
+    };
+
+    attemptCall(retries);
+  };
+
   const startStream = async () => {
     try {
+      setConnectionStatus('connecting');
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('Local stream details:', {
+        active: stream.active,
+        id: stream.id,
+        tracks: stream.getTracks().map(t => ({
+          kind: t.kind,
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+        })),
+      });
+
       localStreamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(err => {
+          console.error("Video play error:", err);
+          toast.error("Failed to play video: " + err.message);
+        });
+      }
 
       setIsStreamActive(true);
+      setConnectionStatus('streaming');
+
       if (socketRef.current) {
         socketRef.current.emit("teacherStartedStreaming", { liveClassId });
         const students = participants.filter(p => p.userId !== userId);
@@ -140,6 +194,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     } catch (error) {
       console.error("Failed to start stream:", error);
       toast.error("Failed to start stream: " + (error as Error).message);
+      setConnectionStatus('idle');
     }
   };
 
@@ -156,6 +211,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     setIsScreenSharing(false);
     setIsMuted(false);
     setIsVideoOff(false);
+    setConnectionStatus('idle');
 
     if (socketRef.current) {
       socketRef.current.emit("teacherDisconnected", { liveClassId });
@@ -253,7 +309,11 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
           <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain" style={{ minHeight: "300px" }} />
           {!isStreamActive && (
             <div className="absolute inset-0 flex items-center justify-center flex-col bg-gray-900 bg-opacity-75">
-              <p className="text-xl mb-4">Click Start Streaming to begin</p>
+              {connectionStatus === 'idle' ? (
+                <p className="text-xl mb-4">Click Start Streaming to begin</p>
+              ) : connectionStatus === 'connecting' ? (
+                <p className="text-xl mb-4">Starting stream...</p>
+              ) : null}
               <Button onClick={startStream} className="bg-green-600 hover:bg-green-700">Start Streaming</Button>
             </div>
           )}

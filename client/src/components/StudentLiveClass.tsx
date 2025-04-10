@@ -31,8 +31,9 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isTeacherConnected, setIsTeacherConnected] = useState(true);
-  const [isStreamActive, setIsStreamActive] = useState(true);
+  const [isTeacherConnected, setIsTeacherConnected] = useState(false);
+  const [isStreamActive, setIsStreamActive] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<Peer | null>(null);
@@ -48,19 +49,36 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
     socketRef.current = socket;
 
     socket.on("connect", () => {
+      console.log("Socket connected");
       socket.emit("joinLiveClass", { liveClassId, isTeacher: false });
       socket.emit("requestStream", { liveClassId, userId });
       toast.success("Connected to live class");
     });
 
     socket.on("userJoined", ({ userId: joinedUserId, participants: newParticipants, isTeacher }) => {
+      console.log(`User joined: ${joinedUserId}, isTeacher: ${isTeacher}`);
       setParticipants(newParticipants);
-      if (isTeacher && joinedUserId === teacherId) setIsTeacherConnected(true);
+      if (isTeacher && joinedUserId === teacherId) {
+        setIsTeacherConnected(true);
+      }
     });
 
     socket.on("teacherStreamStarted", () => {
-      setIsTeacherConnected(true);
       console.log("Teacher started streaming");
+      setIsTeacherConnected(true);
+      if (!isStreamActive) setConnectionStatus('connecting');
+    });
+
+    socket.on("teacherDisconnected", () => {
+      console.log("Teacher disconnected");
+      setIsTeacherConnected(false);
+      setIsStreamActive(false);
+      setConnectionStatus('disconnected');
+      if (callRef.current) {
+        callRef.current.close();
+        callRef.current = null;
+      }
+      toast.warning("Teacher disconnected");
     });
 
     socket.on("teacherPeerId", ({ peerId }) => {
@@ -84,44 +102,83 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
       host: 'localhost',
       port: 9000,
       path: '/myapp',
-      debug: 3
+      debug: 3,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ],
+      },
     });
 
     peerRef.current.on('open', (id) => {
       console.log(`Student PeerJS ID: ${id}`);
+      socket.emit("provideStudentPeerId", { liveClassId, peerId: id });
     });
 
     peerRef.current.on('call', (call) => {
       console.log(`Student ${userId} received call from teacher`);
+      console.log('Call details:', {
+        peer: call.peer,
+        metadata: call.metadata,
+        connectionState: call.peerConnection ? call.peerConnection.connectionState : 'unavailable',
+      });
+
       callRef.current = call;
-      call.answer(); // No local stream needed
-      
+      call.answer();
+
       call.on('stream', (remoteStream) => {
         console.log("Received teacher's stream");
+        console.log('Stream details:', {
+          active: remoteStream.active,
+          id: remoteStream.id,
+          tracks: remoteStream.getTracks().map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState,
+          })),
+        });
+
         if (videoRef.current) {
           videoRef.current.srcObject = remoteStream;
-          videoRef.current.play().catch(err => console.error("Video play error:", err));
+          videoRef.current.play().catch(err => {
+            console.error("Video play error:", err);
+            toast.error("Failed to play video: " + err.message);
+          });
           setIsStreamActive(true);
+          setConnectionStatus('connected');
           toast.success("Connected to teacher's stream");
         }
       });
-      
+
       call.on('error', (err) => {
         console.error("Call error:", err);
         toast.error("Failed to connect to stream: " + err.message);
         setIsStreamActive(false);
+        setConnectionStatus('disconnected');
       });
-      
+
       call.on('close', () => {
         console.log("Call closed");
         setIsStreamActive(false);
+        setConnectionStatus('disconnected');
         callRef.current = null;
+      });
+
+      call.on('iceStateChanged', (state) => {
+        console.log('ICE connection state changed:', state);
       });
     });
 
     peerRef.current.on('error', (err) => {
       console.error("PeerJS error:", err);
       toast.error("PeerJS error: " + err.message);
+      setConnectionStatus('disconnected');
+    });
+
+    peerRef.current.on('connection', (conn) => {
+      console.log('New data connection:', conn);
     });
 
     return () => {
@@ -139,6 +196,15 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
   useEffect(() => {
     initializeWebRTCAndSocket();
   }, [initializeWebRTCAndSocket]);
+
+  const requestStreamFromTeacher = () => {
+    if (socketRef.current) {
+      console.log(`Student ${userId} requesting stream`);
+      socketRef.current.emit("requestStream", { liveClassId, userId });
+      setConnectionStatus('connecting');
+      toast.info("Requested stream from teacher");
+    }
+  };
 
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
@@ -168,19 +234,26 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
             className="w-full h-full object-contain" 
             style={{ minHeight: "300px" }} 
           />
-          {!isStreamActive && isTeacherConnected && (
+          {!isStreamActive && (
             <div className="absolute inset-0 flex items-center justify-center flex-col bg-gray-900 bg-opacity-75">
-              <p className="text-xl mb-4">Teacher is streaming. Connecting...</p>
-            </div>
-          )}
-          {!isTeacherConnected && (
-            <div className="absolute inset-0 flex items-center justify-center flex-col bg-gray-900 bg-opacity-75">
-              <p className="text-xl mb-4">Waiting for teacher to start streaming...</p>
+              {!isTeacherConnected ? (
+                <p className="text-xl mb-4">Waiting for teacher to start streaming...</p>
+              ) : connectionStatus === 'connecting' ? (
+                <>
+                  <p className="text-xl mb-4">Connecting to teacher's stream...</p>
+                  <Button onClick={requestStreamFromTeacher} className="bg-blue-600 hover:bg-blue-700">Request Stream</Button>
+                </>
+              ) : (
+                <p className="text-xl mb-4">Disconnected from teacher's stream</p>
+              )}
             </div>
           )}
         </div>
         <div className="mt-4 flex gap-4">
           <Button onClick={handleLeave} className="bg-red-600 hover:bg-red-700">Leave Class</Button>
+          {isTeacherConnected && !isStreamActive && (
+            <Button onClick={requestStreamFromTeacher} className="bg-blue-600 hover:bg-blue-700">Request Stream</Button>
+          )}
         </div>
       </div>
       <div className="w-1/5 p-6 bg-gray-800 flex flex-col">
