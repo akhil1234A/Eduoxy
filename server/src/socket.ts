@@ -326,6 +326,7 @@ export function initializeSocket(httpServer: HttpServer) {
         if (teacherPeerId) {
           io.to(studentId).emit("teacherPeerId", { peerId: teacherPeerId });
           console.log(`[Socket] Sent teacher PeerJS ID ${teacherPeerId} to student ${studentId} for live class ${liveClassId}`);
+          io.to(teacherId).emit("studentRequestedStream", { liveClassId, studentId });
         } else {
           io.to(studentId).emit("error", { message: "Teacher not streaming yet" });
         }

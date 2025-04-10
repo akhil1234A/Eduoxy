@@ -74,6 +74,18 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       }
     });
 
+    socket.on("studentRequestedStream", ({ liveClassId, studentId }) => {
+      console.log(`Student ${studentId} requested stream`);
+      if (isStreamActive && localStreamRef.current) {
+        const peerId = studentPeerIdsRef.current.get(studentId);
+        if (peerId) {
+          callStudent(studentId, peerId);
+        } else {
+          socket.emit("requestStudentPeerId", { liveClassId, studentId });
+        }
+      }
+    });
+
     socket.on("chatHistory", (messages: ChatMessage[]) => setChatMessages(messages));
     socket.on("liveMessage", (message: ChatMessage) => setChatMessages(prev => [...prev, message]));
 
@@ -299,7 +311,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       socketRef.current.emit("leaveLiveClass", { liveClassId });
       socketRef.current.disconnect();
     }
-    window.location.href = `/course/${courseId}`;
+    window.location.href = `/search/${courseId}`;
   };
 
   return (

@@ -66,7 +66,15 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
     socket.on("teacherStreamStarted", () => {
       console.log("Teacher started streaming");
       setIsTeacherConnected(true);
-      if (!isStreamActive) setConnectionStatus('connecting');
+      if (!isStreamActive) {
+        setConnectionStatus('connecting');
+        setTimeout(() => {
+          if (!isStreamActive && socketRef.current) {
+            console.log("No stream received after timeout, re-requesting");
+            socketRef.current.emit("requestStream", { liveClassId, userId });
+          }
+        }, 5000); 
+      }
     });
 
     socket.on("teacherDisconnected", () => {
@@ -220,7 +228,7 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
     if (peerRef.current) {
       peerRef.current.destroy();
     }
-    window.location.href = `/course/${courseId}`;
+    window.location.href = `/search/${courseId}`;
   };
 
   return (
