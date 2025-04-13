@@ -19,7 +19,7 @@ export const transactionApi = createApi({
     }),
 
     createTransaction: builder.mutation<
-      { message: string; data: any },
+      { message: string; data: Transaction },
       {
         userId: string;
         courseId: string;
@@ -36,7 +36,7 @@ export const transactionApi = createApi({
       invalidatesTags: ["Courses", "Transactions"],
     }),
 
-    getAdminEarnings: builder.query<{ message: string; data: any[] }, void>({
+    getAdminEarnings: builder.query<{ message: string; data: Transaction[] }, void>({
       query: () => ({
         url: "/transactions/admin/earnings",
         method: "GET",
@@ -44,7 +44,7 @@ export const transactionApi = createApi({
       providesTags: ["Transactions"],
     }),
 
-    getTeacherEarnings: builder.query<{ message: string; data: any[] }, string>({
+    getTeacherEarnings: builder.query<{ message: string; data: Transaction[] }, string>({
       query: (teacherId) => ({
         url: `/transactions/teacher/earnings/${teacherId}`,
         method: "GET",
@@ -52,7 +52,7 @@ export const transactionApi = createApi({
       providesTags: ["Transactions"],
     }),
 
-    getStudentPurchases: builder.query<{ message: string; data: any[] }, string>({
+    getStudentPurchases: builder.query<{ message: string; data: Transaction[] }, string>({
       query: (userId) => ({
         url: `/transactions/student/purchases/${userId}`,
         method: "GET",

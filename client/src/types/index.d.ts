@@ -28,14 +28,13 @@ declare global {
   }
 
   interface Transaction {
-    userId: string;
-    transactionId: string;
-    dateTime: string;
-    courseId: string;
-    paymentProvider: "stripe";
-    paymentMethodId?: string;
-    amount: number; // Stored in paisa
-    savePaymentMethod?: boolean;
+    transactionId: string
+    date: string
+    courseName: string
+    studentName?: string
+    amount?: number
+    earning?: number
+    paymentProvider: string
   }
 
   interface DateRange {
@@ -232,58 +231,70 @@ declare global {
     user?: IUser;
     needsVerification?: boolean;
   }
+
+  export interface AdminDasboard {
+    totalRevenue: number
+    activeCourses: number
+    totalEnrollments: number
+    totalUsers: number
+    recentTransactions: RecentTransactionAdmin[]
+  }
+  
+  export interface RecentTransactionAdmin {
+    transactionId: string
+    date: string
+    courseName: string
+    studentName: string
+    amount: number
+  }
+  
+  export interface TeacherDasboard {
+    totalEarnings: number
+    totalStudents: number
+    totalCourses: number
+    pendingCourses: number
+    recentEnrollments: RecentEnrollmentTeacher[]
+  }
+  
+  export interface RecentEnrollmentTeacher {
+    studentName: string
+    courseName: string
+    date: string
+    earning: number
+  }
+  
+  export interface Roadmap {
+    _id: string
+    title: string
+    description: string
+    sections: Section[]
+    createdAt: string
+    updatedAt: string
+    __v: number
+  }
+  
+  export interface RoadmapSection {
+    id: string
+    title: string
+    topics: RoadmapTopic[]
+  }
+  
+  export interface RoadmapTopic {
+    id: string
+    title: string
+    description: string
+    isCompleted: boolean
+    resources: RoadmapResource[]
+  }
+  
+  export interface RoadmapResource {
+    id: string
+    title: string
+    url: string
+  }
+  
   
 }
 
-export interface TestCase {
-  input: string;
-  expectedOutput: string;
-  explanation?: string;
-}
-
-export interface Problem {
-  _id?: string;
-  title: string;
-  description: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  testCases: TestCase[];
-  starterCode: string;
-  solution: string;
-  category: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface CodeExecutionRequest {
-  code: string;
-  language: string;
-  testCase: string;
-}
-
-export interface CodeSubmissionRequest {
-  problemId: string;
-  code: string;
-  language: string;
-}
-
-export interface ExecutionResult {
-  stdout: string | null;
-  stderr: string | null;
-  compile_output: string | null;
-  message: string | null;
-  status: {
-    id: number;
-    description: string;
-  };
-}
-
-export interface SubmissionResult {
-  results: {
-    testCase: TestCase;
-    result: ExecutionResult;
-    passed: boolean;
-  }[];
-  passedAll: boolean;
-}
 
 export {};

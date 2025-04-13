@@ -113,139 +113,6 @@ export function initializeSocket(httpServer: HttpServer) {
       console.log(`User ${userId} left chat room ${chatRoom}`);
     });
 
-    socket.on("joinLiveClass", async ({ liveClassId, isTeacher }) => {
-      if (!liveClassId) {
-        socket.emit("error", { message: "Live class ID is required" });
-        return;
-      }
-
-      try {
-        console.log(`[Socket] User ${userId} joining live class ${liveClassId} as ${isTeacher ? "teacher" : "student"}`);
-        await liveClassService.joinLiveClass(liveClassId, userId);
-        const user = await userService.getProfile(userId);
-        const liveRoom = `live:${liveClassId}`;
-
-        if (isTeacher) {
-          await redisClient.set(TEACHER_KEY(liveClassId), userId, { EX: 3600 });
-        }
-        await redisClient.sAdd(PARTICIPANTS_KEY(liveClassId), userId);
-
-        socket.join(liveRoom);
-        console.log(`[Socket] User ${userId} joined room ${liveRoom}`);
-
-        const participants = await redisClient.sMembers(PARTICIPANTS_KEY(liveClassId));
-        const participantsWithNames = await Promise.all(
-          participants.map(async (id) => ({
-            userId: id,
-            userName: (await userService.getProfile(id))?.name || id,
-          }))
-        );
-
-        io.to(liveRoom).emit("userJoined", {
-          userId,
-          userName: user?.name || userId,
-          participants: participantsWithNames,
-          isTeacher,
-        });
-
-        if (isTeacher) {
-          console.log(`[Socket] Teacher ${userId} joined, notifying students`);
-          io.to(liveRoom).emit("teacherConnected", { teacherId: userId });
-        }
-
-        const chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
-        socket.emit("chatHistory", chatHistory ? JSON.parse(chatHistory) : []);
-      } catch (error) {
-        console.error(`[Socket] Error joining live class ${liveClassId}:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
-    socket.on("teacherStartedStreaming", ({ liveClassId }) => {
-      const liveRoom = `live:${liveClassId}`;
-      io.to(liveRoom).emit("teacherStreamStarted");
-      console.log(`[Socket] Teacher ${userId} started streaming in ${liveClassId}`);
-    });
-
-    socket.on("sendLiveMessage", async ({ liveClassId, message }) => {
-      if (!liveClassId || !message) {
-        socket.emit("error", { message: "Missing liveClassId or message" });
-        return;
-      }
-
-      try {
-        const user = await userService.getProfile(userId);
-        const liveRoom = `live:${liveClassId}`;
-        const isParticipant = await redisClient.sIsMember(PARTICIPANTS_KEY(liveClassId), userId);
-
-        if (!isParticipant) {
-          socket.emit("error", { message: "You are not in this live class" });
-          return;
-        }
-
-        const chatMessage = {
-          senderId: userId,
-          senderName: user?.name || userId,
-          message,
-          timestamp: new Date().toISOString(),
-        };
-
-        let chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
-        const messages = chatHistory ? JSON.parse(chatHistory) : [];
-        messages.push(chatMessage);
-        await redisClient.set(CHAT_HISTORY_KEY(liveClassId), JSON.stringify(messages), { EX: 3600 });
-
-        io.to(liveRoom).emit("liveMessage", chatMessage);
-        console.log(`[Socket] Live message from ${userId} in ${liveClassId}: ${message}`);
-      } catch (error) {
-        console.error(`Error sending live message:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
-    socket.on("leaveLiveClass", async ({ liveClassId }) => {
-      if (!liveClassId) {
-        socket.emit("error", { message: "Live class ID is required" });
-        return;
-      }
-
-      try {
-        const liveRoom = `live:${liveClassId}`;
-        await redisClient.sRem(PARTICIPANTS_KEY(liveClassId), userId);
-        const participants = await redisClient.sMembers(PARTICIPANTS_KEY(liveClassId));
-        const participantsWithNames = await Promise.all(
-          participants.map(async (id) => ({
-            userId: id,
-            userName: (await userService.getProfile(id))?.name || id,
-          }))
-        );
-
-        const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-        const isTeacher = teacherId === userId;
-
-        socket.leave(liveRoom);
-        io.to(liveRoom).emit("userLeft", { userId, participants: participantsWithNames });
-
-        if (isTeacher) {
-          await redisClient.del(TEACHER_KEY(liveClassId));
-          await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
-          io.to(liveRoom).emit("teacherDisconnected");
-          console.log(`[Socket] Teacher ${userId} left ${liveClassId}`);
-        }
-
-        if (participants.length === 0) {
-          await redisClient.del(PARTICIPANTS_KEY(liveClassId));
-          await redisClient.del(CHAT_HISTORY_KEY(liveClassId));
-        }
-
-        await liveClassService.leaveLiveClass(liveClassId, userId);
-        console.log(`[Socket] User ${userId} left live class ${liveClassId}`);
-      } catch (error) {
-        console.error(`[Socket] Error leaving live class ${liveClassId}:`, error);
-        socket.emit("error", { message: (error as Error).message });
-      }
-    });
-
     socket.on("joinForum", async () => {
       const forumRoom = `forum:${DEFAULT_FORUM_ID}`;
       socket.join(forumRoom);
@@ -314,79 +181,128 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("requestStream", async ({ liveClassId, userId: studentId }) => {
+    socket.on("joinLiveClass", async ({ liveClassId, isTeacher }) => {
       try {
-        const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-        if (!teacherId) {
-          socket.emit("error", { message: "No teacher in this live class" });
-          return;
+        const liveRoom = `live:${liveClassId}`;
+        const user = await userService.getProfile(userId);
+    
+        await liveClassService.joinLiveClass(liveClassId, userId);
+        if (isTeacher) {
+          await redisClient.set(TEACHER_KEY(liveClassId), userId, { EX: 3600 });
         }
-
-        const teacherPeerId = await redisClient.get(TEACHER_PEER_ID_KEY(liveClassId));
-        if (teacherPeerId) {
-          io.to(studentId).emit("teacherPeerId", { peerId: teacherPeerId });
-          console.log(`[Socket] Sent teacher PeerJS ID ${teacherPeerId} to student ${studentId} for live class ${liveClassId}`);
-          io.to(teacherId).emit("studentRequestedStream", { liveClassId, studentId });
-        } else {
-          io.to(studentId).emit("error", { message: "Teacher not streaming yet" });
-        }
-      } catch (error) {
-        console.error(`[Socket] Error in stream request:`, error);
-        socket.emit("error", { message: (error as Error).message });
+    
+        await redisClient.sAdd(PARTICIPANTS_KEY(liveClassId), userId);
+        socket.join(liveRoom);
+    
+        const participants = await redisClient.sMembers(PARTICIPANTS_KEY(liveClassId));
+        const participantsWithNames = await Promise.all(
+          participants.map(async (id) => ({
+            userId: id,
+            userName: (await userService.getProfile(id))?.name || id,
+          }))
+        );
+    
+        io.to(liveRoom).emit("userJoined", {
+          userId,
+          userName: user?.name,
+          participants: participantsWithNames,
+          isTeacher,
+        });
+    
+        const chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
+        socket.emit("chatHistory", chatHistory ? JSON.parse(chatHistory) : []);
+      } catch (err) {
+        socket.emit("error", { message: (err as Error).message });
       }
     });
-
+    
+    socket.on("sendLiveMessage", async ({ liveClassId, message }) => {
+      try {
+        const user = await userService.getProfile(userId);
+        const chatMessage = {
+          senderId: userId,
+          senderName: user?.name || userId,
+          message,
+          timestamp: new Date().toISOString(),
+        };
+    
+        let chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
+        const messages = chatHistory ? JSON.parse(chatHistory) : [];
+        messages.push(chatMessage);
+    
+        await redisClient.set(CHAT_HISTORY_KEY(liveClassId), JSON.stringify(messages), { EX: 3600 });
+        io.to(`live:${liveClassId}`).emit("liveMessage", chatMessage);
+      } catch (err) {
+        socket.emit("error", { message: (err as Error).message });
+      }
+    });
+    
     socket.on("providePeerId", ({ liveClassId, peerId }) => {
       redisClient.set(TEACHER_PEER_ID_KEY(liveClassId), peerId, { EX: 3600 });
-      console.log(`[Socket] Teacher ${userId} provided PeerJS ID ${peerId} for live class ${liveClassId}`);
     });
-
-    socket.on("requestStudentPeerId", ({ liveClassId, studentId }) => {
-      io.to(studentId).emit("provideStudentPeerId", { liveClassId });
-    });
-
-    socket.on("provideStudentPeerId", async ({ liveClassId, peerId }) => {
-      const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-      if (teacherId) {
-        io.to(teacherId).emit("studentPeerId", { studentId: userId, peerId });
+    
+    socket.on("requestStream", async ({ liveClassId, userId: studentId }) => {
+      const teacherPeerId = await redisClient.get(TEACHER_PEER_ID_KEY(liveClassId));
+      if (teacherPeerId) {
+        io.to(studentId).emit("teacherPeerId", { peerId: teacherPeerId });
+      } else {
+        io.to(studentId).emit("error", { message: "Teacher not streaming yet" });
       }
     });
+    
 
     socket.on("disconnect", async () => {
       console.log("[Socket] Client disconnected:", socket.id);
       socketLogger.info("Client disconnected", { socketId: socket.id });
 
-      const liveClasses = await redisClient.keys(`${LIVE_CLASS_PREFIX}*:participants`);
-      for (const key of liveClasses) {
-        const liveClassId = key.split(":")[2];
-        const liveRoom = `live:${liveClassId}`;
-        const wasParticipant = await redisClient.sIsMember(PARTICIPANTS_KEY(liveClassId), userId);
-
-        if (wasParticipant) {
-          await redisClient.sRem(PARTICIPANTS_KEY(liveClassId), userId);
-          const participants = await redisClient.sMembers(PARTICIPANTS_KEY(liveClassId));
-          const participantsWithNames = await Promise.all(
-            participants.map(async (id) => ({
-              userId: id,
-              userName: (await userService.getProfile(id))?.name || id,
-            }))
-          );
-
-          io.to(liveRoom).emit("userLeft", { userId, participants: participantsWithNames });
-
-          const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-          if (userId === teacherId) {
-            await redisClient.del(TEACHER_KEY(liveClassId));
-            await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
-            io.to(liveRoom).emit("teacherDisconnected");
-            console.log(`[Socket] Teacher ${userId} disconnected from ${liveClassId}`);
-          }
-
-          if (participants.length === 0) {
-            await redisClient.del(PARTICIPANTS_KEY(liveClassId));
-            await redisClient.del(CHAT_HISTORY_KEY(liveClassId));
+      try {
+        const liveClassKeys = await redisClient.keys(`${LIVE_CLASS_PREFIX}*:participants`);
+        
+        for (const participantsKey of liveClassKeys) {
+          const liveClassId = participantsKey.split(':')[2];
+          
+          const isMember = await redisClient.sIsMember(participantsKey, userId);
+          
+          if (isMember) {
+            await redisClient.sRem(participantsKey, userId);
+            
+            const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
+            const isTeacher = teacherId === userId;
+            
+            if (isTeacher) {
+              await redisClient.del(TEACHER_KEY(liveClassId));
+              await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
+            }
+            
+            const participants = await redisClient.sMembers(participantsKey);
+            const participantsWithNames = await Promise.all(
+              participants.map(async (id) => ({
+                userId: id,
+                userName: (await userService.getProfile(id))?.name || id,
+              }))
+            );
+            
+            io.to(`live:${liveClassId}`).emit("userLeft", {
+              userId,
+              isTeacher,
+              participants: participantsWithNames
+            });
+            
+            await liveClassService.leaveLiveClass(liveClassId, userId);
+            
+            socket.leave(`live:${liveClassId}`);
+            
+            console.log(`User ${userId} left live class ${liveClassId}`);
+            socketLogger.info("User left live class", { userId, liveClassId, isTeacher });
           }
         }
+      } catch (error) {
+        console.error("Error cleaning up live class on disconnect:", error);
+        socketLogger.error("Error cleaning up live class on disconnect", { 
+          error: (error as Error).message,
+          userId,
+          socketId: socket.id 
+        });
       }
     });
   });

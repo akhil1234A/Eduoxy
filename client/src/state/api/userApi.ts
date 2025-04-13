@@ -72,7 +72,7 @@ export const userApi = createApi({
     }),
     getChatHistory: builder.query<
       { message: string; data: IMessage[] },
-      { courseId: string; userId: string; instructorId: string }
+      { courseId: string; senderId: string; receiverId: string }
     >({
       query: ({ courseId, senderId, receiverId }) => ({
         url: `/chat/history?courseId=${courseId}&senderId=${senderId}&receiverId=${receiverId}`,

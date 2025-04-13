@@ -6,10 +6,10 @@ export const adminApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Dashboard"],
   endpoints: (builder) => ({
-    getStudents: builder.query<IUser[], void>({
+    getStudents: builder.query<ApiResponse<IUser[]>, void>({
       query: () => "admin/students",
     }),
-    getTeachers: builder.query<IUser[], void>({
+    getTeachers: builder.query<ApiResponse<IUser[]>, void>({
       query: () => "admin/teachers",
     }),
     blockUser: builder.mutation<void, string>({
@@ -24,7 +24,7 @@ export const adminApi = createApi({
         method: "PUT",
       }),
     }),
-    getAdminDashboard: builder.query<{ message: string; data: any }, void>({
+    getAdminDashboard: builder.query<{ message: string; data: AdminDasboard }, void>({
       query: () => ({
         url: "/dashboard/admin",
         method: "GET",
@@ -32,7 +32,7 @@ export const adminApi = createApi({
       providesTags: ["Dashboard"],
     }),
 
-    getTeacherDashboard: builder.query<{ message: string; data: any }, string>({
+    getTeacherDashboard: builder.query<{ message: string; data: TeacherDasboard }, string>({
       query: (teacherId) => ({
         url: `/dashboard/teacher/${teacherId}`,
         method: "GET",

@@ -15,7 +15,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { roadmapSchema } from "@/lib/roadmapSchema"
 
 interface Resource {
   id: string
@@ -317,7 +316,9 @@ export default function CreateRoadmapPage() {
       toast.success("Roadmap created successfully")
       router.push("/admin/roadmaps")
     } catch (error) {
-      toast.error("Failed to create roadmap")
+      toast.error("Failed to create roadmap", {
+        description: (error as Error).message,
+      });
     }
   }
 

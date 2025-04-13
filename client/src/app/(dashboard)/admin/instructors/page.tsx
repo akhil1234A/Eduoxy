@@ -8,7 +8,7 @@ import DynamicTable from "@/components/DynamicTable";
 import { Button } from "@/components/ui/button";
 
 interface Teacher {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   isBlocked: boolean;
@@ -28,7 +28,9 @@ const ManageInstructors = () => {
       await blockUser(userId).unwrap();
       toast.success("Instructor blocked successfully");
     } catch (error) {
-      toast.error("Failed to block instructor");
+      toast.error("Failed to block instructor", {
+        description: (error as Error).message,
+      });
     }
   };
 
@@ -37,7 +39,9 @@ const ManageInstructors = () => {
       await unblockUser(userId).unwrap();
       toast.success("Instructor unblocked successfully");
     } catch (error) {
-      toast.error("Failed to unblock instructor");
+      toast.error("Failed to unblock instructor", {
+        description: (error as Error).message,
+      });
     }
   };
 
@@ -57,15 +61,15 @@ const ManageInstructors = () => {
     {
       key: "actions",
       label: "Actions",
-      render: (_: any, teacher: Teacher) => (
-                        <Button
-          onClick={() => (teacher.isBlocked ? handleUnblock(teacher._id) : handleBlock(teacher._id))}
-                          variant="outline"
-                          size="sm"
-                          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
-                        >
+      render: (_: unknown, teacher: Teacher) => (
+        <Button
+          onClick={() => (teacher.isBlocked ? handleUnblock(teacher.id) : handleBlock(teacher.id))}
+          variant="outline"
+          size="sm"
+          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+        >
           {teacher.isBlocked ? "Unblock" : "Block"}
-                        </Button>
+        </Button>
       ),
     },
   ];
@@ -79,7 +83,7 @@ const ManageInstructors = () => {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         isLoading={isLoading}
-        rowKeyExtractor={(teacher) => teacher._id}
+        rowKeyExtractor={(teacher) => teacher.id}
         filterFn={(teacher, term) =>
           [teacher.name, teacher.email].some((field) =>
             field.toLowerCase().includes(term.toLowerCase())
@@ -88,7 +92,7 @@ const ManageInstructors = () => {
         searchPlaceholder="Search instructors by name or email..."
         noResultsComponent={<div>No instructors found</div>}
       />
-      </div>
+    </div>
   );
 };
 

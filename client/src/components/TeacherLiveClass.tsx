@@ -35,13 +35,13 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'streaming'>('idle');
+  const [showPeerId, setShowPeerId] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const peerRef = useRef<Peer | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const callsRef = useRef<Map<string, MediaConnection>>(new Map());
-  const studentPeerIdsRef = useRef<Map<string, string>>(new Map());
 
   const initializeWebRTCAndSocket = useCallback(async () => {
     const socket = io("http://localhost:8000", {
@@ -57,32 +57,18 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       toast.success("Connected to live class");
     });
 
-    socket.on("userJoined", ({ userId: joinedUserId, participants: newParticipants }) => {
-      console.log(`User joined: ${joinedUserId}`);
+    socket.on("userJoined", ({ userId: joinedUserId, userName, participants: newParticipants, isTeacher }) => {
+      console.log(`User joined: ${joinedUserId}, isTeacher: ${isTeacher}`);
       setParticipants(newParticipants);
-      if (isStreamActive && joinedUserId !== userId) {
-        console.log(`Requesting PeerJS ID for new student ${joinedUserId}`);
-        socket.emit("requestStudentPeerId", { liveClassId, studentId: joinedUserId });
-      }
     });
 
-    socket.on("studentPeerId", ({ studentId, peerId }) => {
-      console.log(`Received student ${studentId} PeerJS ID: ${peerId}`);
-      studentPeerIdsRef.current.set(studentId, peerId);
-      if (isStreamActive && localStreamRef.current && peerRef.current) {
-        callStudent(studentId, peerId);
-      }
-    });
-
-    socket.on("studentRequestedStream", ({ liveClassId, studentId }) => {
-      console.log(`Student ${studentId} requested stream`);
-      if (isStreamActive && localStreamRef.current) {
-        const peerId = studentPeerIdsRef.current.get(studentId);
-        if (peerId) {
-          callStudent(studentId, peerId);
-        } else {
-          socket.emit("requestStudentPeerId", { liveClassId, studentId });
-        }
+    socket.on("userLeft", ({ userId: leftUserId, isTeacher, participants: updatedParticipants }) => {
+      console.log(`User left: ${leftUserId}, isTeacher: ${isTeacher}`);
+      setParticipants(updatedParticipants);
+      
+      if (!isTeacher && callsRef.current.has(leftUserId)) {
+        callsRef.current.get(leftUserId)?.close();
+        callsRef.current.delete(leftUserId);
       }
     });
 
@@ -98,25 +84,69 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       debug: 3,
       config: {
         iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:stun2.l.google.com:19302" },
+          { urls: "stun:stun3.l.google.com:19302" },
+          { urls: "stun:stun4.l.google.com:19302" },
         ],
       },
     });
 
     peerRef.current.on('open', (id) => {
       console.log(`Teacher PeerJS ID: ${id}`);
-      socket.emit("providePeerId", { liveClassId, peerId: id });
+      if (socketRef.current) {
+        socketRef.current.emit("providePeerId", { liveClassId, peerId: id });
+        console.log("Emitted teacher PeerID to server");
+      }
+    });
+
+    peerRef.current.on('call', (call) => {
+      console.log('Received call from student:', call.peer);
+      console.log('Call metadata:', call.metadata);
+      
+      if (localStreamRef.current && localStreamRef.current.active) {
+        console.log('Answering call with local stream, ensuring unmute');
+        localStreamRef.current.getAudioTracks().forEach(track => track.enabled = true);
+        localStreamRef.current.getVideoTracks().forEach(track => track.enabled = true);
+
+        call.answer(localStreamRef.current);
+        callsRef.current.set(call.peer, call);
+
+        call.on('stream', (remoteStream) => {
+          console.log('Received student stream (if any):', {
+            active: remoteStream.active,
+            id: remoteStream.id,
+            tracks: remoteStream.getTracks().map(t => ({
+              kind: t.kind,
+              enabled: t.enabled,
+              muted: t.muted,
+              readyState: t.readyState,
+            })),
+          });
+        });
+
+        call.on('close', () => {
+          console.log('Call closed with student:', call.peer);
+          callsRef.current.delete(call.peer);
+        });
+
+        call.on('error', (err) => {
+          console.error('Call error:', err);
+          callsRef.current.delete(call.peer);
+          toast.error("Failed to maintain call with student: " + err.message);
+        });
+      } else {
+        console.log('No active local stream available, rejecting call');
+        call.close();
+        toast.error("Teacher is not streaming yet.");
+      }
     });
 
     peerRef.current.on('error', (err) => {
       console.error("PeerJS error:", err);
       toast.error("PeerJS error: " + err.message);
       setConnectionStatus('idle');
-    });
-
-    peerRef.current.on('connection', (conn) => {
-      console.log('New data connection:', conn);
     });
 
     return () => {
@@ -130,42 +160,6 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     initializeWebRTCAndSocket();
   }, [initializeWebRTCAndSocket]);
 
-  const callStudent = (studentId: string, peerId: string, retries = 3) => {
-    if (!peerRef.current || !localStreamRef.current) return;
-
-    const attemptCall = (attempt: number) => {
-      console.log(`Calling student ${studentId} with PeerJS ID ${peerId} (Attempt ${4 - attempt})`);
-      const call = peerRef.current!.call(peerId, localStreamRef.current!, {
-        metadata: { studentId, teacherId: userId, liveClassId },
-      });
-      callsRef.current.set(studentId, call);
-
-      call.on('stream', () => {
-        console.log(`Stream established with student ${studentId}`);
-      });
-
-      call.on('error', (err) => {
-        console.error(`Call error to student ${studentId}:`, err);
-        toast.error("Failed to send stream to student: " + err.message);
-        callsRef.current.delete(studentId);
-        if (attempt > 1) {
-          setTimeout(() => attemptCall(attempt - 1), 2000); // Retry after 2s
-        }
-      });
-
-      call.on('close', () => {
-        console.log(`Call closed with student ${studentId}`);
-        callsRef.current.delete(studentId);
-      });
-
-      call.on('iceStateChanged', (state) => {
-        console.log(`ICE connection state changed for student ${studentId}:`, state);
-      });
-    };
-
-    attemptCall(retries);
-  };
-
   const startStream = async () => {
     try {
       setConnectionStatus('connecting');
@@ -173,6 +167,8 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       console.log('Local stream details:', {
         active: stream.active,
         id: stream.id,
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length,
         tracks: stream.getTracks().map(t => ({
           kind: t.kind,
           enabled: t.enabled,
@@ -180,6 +176,13 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
           readyState: t.readyState,
         })),
       });
+
+      if (stream.getVideoTracks().length === 0 || stream.getAudioTracks().length === 0) {
+        throw new Error("No video or audio tracks available");
+      }
+
+      stream.getAudioTracks().forEach(track => track.enabled = true);
+      stream.getVideoTracks().forEach(track => track.enabled = true);
 
       localStreamRef.current = stream;
       if (videoRef.current) {
@@ -192,17 +195,12 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
 
       setIsStreamActive(true);
       setConnectionStatus('streaming');
-
-      if (socketRef.current) {
-        socketRef.current.emit("teacherStartedStreaming", { liveClassId });
-        const students = participants.filter(p => p.userId !== userId);
-        students.forEach(student => {
-          console.log(`Requesting PeerJS ID for existing student ${student.userId}`);
-          socketRef.current?.emit("requestStudentPeerId", { liveClassId, studentId: student.userId });
-        });
-      }
-
       toast.success("Stream started");
+
+      // Notify all students that streaming has started
+      if (socketRef.current) {
+        socketRef.current.emit("teacherStreamStarted", { liveClassId });
+      }
     } catch (error) {
       console.error("Failed to start stream:", error);
       toast.error("Failed to start stream: " + (error as Error).message);
@@ -217,7 +215,6 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     }
     callsRef.current.forEach(call => call.close());
     callsRef.current.clear();
-    studentPeerIdsRef.current.clear();
 
     setIsStreamActive(false);
     setIsScreenSharing(false);
@@ -226,11 +223,25 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     setConnectionStatus('idle');
 
     if (socketRef.current) {
-      socketRef.current.emit("teacherDisconnected", { liveClassId });
+      socketRef.current.emit("teacherStreamStopped", { liveClassId });
     }
+
     if (peerRef.current) {
       peerRef.current.destroy();
-      peerRef.current = new Peer({ host: 'localhost', port: 9000, path: '/myapp' });
+      peerRef.current = new Peer({
+        host: 'localhost',
+        port: 9000,
+        path: '/myapp',
+        config: {
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" },
+            { urls: "stun:stun4.l.google.com:19302" },
+          ],
+        },
+      });
     }
   };
 
@@ -282,6 +293,13 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       audioTrack.enabled = !audioTrack.enabled;
       setIsMuted(!audioTrack.enabled);
       toast.success(audioTrack.enabled ? "Unmuted" : "Muted");
+
+      callsRef.current.forEach((call) => {
+        const audioSender = call.peerConnection.getSenders().find((s: RTCRtpSender) => s.track?.kind === "audio");
+        if (audioSender && localStreamRef.current) {
+          audioSender.replaceTrack(localStreamRef.current.getAudioTracks()[0]);
+        }
+      });
     }
   };
 
@@ -318,7 +336,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     <div className="flex min-h-screen bg-gray-900 text-white">
       <div className="w-4/5 p-6 flex flex-col">
         <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
-          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain" style={{ minHeight: "300px" }} />
+          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain" style={{ minHeight: "300px" }} />
           {!isStreamActive && (
             <div className="absolute inset-0 flex items-center justify-center flex-col bg-gray-900 bg-opacity-75">
               {connectionStatus === 'idle' ? (
@@ -348,7 +366,37 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
             <Button onClick={startStream} className="bg-green-600 hover:bg-green-700">Start Streaming</Button>
           )}
           <Button onClick={handleLeave} className="bg-red-600 hover:bg-red-700">Leave Class</Button>
+          <Button 
+            onClick={() => setShowPeerId(!showPeerId)} 
+            className="bg-gray-600 hover:bg-gray-700"
+          >
+            {showPeerId ? "Hide Peer ID" : "Show Peer ID"}
+          </Button>
         </div>
+        
+        {showPeerId && peerRef.current && (
+          <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Your PeerJS ID (For Debugging)</h3>
+            <div className="flex gap-2 mb-2">
+              <Input
+                value={peerRef.current.id || "Not connected"}
+                readOnly
+                className="flex-1 bg-gray-700 border-gray-600 text-white"
+              />
+              <Button 
+                onClick={() => {
+                  if (peerRef.current?.id) {
+                    navigator.clipboard.writeText(peerRef.current.id);
+                    toast.success("Peer ID copied to clipboard");
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Copy
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
       <div className="w-1/5 p-6 bg-gray-800 flex flex-col">
         <h2 className="text-lg font-semibold mb-2">Participants ({participants.length})</h2>

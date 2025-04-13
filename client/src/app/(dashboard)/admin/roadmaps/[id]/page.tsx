@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video, Loader2 } from "lucide-react"
+import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video} from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -318,7 +318,9 @@ export default function EditRoadmapPage({ params }: { params: { id: string } }) 
       toast.success("Roadmap updated successfully");
       router.push("/admin/roadmaps")
     } catch (error) {
-      toast.error("Failed to update roadmap")
+      toast.error("Failed to update roadmap", {
+        description: (error as Error).message,
+      });
     }
   }
 

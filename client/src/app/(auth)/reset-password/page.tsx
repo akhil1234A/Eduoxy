@@ -66,8 +66,9 @@ const ResetPassword = () => {
       } else {
         setError(data.message || "Failed to reset password");
       }
-    } catch (err: any) {
-      setError(err.errors ? err.errors[0].message : "An error occurred. Please try again.");
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || "An error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
