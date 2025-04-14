@@ -1,16 +1,14 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { v4 as uuidv4 } from "uuid"
-import { useCreateRoadmapMutation } from "@/state/api/roadmapApi"
+import { useUpdateRoadmapMutation } from "@/state/api/roadmapApi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video } from "lucide-react"
+import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video} from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -43,29 +41,31 @@ interface RoadmapFormData {
   sections: Section[]
 }
 
-export default function CreateRoadmapPage() {
-  const [createRoadmap, { isLoading }] = useCreateRoadmapMutation()
+interface EditRoadmapFormProps {
+  roadmapId: string
+  initialData: Roadmap
+}
+
+export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapFormProps) {
+  const [updateRoadmap, { isLoading: isUpdating }] = useUpdateRoadmapMutation()
   const router = useRouter()
 
   const [formData, setFormData] = useState<RoadmapFormData>({
     title: "",
     description: "",
-    sections: [
-      {
-        id: uuidv4(),
-        title: "Section 1",
-        topics: [
-          {
-            id: uuidv4(),
-    title: "",
-    description: "",
-            isCompleted: false,
-            resources: [],
-          },
-        ],
-      },
-    ],
+    sections: [],
   })
+
+  useEffect(() => {
+    if (initialData) {
+      // Transform API data to form data structure
+      setFormData({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        sections: initialData.sections || [],
+      })
+    }
+  }, [initialData])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -127,10 +127,10 @@ export default function CreateRoadmapPage() {
   }
 
   const addSection = () => {
-      setFormData({
-        ...formData,
-        sections: [
-          ...formData.sections,
+    setFormData({
+      ...formData,
+      sections: [
+        ...formData.sections,
         {
           id: uuidv4(),
           title: `Section ${formData.sections.length + 1}`,
@@ -167,13 +167,13 @@ export default function CreateRoadmapPage() {
         section.id === sectionId
           ? {
               ...section,
-        topics: [
+              topics: [
                 ...section.topics,
-          {
+                {
                   id: uuidv4(),
                   title: "",
                   description: "",
-            isCompleted: false,
+                  isCompleted: false,
                   resources: [],
                 },
               ],
@@ -215,7 +215,7 @@ export default function CreateRoadmapPage() {
                 topic.id === topicId
                   ? {
                       ...topic,
-        resources: [
+                      resources: [
                         ...topic.resources,
                         {
                           id: uuidv4(),
@@ -281,42 +281,45 @@ export default function CreateRoadmapPage() {
       ),
     })
   }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-      // Validate form
-      if (!formData.title.trim()) {
-        toast.error("Roadmap title is required")
+
+    // Validate form
+    if (!formData.title.trim()) {
+      toast.error("Roadmap title is required")
+      return
+    }
+
+    // Validate sections and topics
+    for (const section of formData.sections) {
+      if (!section.title.trim()) {
+        toast.error("All section titles are required")
         return
       }
-  
-      // Validate sections and topics
-      for (const section of formData.sections) {
-        if (!section.title.trim()) {
-          toast.error("All section titles are required")
+
+      for (const topic of section.topics) {
+        if (!topic.title.trim()) {
+          toast.error("All topic titles are required")
           return
         }
-  
-        for (const topic of section.topics) {
-          if (!topic.title.trim()) {
-            toast.error("All topic titles are required")
+
+        // Validate resources
+        for (const resource of topic.resources) {
+          if (!resource.title.trim() || !resource.url.trim()) {
+            toast.error("All resource titles and URLs are required")
             return
-          }
-  
-          // Validate resources
-          for (const resource of topic.resources) {
-            if (!resource.title.trim() || !resource.url.trim()) {
-              toast.error("All resource titles and URLs are required")
-              return
-            }
           }
         }
       }
+    }
+
     try {
-      await createRoadmap(formData).unwrap()
-      toast.success("Roadmap created successfully")
+      await updateRoadmap({ id: roadmapId, roadmap: formData }).unwrap()
+      toast.success("Roadmap updated successfully");
       router.push("/admin/roadmaps")
     } catch (error) {
-      toast.error("Failed to create roadmap", {
+      toast.error("Failed to update roadmap", {
         description: (error as Error).message,
       });
     }
@@ -329,39 +332,39 @@ export default function CreateRoadmapPage() {
           <ArrowLeft className="h-4 w-4" />
           <span className="sr-only">Back</span>
         </Button>
-        <h1 className="text-2xl font-bold">Create New Roadmap</h1>
+        <h1 className="text-2xl font-bold">Edit Roadmap</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-      <Card>
-        <CardHeader>
+        <Card>
+          <CardHeader>
             <CardTitle>Roadmap Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
-            <Input
+              <Input
                 id="title"
                 name="title"
-              value={formData.title}
+                value={formData.title}
                 onChange={handleChange}
-              placeholder="Enter roadmap title"
+                placeholder="Enter roadmap title"
                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-            <Textarea
+              <Textarea
                 id="description"
                 name="description"
-              value={formData.description}
+                value={formData.description}
                 onChange={handleChange}
                 placeholder="Enter roadmap description"
                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
-        </CardContent>
-      </Card>
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -405,14 +408,14 @@ export default function CreateRoadmapPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor={`section-${section.id}-title`}>Section Title</Label>
-            <Input
+                      <Input
                         id={`section-${section.id}-title`}
                         value={section.title}
                         onChange={(e) => handleSectionChange(section.id, "title", e.target.value)}
-              placeholder="Enter section title"
+                        placeholder="Enter section title"
                         className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                      />
+                    </div>
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -442,26 +445,26 @@ export default function CreateRoadmapPage() {
                               <Label htmlFor={`topic-${topic.id}-title`} className="text-xs">
                                 Title
                               </Label>
-            <Input
+                              <Input
                                 id={`topic-${topic.id}-title`}
                                 value={topic.title}
                                 onChange={(e) => handleTopicChange(section.id, topic.id, "title", e.target.value)}
                                 placeholder="Enter topic title"
                                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                              />
+                            </div>
                             <div className="space-y-2">
                               <Label htmlFor={`topic-${topic.id}-description`} className="text-xs">
                                 Description
                               </Label>
-            <Textarea
+                              <Textarea
                                 id={`topic-${topic.id}-description`}
                                 value={topic.description}
                                 onChange={(e) => handleTopicChange(section.id, topic.id, "description", e.target.value)}
                                 placeholder="Enter topic description"
                                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                              />
+                            </div>
 
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
@@ -491,7 +494,7 @@ export default function CreateRoadmapPage() {
                                       </div>
                                       <div className="space-y-2">
                                         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-            <Input
+                                          <Input
                                             value={resource.title}
                                             onChange={(e) =>
                                               handleResourceChange(
@@ -502,7 +505,7 @@ export default function CreateRoadmapPage() {
                                                 e.target.value,
                                               )
                                             }
-              placeholder="Resource title"
+                                            placeholder="Resource title"
                                             className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
                                           />
                                           <Button
@@ -515,9 +518,9 @@ export default function CreateRoadmapPage() {
                                             <Trash2 className="h-3 w-3" />
                                             <span className="sr-only">Remove Resource</span>
                                           </Button>
-          </div>
+                                        </div>
                                         <div className="grid grid-cols-[1fr_auto] gap-2">
-            <Input
+                                          <Input
                                             value={resource.url}
                                             onChange={(e) =>
                                               handleResourceChange(
@@ -528,7 +531,7 @@ export default function CreateRoadmapPage() {
                                                 e.target.value,
                                               )
                                             }
-              placeholder="Resource URL"
+                                            placeholder="Resource URL"
                                             className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
                                           />
                                           <Select
@@ -566,7 +569,7 @@ export default function CreateRoadmapPage() {
                         </Card>
                       ))}
                     </div>
-          </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -577,13 +580,12 @@ export default function CreateRoadmapPage() {
           <Button type="button" variant="outline" onClick={() => router.push("/admin/roadmaps")}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Roadmap"}
-            {!isLoading && <Save className="ml-2 h-4 w-4" />}
+          <Button type="submit" disabled={isUpdating}>
+            {isUpdating ? "Updating..." : "Update Roadmap"}
+            {!isUpdating && <Save className="ml-2 h-4 w-4" />}
           </Button>
         </div>
-    </form>
+      </form>
     </div>
   )
-}
-
+} 

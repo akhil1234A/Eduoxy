@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useLoginMutation } from "@/state/redux"; 
@@ -10,6 +9,36 @@ import { z } from "zod";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
 import EnterPasscodeComponent from '@/components/EnterPasscodeComponent'
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
+
+const SignInSkeleton = () => {
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
+        <Skeleton className="h-8 w-40 mx-auto mb-6" /> 
+        
+        <Skeleton className="h-10 w-full mb-4" />
+
+        <div className="text-gray-400 text-center mb-4">
+          <Skeleton className="h-4 w-10 mx-auto" /> 
+        </div>
+
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-4 w-20" /> 
+            <Skeleton className="h-4 w-40" /> 
+          </div>
+          <Skeleton className="h-10 w-full" /> 
+        </div>
+
+        <Skeleton className="h-4 w-60 mt-4 mx-auto" /> 
+      </div>
+    </div>
+  );
+};
 
 const SignInComponent = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +46,7 @@ const SignInComponent = () => {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [login, { isLoading, error }] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
   const [showPasscodeStep, setShowPasscodeStep] = useState(false);
   const [userType, setUserType] = useState<"student" | "teacher">("student");
   const router = useRouter();
@@ -58,7 +87,7 @@ const SignInComponent = () => {
           return;
         }
        
-        const { accessToken, user } = response.data;
+        const { user } = response.data;
 
         const targetRoute =
           user?.userType === "admin" ? "/admin/courses" :
@@ -68,24 +97,18 @@ const SignInComponent = () => {
       } else {
         throw new Error("Login response missing data");
       }
-    } catch (err: any) {
-      console.error("Login error:", err);
-      const errorMessage =
-        err.data?.error ||
-        err.data?.message ||
-        err.message ||
-        "An error occurred during login";
+    } catch (err) {
+      const errorMessage = (err as Error).message || "An error occurred during login";
       setErrors((prev) => ({ ...prev, general: errorMessage }));
     }
-    }
-  
+  };
 
   const handleGoogleSignIn = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/google`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -194,4 +217,10 @@ const SignInComponent = () => {
   );
 };
 
-export default SignInComponent;
+export default function Page() {
+  return (
+    <Suspense fallback={<SignInSkeleton />}>
+      <SignInComponent />
+    </Suspense>
+  );
+}

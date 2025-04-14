@@ -31,18 +31,18 @@ export class AuthController implements IAuthController {
 
 
       if (result.needsVerification) {
-        res.json(successResponse("User not verified. OTP sent to email.", result));
         apiLogger.info("User not verified. OTP sent to email.", { result });
+        res.json(successResponse("User not verified. OTP sent to email.", result));
         return;
       }
 
       setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
-      res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
       apiLogger.info("Login successful", { result });
+      res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Login failed", err.message));
       apiLogger.error("Login failed", { error: err.message });
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Login failed", err.message));
     }
   }
 
@@ -74,8 +74,8 @@ export class AuthController implements IAuthController {
       const { accessToken, refreshToken: newRefreshToken, user } = await this._authService.loginWithRefresh(userId, refreshToken);
 
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
-      res.json(successResponse("Token refreshed", { accessToken, user }));
       apiLogger.info("Token refreshed", {});
+      res.json(successResponse("Token refreshed", { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
       apiLogger.error("Refresh failed", { error: err.message });
@@ -110,8 +110,8 @@ export class AuthController implements IAuthController {
 
       const { accessToken, refreshToken, user } = await this._authService.googleAuth(idToken);
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: refreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
-      res.json(successResponse("Google login successful", { accessToken, user }));
       apiLogger.info("Google login successful", { });
+      res.json(successResponse("Google login successful", { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
       apiLogger.error("Google authentication failed", { error: err.message });

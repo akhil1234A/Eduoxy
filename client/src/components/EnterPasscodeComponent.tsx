@@ -11,7 +11,7 @@ interface Props {
   userType: "student" | "teacher"; 
 }
 
-const EnterPasscodeComponent = ({ email, userType }: Props) => {
+const EnterPasscodeComponent = ({ email }: Props) => {
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -75,7 +75,7 @@ const EnterPasscodeComponent = ({ email, userType }: Props) => {
     setSuccess("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/send-otp`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

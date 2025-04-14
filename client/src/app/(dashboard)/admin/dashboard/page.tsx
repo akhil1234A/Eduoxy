@@ -12,14 +12,14 @@ const AdminDashboard = () => {
   const { data, isLoading, isError } = useGetAdminDashboardQuery();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const dashboardData = data?.data || {};
+  const dashboardData = data?.data;
   const {
     totalRevenue = 0,
     activeCourses = 0,
     totalEnrollments = 0,
     totalUsers = 0,
     recentTransactions = [],
-  } = dashboardData;
+  } = dashboardData || {};
 
   if (isError) {
     toast.error("Failed to fetch admin dashboard data");

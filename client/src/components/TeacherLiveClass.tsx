@@ -57,7 +57,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       toast.success("Connected to live class");
     });
 
-    socket.on("userJoined", ({ userId: joinedUserId, userName, participants: newParticipants, isTeacher }) => {
+    socket.on("userJoined", ({ userId: joinedUserId, participants: newParticipants, isTeacher }) => {
       console.log(`User joined: ${joinedUserId}, isTeacher: ${isTeacher}`);
       setParticipants(newParticipants);
     });
@@ -154,6 +154,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
       socket.disconnect();
       stopStream();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveClassId, userId]);
 
   useEffect(() => {

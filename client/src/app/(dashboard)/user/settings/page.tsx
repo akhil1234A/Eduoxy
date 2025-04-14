@@ -49,8 +49,9 @@ const SettingsPage = () => {
 
       toast.success(result.message || "Password updated successfully!");
       methods.reset();
-    } catch (error: any) {
-      toast.error(error.data?.message || "Something went wrong.");
+    } catch (error) {
+      const errorMessage = error as Error
+      toast.error(errorMessage.data?.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }

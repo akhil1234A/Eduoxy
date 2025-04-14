@@ -35,19 +35,37 @@ const SENSITIVE_FIELDS = [
 ];
 
 // Helper function to sanitize sensitive data
-const sanitizeData = (data: any): any => {
+const sanitizeData = (data: any, seen = new WeakMap()): any => {
   if (!data || typeof data !== 'object') return data;
 
-  if (Array.isArray(data)) {
-    return data.map(item => sanitizeData(item));
+  // Handle circular references
+  if (seen.has(data)) {
+    return '[Circular Reference]';
   }
 
+  // Handle Mongoose documents
+  if (data._doc) {
+    seen.set(data, true);
+    return sanitizeData(data._doc, seen);
+  }
+
+  if (Array.isArray(data)) {
+    seen.set(data, true);
+    return data.map(item => sanitizeData(item, seen));
+  }
+
+  seen.set(data, true);
   const sanitized: any = {};
   for (const [key, value] of Object.entries(data)) {
+    // Skip Mongoose internal properties
+    if (key.startsWith('$') || key === '__v' || key === '_id') {
+      continue;
+    }
+    
     if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
       sanitized[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeData(value);
+      sanitized[key] = sanitizeData(value, seen);
     } else {
       sanitized[key] = value;
     }

@@ -19,17 +19,17 @@ const Search = () => {
 
   const courses = useMemo(() => (debouncedTerm ? searchedCourses?.data : allCourses?.data) || [], [searchedCourses, allCourses, debouncedTerm]);
 
-  const debouncedSearch = useCallback(
-    debounce((term: string) => {
+  const debouncedSearch = useMemo(
+    () => debounce((term: string) => {
       setDebouncedTerm(term);
     }, 500),
     []
   );
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     debouncedSearch(e.target.value);
-  };
+  }, [debouncedSearch]);
 
   const handleCourseSelect = (course: Course) => {
     router.push(`/search/${course.courseId}`, { scroll: false }); 

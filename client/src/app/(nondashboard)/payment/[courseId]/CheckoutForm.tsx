@@ -73,8 +73,9 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
         paymentChannel.close();
         router.push(`/payment/success/${courseId}`);
       }
-    } catch (error: any) {
-      const errorMsg = error.data?.message || "Payment failed. Please try again.";
+    } catch (error) {
+      const errorMessage = error as Error
+      const errorMsg = errorMessage.data?.message || "Payment failed. Please try again.";
       setErrorMessage(errorMsg);
       toast.error(errorMsg, { id: toastId });
     } finally {

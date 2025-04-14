@@ -7,16 +7,16 @@ export const roadmapApi = createApi({
   tagTypes: ["Roadmap"],
   endpoints: (builder) => ({
     getRoadmaps: builder.query<Roadmap[], void>({
-      query: () => "roadmap",
+      query: () => "/roadmap",
       providesTags: ["Roadmap"],
     }),
     getRoadmapById: builder.query<Roadmap, string>({
-      query: (id) => `roadmap/${id}`,
+      query: (id) => `/roadmap/${id}`,
       providesTags: ["Roadmap"],
     }),
     createRoadmap: builder.mutation<Roadmap, Roadmap>({
       query: (roadmap) => ({
-        url: "roadmap",
+        url: "/roadmap",
         method: "POST",
         body: roadmap,
       }),
@@ -24,7 +24,7 @@ export const roadmapApi = createApi({
     }),
     updateRoadmap: builder.mutation<Roadmap, { id: string; roadmap: Roadmap }>({
       query: ({ id, roadmap }) => ({
-        url: `roadmap/${id}`,
+        url: `/roadmap/${id}`,
         method: "PUT",
         body: roadmap,
       }),
@@ -32,7 +32,7 @@ export const roadmapApi = createApi({
     }),
     deleteRoadmap: builder.mutation<void, string>({
       query: (id) => ({
-        url: `roadmap/${id}`,
+        url: `/roadmap/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Roadmap"],
@@ -42,7 +42,7 @@ export const roadmapApi = createApi({
       { roadmapId: string; sectionId: string; topicId: string; isCompleted: boolean }
     >({
       query: ({ roadmapId, sectionId, topicId, isCompleted }) => ({
-        url: `roadmap/${roadmapId}/sections/${sectionId}/topics/${topicId}/progress`,
+        url: `/roadmap/${roadmapId}/sections/${sectionId}/topics/${topicId}/progress`,
         method: "PUT",
         body: { isCompleted },
       }),

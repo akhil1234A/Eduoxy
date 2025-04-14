@@ -54,7 +54,8 @@ const Courses = () => {
         await deleteCourse(course.courseId).unwrap();
         toast.success("Course deleted successfully!");
       } catch (error) {
-        toast.error("Failed to delete course");
+        const errorMessage = error as Error
+        toast.error(errorMessage.data?.message || "Failed to delete course");
       }
     }
   };
@@ -63,13 +64,14 @@ const Courses = () => {
     if (!userId) return;
 
     try {
-      const result = await createCourse({
+      await createCourse({
         teacherId: userId,
         teacherName: userName || "Unknown Teacher",
       }).unwrap();
 
     } catch (error) {
-      toast.error("Failed to create course");
+      const errorMessage = error as Error
+      toast.error(errorMessage.data?.message || "Failed to create course");
     }
   };
 

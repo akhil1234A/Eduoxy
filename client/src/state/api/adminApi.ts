@@ -7,24 +7,24 @@ export const adminApi = createApi({
   tagTypes: ["Dashboard"],
   endpoints: (builder) => ({
     getStudents: builder.query<ApiResponse<IUser[]>, void>({
-      query: () => "admin/students",
+      query: () => "/admin/students",
     }),
     getTeachers: builder.query<ApiResponse<IUser[]>, void>({
-      query: () => "admin/teachers",
+      query: () => "/admin/teachers",
     }),
     blockUser: builder.mutation<void, string>({
       query: (userId) => ({
-        url: `admin/users/${userId}/block`,
+        url: `/admin/users/${userId}/block`,
         method: "PUT",
       }),
     }),
     unblockUser: builder.mutation<void, string>({
       query: (userId) => ({
-        url: `admin/users/${userId}/unblock`,
+        url: `/admin/users/${userId}/unblock`,
         method: "PUT",
       }),
     }),
-    getAdminDashboard: builder.query<{ message: string; data: AdminDasboard }, void>({
+    getAdminDashboard: builder.query<ApiResponse<AdminDasboard>, void>({
       query: () => ({
         url: "/dashboard/admin",
         method: "GET",

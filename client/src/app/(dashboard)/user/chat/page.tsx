@@ -27,7 +27,7 @@ export default function StudentChatPage() {
     if (!courses?.data?.length) return [];
 
     const teacherMap = new Map<string, { courseId: string; receiverId: string; teacherName: string }>();
-    courses.data.forEach((course) => {
+    courses.data.forEach((course: Course) => {
       if (!teacherMap.has(course.teacherName)) {
         teacherMap.set(course.teacherName, {
           courseId: course.courseId,

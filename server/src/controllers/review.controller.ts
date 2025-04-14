@@ -44,8 +44,8 @@ export class ReviewController {
       if (success) {
         res.status(HttpStatus.OK).json(successResponse("Review deleted successfully", "Review deleted successfully"));
       } else {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Review not found or unauthorized", "Review not found or unauthorized"));
         apiLogger.error(`Review not found or unauthorized ${id} for user ${userId}`);
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Review not found or unauthorized", "Review not found or unauthorized"));
       }
     } catch (error) {
       const err = error as Error;

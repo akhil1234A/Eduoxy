@@ -30,13 +30,6 @@ interface Instructor {
   title?: string
 }
 
-interface Review {
-  id: string
-  userName: string
-  rating: number
-  comment: string
-  date: string
-}
 
 interface LiveClass {
   _id: string
@@ -69,14 +62,13 @@ const CourseView = () => {
   const instructor: Instructor | undefined = instructorData?.data
 
   const [showReviewForm, setShowReviewForm] = useState(false)
-  const [newReview, setNewReview] = useState({ rating: 0, comment: "" })
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([])
 
   const isTeacher = course?.teacherId === userId
-  const isEnrolled = course?.enrollments?.some((enrollment) => enrollment.userId === userId)
+  const isEnrolled = course?.enrollments?.some((enrollment: { userId: string }) => enrollment.userId === userId)
 
-  const { data, isLoading: isReviewsLoading } = useGetReviewsByCourseIdQuery(courseId)
-  const reviewsData = data?.data
+  const { data: reviewsResponse, isLoading: isReviewsLoading } = useGetReviewsByCourseIdQuery(courseId)
+  const reviewsData = reviewsResponse?.data
   const [addReview] = useAddReviewMutation()
   const [deleteReview] = useDeleteReviewMutation()
   const [formData, setFormData] = useState<ReviewFormData>({
@@ -154,6 +146,11 @@ const CourseView = () => {
       return
     }
 
+    if (!userId || !userName) {
+      toast.error("User information not available")
+      return
+    }
+
     try {
       await addReview({
         courseId,
@@ -165,17 +162,24 @@ const CourseView = () => {
       setFormData({ rating: 0, review: "" })
       setShowReviewForm(false)
       toast.success("Review added successfully")
-    } catch (error) {
+    } catch (err) {
+      console.error("Failed to add review:", err)
       toast.error("Failed to add review")
     }
   }
 
   const handleDelete = async (reviewId: string) => {
+    if (!userId) {
+      toast.error("User information not available")
+      return
+    }
+
     if (confirm("Are you sure you want to delete this review?")) {
       try {
         await deleteReview({ reviewId, userId }).unwrap()
         toast.success("Review deleted successfully")
-      } catch (error) {
+      } catch (err) {
+        console.error("Failed to delete review:", err)
         toast.error("Failed to delete review")
       }
     }
@@ -513,7 +517,7 @@ const CourseView = () => {
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">No Reviews Yet</h3>
                   <p className="text-gray-400 max-w-md mx-auto mb-6">
-                    This course doesn't have any reviews yet. Be the first to share your experience!
+                    This course doesn&apos;t have any reviews yet. Be the first to share your experience!
                   </p>
                   {isEnrolled && (
                     <Button onClick={() => setShowReviewForm(true)} className="bg-[#6366F1] hover:bg-[#4f46e5]">
@@ -550,7 +554,7 @@ const CourseView = () => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                   </svg>
-                  {course.sections?.reduce((acc, section) => acc + section.chapters.length, 0) || 0} lessons
+                  {course.sections?.reduce((acc: number, section: Section) => acc + section.chapters.length, 0) || 0} lessons
                 </li>
                 <li className="flex items-center">
                   <svg

@@ -16,7 +16,7 @@ export class CourseService implements ICourseService {
       teacherId,
       teacherName,
     }; 
-    const course = await this._courseRepository.create(courseData); 
+    const course = await this._courseRepository.createCourse(courseData); 
     await CacheUtil.del(CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`));
     return course;
   }

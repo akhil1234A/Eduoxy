@@ -21,7 +21,7 @@ interface Roadmap {
       title: string
       description: string
       isCompleted: boolean
-      resources: any[]
+      resources: RoadmapResource[]
     }[]
   }[]
 }

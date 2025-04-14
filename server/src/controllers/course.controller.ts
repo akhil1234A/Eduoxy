@@ -113,12 +113,12 @@ export class CourseController {
       }
 
       const course = await this._courseService.createCourse(teacherId, teacherName);
-      res.json(successResponse("Course created successfully", course));
       apiLogger.info("Course created successfully", { course });
+      res.json(successResponse("Course created successfully", course));
     } catch (error) {
       const err = error as Error;
+      apiLogger.error("Error creating course", { error: err.stack });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating course", err.message));
-      apiLogger.error("Error creating course", { error: err.message });
     }
   }
 
@@ -152,8 +152,8 @@ export class CourseController {
       res.json(successResponse("Course updated successfully", course));
     } catch (error) {
       const err = error as Error;
-      res.status(500).json(errorResponse("Error updating course", err.message));
       apiLogger.error("Error updating course", { error: err.message });
+      res.status(500).json(errorResponse("Error updating course", err.message));
     }
   }
   

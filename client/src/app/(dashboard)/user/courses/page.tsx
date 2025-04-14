@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Toolbar from "@/components/Toolbar";

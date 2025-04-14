@@ -1,7 +1,25 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
+
+const ForgotPasswordSkeleton = () => {
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
+        <Skeleton className="h-8 w-40 mx-auto mb-6" /> 
+
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+        </div>
+
+        <Skeleton className="h-4 w-40 mt-4 mx-auto" /> 
+      </div>
+    </div>
+  );
+};
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +34,7 @@ const ForgotPassword = () => {
     setSuccess("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/request-password-reset`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/request-password-reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,4 +93,10 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export default function Page() {
+  return (
+    <Suspense fallback={<ForgotPasswordSkeleton />}>
+      <ForgotPassword />
+    </Suspense>
+  );
+}

@@ -177,6 +177,7 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
         peerRef.current.destroy();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveClassId, userId, teacherId, teacherPeerId]);
 
   const handleIncomingStream = useCallback((stream: MediaStream) => {
@@ -325,7 +326,7 @@ const StudentLiveClass = ({ liveClassId, courseId, userId, teacherId }: StudentL
               {!isTeacherConnected ? (
                 <p className="text-xl mb-4">Waiting for teacher to start streaming...</p>
               ) : connectionStatus === "connecting" ? (
-                <p className="text-xl mb-4">Connecting to teacher's stream...</p>
+                <p className="text-xl mb-4">Connecting to teacher&apos;s stream...</p>
               ) : (
                 <p className="text-xl mb-4">Teacher has stopped streaming</p>
               )}

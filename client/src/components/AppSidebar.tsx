@@ -24,7 +24,7 @@ import {
   BarChart,
   MessageCircle,
   MessageSquareMore,
-  Code
+  
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";

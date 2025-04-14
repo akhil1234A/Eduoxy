@@ -7,32 +7,32 @@ export const coursesApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Courses", "UserCourseProgress"],
   endpoints: (build) => ({
-    getPublicCourses: build.query<Course[], { category?: string }>({
+    getPublicCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
       query: ({ category }) => ({
-        url: "courses/public",
+        url: "/courses/public",
         params: { category },
       }),
       providesTags: ["Courses"],
     }),
 
-    getAdminCourses: build.query<Course[], { category?: string }>({
+    getAdminCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
       query: ({ category }) => ({
-        url: "courses/admin",
+        url: "/courses/admin",
         params: { category },
       }),
       providesTags: ["Courses"],
     }),
 
-    getTeacherCourses: build.query<Course[], { category?: string }>({
+    getTeacherCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
       query: ({ category }) => ({
-        url: "courses/teacher",
+        url: "/courses/teacher",
         params: { category },
       }),
       providesTags: ["Courses"],
     }),
 
-    getCourse: build.query<Course, string>({
-      query: (id) => `courses/${id}`,
+    getCourse: build.query<ApiResponse<Course>, string>({
+      query: (id) => `/courses/${id}`,
       providesTags: (result, error, id) => [{ type: "Courses", id }],
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         try {
@@ -52,7 +52,7 @@ export const coursesApi = createApi({
       { teacherId: string; teacherName: string }
     >({
       query: (body) => ({
-        url: "courses",
+        url: "/courses",
         method: "POST",
         body,
       }),
@@ -64,11 +64,11 @@ export const coursesApi = createApi({
       { courseId: string; formData: FormData }
     >({
       query: ({ courseId, formData }) => ({
-        url: `courses/${courseId}`,
+        url: `/courses/${courseId}`,
         method: "PUT",
         body: formData,
       }),
-      invalidatesTags: (result, error, { courseId }) => [
+      invalidatesTags: () => [
         { type: "Courses"},
         "Courses",
       ],
@@ -76,7 +76,7 @@ export const coursesApi = createApi({
 
     deleteCourse: build.mutation<{ message: string }, string>({
       query: (courseId) => ({
-        url: `courses/${courseId}`,
+        url: `/courses/${courseId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Courses"],
@@ -84,7 +84,7 @@ export const coursesApi = createApi({
 
     unlistCourse: build.mutation<Course, string>({
       query: (courseId) => ({
-        url: `courses/${courseId}/unlist`,
+        url: `/courses/${courseId}/unlist`,
         method: "PUT",
       }),
       invalidatesTags: ["Courses"],
@@ -92,14 +92,14 @@ export const coursesApi = createApi({
 
     publishCourse: build.mutation<Course, string>({
       query: (courseId) => ({
-        url: `courses/${courseId}/publish`,
+        url: `/courses/${courseId}/publish`,
         method: "PUT",
       }),
       invalidatesTags: ["Courses"],
     }),
 
     getUserEnrolledCourses: build.query<Course[], string>({
-      query: (userId) => `users/course-progress/${userId}/enrolled-courses`,
+      query: (userId) => `/users/course-progress/${userId}/enrolled-courses`,
       providesTags: ["Courses", "UserCourseProgress"],
     }),
 
@@ -108,7 +108,7 @@ export const coursesApi = createApi({
       { userId: string; courseId: string }
     >({
       query: ({ userId, courseId }) => ({
-        url: `users/course-progress/${userId}/courses/${courseId}`,
+        url: `/users/course-progress/${userId}/courses/${courseId}`,
       }),
       providesTags: ["UserCourseProgress"],
     }),
@@ -121,7 +121,7 @@ export const coursesApi = createApi({
       }
     >({
       query: ({ userId, courseId, progressData }) => ({
-        url: `users/course-progress/${userId}/courses/${courseId}`,
+        url: `/users/course-progress/${userId}/courses/${courseId}`,
         method: "PUT",
         body: progressData,
       }),
@@ -152,13 +152,12 @@ export const coursesApi = createApi({
 
     searchCourses: build.query<Course[], { searchTerm: string; category?: string }>({
       query: ({ searchTerm, category }) => ({
-        url: "courses/search",
+        url: "/courses/search",
         params: { 
           q: searchTerm,
           category 
         },
       }),
-      skip: ({ searchTerm }) => !searchTerm,
     }),
   }),
 });

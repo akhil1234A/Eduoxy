@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useSignUpMutation } from "@/state/redux";
@@ -10,6 +8,34 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { z } from "zod";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Suspense } from "react";
+
+const SignUpSkeleton = () => {
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
+        <Skeleton className="h-8 w-40 mx-auto mb-6" /> 
+
+        <Skeleton className="h-10 w-full mb-4" />
+
+        <div className="text-gray-400 text-center mb-4">
+          <Skeleton className="h-4 w-10 mx-auto" /> 
+        </div>
+
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+          <Skeleton className="h-10 w-full" /> 
+        </div>
+
+        <Skeleton className="h-4 w-60 mt-4 mx-auto" /> 
+      </div>
+    </div>
+  );
+};
 
 const SignUpComponent = () => {
   const [formData, setFormData] = useState<SignUpRequest>({
@@ -23,6 +49,7 @@ const SignUpComponent = () => {
   const [signUp, { isLoading, error }] = useSignUpMutation();
   const [showPasscodeStep, setShowPasscodeStep] = useState(false);
   const router = useRouter();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -59,10 +86,9 @@ const SignUpComponent = () => {
     } catch (err) {
       console.error("Signup error:", err);
       const errorMessage =
-      (err as { data?: { error?: string; message?: string } }).data?.error ||
-      (err as Error).message ||
-      "An error occurred during signup";
-      // const errorMessage = err.data?.error || err.message || "An error occurred during signup";
+        (err as { data?: { error?: string; message?: string } }).data?.error ||
+        (err as Error).message ||
+        "An error occurred during signup";
       setErrors((prev) => ({ ...prev, general: errorMessage }));
     }
   };
@@ -72,7 +98,7 @@ const SignUpComponent = () => {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/google`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/google`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -83,7 +109,6 @@ const SignUpComponent = () => {
 
       const data = await response.json();
       if (data.success && data.data) {
-        
         const userType = data.data.user.userType;
         switch (userType) {
           case "admin":
@@ -108,7 +133,7 @@ const SignUpComponent = () => {
   };
 
   if (showPasscodeStep) {
-    return <EnterPasscodeComponent email={formData.email} userType={formData.userType}/>;
+    return <EnterPasscodeComponent email={formData.email} userType={formData.userType} />;
   }
 
   return (
@@ -201,7 +226,6 @@ const SignUpComponent = () => {
           )}
           {error && !errors.general && (
             <p className="text-red-400 text-sm mb-4">
-              {/* {(error as any)?.data?.error || "An error occurred"} */}
               {(error as { data?: { error?: string } })?.data?.error || "An error occurred"}
             </p>
           )}
@@ -226,4 +250,10 @@ const SignUpComponent = () => {
   );
 };
 
-export default SignUpComponent;
+export default function Page() {
+  return (
+    <Suspense fallback={<SignUpSkeleton />}>
+      <SignUpComponent />
+    </Suspense>
+  );
+}

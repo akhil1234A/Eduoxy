@@ -150,7 +150,7 @@ export const createCourseFormData = async (
   return formData;
 };
 
-export const uploadAllVideos = async (localSections: Section[], courseId: string) => {
+export const uploadAllVideos = async (localSections: Section[]) => {
   const updatedSections = localSections.map((section) => ({
     ...section,
     chapters: section.chapters.map((chapter) => ({ ...chapter })),

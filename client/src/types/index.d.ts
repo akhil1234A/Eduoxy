@@ -27,6 +27,11 @@ declare global {
     }>;
   }
 
+  interface Enrollment {
+    userId: string;
+    userName: string
+  }
+
   interface Transaction {
     transactionId: string
     date: string
@@ -264,13 +269,13 @@ declare global {
   }
   
   export interface Roadmap {
-    _id: string
+    _id?: string
     title: string
     description: string
-    sections: Section[]
-    createdAt: string
-    updatedAt: string
-    __v: number
+    sections: RoadmapSection[]
+    createdAt?: string
+    updatedAt?: string
+    __v?: number
   }
   
   export interface RoadmapSection {

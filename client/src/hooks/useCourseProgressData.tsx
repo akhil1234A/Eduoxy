@@ -41,9 +41,9 @@ export const useCourseProgressData = (propCourseId?: string) => {
 
   useEffect(() => {
     if (!isLoading && course && userId && userProgress === null) {
-      const initialSections = course.sections.map((section: any) => ({
+      const initialSections = course.sections.map((section: Section) => ({
         sectionId: section.sectionId,
-        chapters: section.chapters.map((chapter: any) => ({
+        chapters: section.chapters.map((chapter: Chapter) => ({
           chapterId: chapter.chapterId,
           completed: false,
         })),
@@ -64,20 +64,20 @@ export const useCourseProgressData = (propCourseId?: string) => {
   }, [isLoading, course, userId, userProgress, updateProgress, courseId]);
 
   const currentSection = useMemo(
-    () => course?.sections?.find((s) => s.chapters.some((c) => c.chapterId === chapterId)) || null,
+    () => course?.sections?.find((s: Section) => s.chapters.some((c: Chapter) => c.chapterId === chapterId)) || null,
     [course, chapterId]
   );
 
   const currentChapter = useMemo(
-    () => currentSection?.chapters.find((c) => c.chapterId === chapterId) || null,
+    () => currentSection?.chapters.find((c: Chapter) => c.chapterId === chapterId) || null,
     [currentSection, chapterId]
   );
 
   const isChapterCompleted = () => {
     if (!currentSection || !currentChapter || !userProgress?.sections) return false;
 
-    const section = userProgress.sections.find((s) => s.sectionId === currentSection.sectionId);
-    return section?.chapters.some((c) => c.chapterId === currentChapter.chapterId && c.completed) ?? false;
+    const section = userProgress.sections.find((s: SectionProgress) => s.sectionId === currentSection.sectionId);
+    return section?.chapters.some((c: ChapterProgress) => c.chapterId === currentChapter.chapterId && c.completed) ?? false;
   };
 
   const updateChapterProgress = (sectionId: string, chapterId: string, completed: boolean) => {

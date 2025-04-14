@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, TargetAndTransition, VariantLabels } from "framer-motion";
 
 
 interface ColumnConfig<T> {
   key: keyof T | string;
   label: string | React.ReactNode; 
-  render?: (value: any, item: T, index: number) => React.ReactNode; 
+  render?: (value: unknown, item: T, index: number) => React.ReactNode; 
 }
 
 
@@ -23,13 +23,13 @@ interface DynamicTableProps<T> {
   rowKeyExtractor: (item: T) => string; 
   searchPlaceholder?: string;
   animationProps?: {
-    initial?: object;
-    animate?: object;
+    initial?: TargetAndTransition | VariantLabels;
+    animate?: TargetAndTransition | VariantLabels;
     transition?: object;
   };
 }
 
-const DynamicTable = <T,>({
+const DynamicTable = <T extends Record<string, unknown>>({
   items,
   columns,
   searchTerm,
@@ -47,7 +47,7 @@ const DynamicTable = <T,>({
   },
 }: DynamicTableProps<T>) => {
   const defaultFilterFn = (item: T, term: string) =>
-    Object.values(item as any).some((value) =>
+    Object.values(item).some((value) =>
       String(value).toLowerCase().includes(term.toLowerCase())
     );
 
@@ -61,7 +61,9 @@ const DynamicTable = <T,>({
 
   return (
     <motion.div
-      {...animationProps}
+      initial={animationProps.initial}
+      animate={animationProps.animate}
+      transition={animationProps.transition}
       className="w-full h-full"
     >
       <div className="mt-6">
@@ -97,11 +99,11 @@ const DynamicTable = <T,>({
                       >
                         {column.render
                           ? column.render(
-                              (item as any)[column.key] ?? "",
+                              (item as Record<string, unknown>)[column.key as string] ?? "",
                               item,
                               index
                             )
-                          : String((item as any)[column.key] ?? "")}
+                          : String((item as Record<string, unknown>)[column.key as string] ?? "")}
                       </td>
                     ))}
                   </tr>

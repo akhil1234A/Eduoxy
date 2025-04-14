@@ -1,3 +1,4 @@
+"use client";
 import SignUpComponent from '@/components/SignUp';
 
 import React from 'react'

@@ -82,7 +82,7 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return this.model.findOneAndDelete({ courseId, teacherId }).exec();
   }
 
-  async create(data: Partial<ICourseDocument>): Promise<ICourseDocument> {
+  async createCourse(data: Partial<ICourseDocument>): Promise<ICourseDocument> {
     const newCourse = new this.model({
       courseId: uuidv4(),
       title: "Untitled Course",

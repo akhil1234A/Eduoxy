@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
-import { io, Socket } from "socket.io-client";
+import { io} from "socket.io-client";
 
 interface Notification {
   _id: string;
@@ -27,7 +27,6 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const userId = Cookies.get("userId");
 
   useEffect(() => {
@@ -82,7 +81,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       toast.error("Failed to connect to notification server");
     });
 
-    setSocket(socketInstance);
 
     // Fetch existing notifications
     fetchNotifications();

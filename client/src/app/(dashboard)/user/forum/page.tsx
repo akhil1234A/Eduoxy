@@ -148,11 +148,12 @@ const Forum = () => {
       { threshold: 0.1 }
     );
 
-    observer.current.observe(lastPostElementRef.current);
+    const currentRef = lastPostElementRef.current;
+    observer.current.observe(currentRef);
 
     return () => {
-      if (observer.current && lastPostElementRef.current) {
-        observer.current.unobserve(lastPostElementRef.current);
+      if (observer.current && currentRef) {
+        observer.current.unobserve(currentRef);
       }
     };
   }, [loadMorePosts, hasMore]);

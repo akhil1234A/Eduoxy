@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 
-export default function SuccessPage({ params }: { params: { courseId: string } }) {
+export default function SuccessPage() {
   const router = useRouter();
 
 

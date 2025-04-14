@@ -22,8 +22,8 @@ export default function InstructorChatPage() {
     skip: !senderId,
   });
 
-  const students = courses?.data?.reduce((acc: any[], course) => {
-    course.enrollments.forEach((student: any) => {
+  const students = courses?.data?.reduce((acc: Course[], course) => {
+    course.enrollments.forEach((student: Enrollment) => {
       if (!acc.find((s) => s.userId === student.userId)) {
         acc.push({
           ...student,

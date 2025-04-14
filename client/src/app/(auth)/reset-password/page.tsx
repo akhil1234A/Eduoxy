@@ -50,7 +50,7 @@ const ResetPassword = () => {
       passwordSchema.parse(newPassword);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}auth/reset-password/${token}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/reset-password/${token}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

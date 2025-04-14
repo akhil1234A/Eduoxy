@@ -59,7 +59,7 @@ const ManageUsers = () => {
     {
       key: "actions",
       label: "Actions",
-      render: (_: any, student: Student) => (
+      render: (_:void, student: Student) => (
                         <Button
           onClick={() => (student.isBlocked ? handleUnblock(student._id) : handleBlock(student._id))}
                           variant="outline"
