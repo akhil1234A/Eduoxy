@@ -75,7 +75,7 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
       }
     } catch (error) {
       const errorMessage = error as Error
-      const errorMsg = errorMessage.data?.message || "Payment failed. Please try again.";
+      const errorMsg = errorMessage.message || "Payment failed. Please try again.";
       setErrorMessage(errorMsg);
       toast.error(errorMsg, { id: toastId });
     } finally {

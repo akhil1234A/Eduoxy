@@ -5,18 +5,10 @@ import Cookies from "js-cookie";
 import { toast } from "sonner";
 import { io} from "socket.io-client";
 
-interface Notification {
-  _id: string;
-  title: string;
-  message: string;
-  type: "info" | "success" | "warning" | "error";
-  isRead: boolean;
-  link?: string;
-  createdAt: Date;
-}
+
 
 interface NotificationContextType {
-  notifications: Notification[];
+  notifications: AppNotification[];
   unreadCount: number;
   markAsRead: (notificationId: string) => void;
   markAllAsRead: () => void;
@@ -25,7 +17,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const userId = Cookies.get("userId");
 
@@ -46,7 +38,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       socketInstance.emit("joinNotifications", { userId });
     });
 
-    socketInstance.on("notification", (notification: Notification) => {
+    socketInstance.on("notification", (notification: AppNotification) => {
       console.log("Received notification:", notification);
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
@@ -99,7 +91,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
       const data = await response.json();
       setNotifications(data.notifications);
-      setUnreadCount(data.notifications.filter((n: Notification) => !n.isRead).length);
+      setUnreadCount(data.notifications.filter((n: AppNotification) => !n.isRead).length);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }

@@ -20,16 +20,15 @@ async function getRoadmapById(id: string): Promise<Roadmap> {
 
     const data = await res.json();
 
-    // Make sure 'data.data' exists
     if (!data?.data) {
       throw new Error(`Invalid response format. Full response: ${JSON.stringify(data)}`);
     }
 
     return data.data;
-  } catch (err: any) {
-    // You can log this to an error reporting tool too
-    console.error('getRoadmapById error:', err);
-    throw err; // Re-throw if you want the caller to handle it
+  } catch (err) {
+    const error = err as Error;
+    console.error('getRoadmapById error:', error.message);
+    throw err; 
   }
 }
 

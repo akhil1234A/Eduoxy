@@ -37,8 +37,8 @@ export const coursesApi = createApi({
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         try {
           const result = await queryFulfilled;
-          const data = result.data; 
-          dispatch(setSections(data.sections || []));
+          const course = result.data.data; 
+          dispatch(setSections(course?.sections || []));
           // console.log("Course sections loaded into Redux:", data.sections);
         } catch (err) {
           console.error("Failed to fetch course from coursesApi:", err);
@@ -98,15 +98,12 @@ export const coursesApi = createApi({
       invalidatesTags: ["Courses"],
     }),
 
-    getUserEnrolledCourses: build.query<Course[], string>({
+    getUserEnrolledCourses: build.query<ApiResponse<Course[]>, string>({
       query: (userId) => `/users/course-progress/${userId}/enrolled-courses`,
       providesTags: ["Courses", "UserCourseProgress"],
     }),
 
-    getUserCourseProgress: build.query<
-      UserCourseProgress,
-      { userId: string; courseId: string }
-    >({
+    getUserCourseProgress: build.query<ApiResponse<UserCourseProgress>, { userId: string; courseId: string }>({
       query: ({ userId, courseId }) => ({
         url: `/users/course-progress/${userId}/courses/${courseId}`,
       }),
@@ -150,7 +147,7 @@ export const coursesApi = createApi({
       },
     }),
 
-    searchCourses: build.query<Course[], { searchTerm: string; category?: string }>({
+    searchCourses: build.query<ApiResponse<Course[]>, { searchTerm: string; category?: string }>({
       query: ({ searchTerm, category }) => ({
         url: "/courses/search",
         params: { 

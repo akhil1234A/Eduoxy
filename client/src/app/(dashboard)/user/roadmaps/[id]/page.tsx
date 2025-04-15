@@ -3,7 +3,7 @@ import RoadmapDetail from "./RoadmapDetail"
 
 async function getRoadmapById(id: string) {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/roadmaps/${id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/roadmap/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

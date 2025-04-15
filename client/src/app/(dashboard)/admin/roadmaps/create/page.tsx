@@ -41,6 +41,7 @@ interface RoadmapFormData {
   title: string
   description: string
   sections: Section[]
+  [key: string]: unknown;
 }
 
 export default function CreateRoadmapPage() {

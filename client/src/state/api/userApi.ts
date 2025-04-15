@@ -40,14 +40,14 @@ export const userApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Chat"],
   endpoints: (builder) => ({
-    updatePassword: builder.mutation<UpdatePasswordResponse, UpdatePasswordRequest>({
+    updatePassword: builder.mutation<ApiResponse<UpdatePasswordResponse>, UpdatePasswordRequest>({
       query: ({ userId, currentPassword, newPassword }) => ({
         url: "/user/update-password",
         method: "PUT", 
         body: { userId, currentPassword, newPassword },
       }),
     }),
-    updateProfile: builder.mutation<UpdateProfileResponse, UpdateProfileRequest>({
+    updateProfile: builder.mutation<ApiResponse<UpdateProfileResponse>, UpdateProfileRequest>({
       query: (data) => {
         const formData = new FormData();
         formData.append("userId", data.userId);
@@ -64,14 +64,14 @@ export const userApi = createApi({
         };
       },
     }),
-    getProfile: builder.query<IUser, string>({
+    getProfile: builder.query<ApiResponse<IUser>, string>({
       query: (userId) => ({
         url: `/user/profile?userId=${userId}`,
         method: "GET",
       }),
     }),
     getChatHistory: builder.query<
-      { message: string; data: IMessage[] },
+      ApiResponse<IMessage[]>,
       { courseId: string; senderId: string; receiverId: string }
     >({
       query: ({ courseId, senderId, receiverId }) => ({

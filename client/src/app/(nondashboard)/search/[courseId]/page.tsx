@@ -54,12 +54,12 @@ const CourseView = () => {
   const userName = Cookies.get("userName");
 
   const { data: courseData, isLoading: isCourseLoading, isError: isCourseError } = useGetCourseQuery(courseId)
-  const course = courseData?.data
+  const course = courseData?.data as Course
 
   const { data: instructorData, isLoading: isInstructorLoading } = useGetProfileQuery(course?.teacherId || "", {
     skip: !course?.teacherId,
   })
-  const instructor: Instructor | undefined = instructorData?.data
+  const instructor: Instructor | undefined = instructorData?.data as Instructor | undefined
 
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [liveClasses, setLiveClasses] = useState<LiveClass[]>([])

@@ -33,7 +33,7 @@ export default function RoadmapsPage() {
   const [searchTerm, setSearchTerm] = useState("")
 
   const filteredRoadmaps = roadmaps.filter(
-    (roadmap: Roadmap) =>
+    (roadmap) =>
       roadmap.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       roadmap.description.toLowerCase().includes(searchTerm.toLowerCase()),
   )
@@ -88,8 +88,8 @@ export default function RoadmapsPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredRoadmaps.map((roadmap: Roadmap) => {
-            const { totalTopics, completedTopics } = getRoadmapStats(roadmap)
+          {filteredRoadmaps.map((roadmap) => {
+            const { totalTopics, completedTopics } = getRoadmapStats(roadmap as Roadmap)
             const progress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0
 
             return (

@@ -23,6 +23,7 @@ export enum ChapterType {
   Text = "Text",
   Quiz = "Quiz",
   Video = "Video",
+  PDF = "PDF",
 }
 
 export interface AuthenticatedRequest extends Request {

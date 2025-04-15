@@ -13,14 +13,14 @@ const TeacherDashboard = () => {
   const { data, isLoading, isError } = useGetTeacherDashboardQuery(teacherId as string);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const dashboardData = data?.data || {};
+  const dashboardData = data?.data ;
   const {
     totalEarnings = 0,
     totalStudents = 0,
     totalCourses = 0,
     pendingCourses = 0,
     recentEnrollments = [],
-  } = dashboardData;
+  } = dashboardData || {};
 
   if (isError) {
     toast.error("Failed to fetch teacher dashboard data");
@@ -33,7 +33,7 @@ const TeacherDashboard = () => {
     {
       key: "earning",
       label: "Earning",
-      render: (value: number) => `₹${value.toFixed(2)}`,
+      render: (value: unknown) => `₹${(value as number).toFixed(2)}`,
     },
   ];
 
@@ -60,7 +60,7 @@ const TeacherDashboard = () => {
       </div>
       <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
         <h3 className="text-xl font-semibold mb-4">Recent Enrollments</h3>
-        <DynamicTable
+        <DynamicTable<RecentEnrollmentTeacher>
           items={recentEnrollments}
           columns={columns}
           searchTerm={searchTerm}

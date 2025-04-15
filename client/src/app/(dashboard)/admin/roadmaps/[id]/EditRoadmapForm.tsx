@@ -39,6 +39,7 @@ interface RoadmapFormData {
   title: string
   description: string
   sections: Section[]
+  [key: string]: unknown;
 }
 
 interface EditRoadmapFormProps {

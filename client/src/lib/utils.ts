@@ -96,7 +96,7 @@ export const uploadToS3 = async (
       method: "PUT",
       body: file,
       headers: {
-        "Content-Type": file.type || (type === "subtitle" ? "text/vtt" : undefined),
+        "Content-Type": file.type || (type === "subtitle" ? "text/vtt" : "application/octet-stream"),
       },
     });
 
@@ -127,7 +127,7 @@ export const createCourseFormData = async (
   formData.append("description", data.courseDescription);
   formData.append("category", data.courseCategory);
   formData.append("price", data.coursePrice.toString());
-  formData.append("status", data.courseStatus ? "Published" : "Draft");
+  formData.append("status", data.courseStatus);
 
   if (data.courseImage) {
     const { publicUrl } = await updateS3Resource(
@@ -150,8 +150,8 @@ export const createCourseFormData = async (
   return formData;
 };
 
-export const uploadAllVideos = async (localSections: Section[]) => {
-  const updatedSections = localSections.map((section) => ({
+export const uploadAllVideos = async (sections: Section[]): Promise<Section[]> => {
+  const updatedSections = sections.map((section) => ({
     ...section,
     chapters: section.chapters.map((chapter) => ({ ...chapter })),
   }));
@@ -159,21 +159,29 @@ export const uploadAllVideos = async (localSections: Section[]) => {
   for (let i = 0; i < updatedSections.length; i++) {
     for (let j = 0; j < updatedSections[i].chapters.length; j++) {
       const chapter = updatedSections[i].chapters[j];
-      if (chapter.video instanceof File && chapter.video.type.startsWith("video/")) {
-        try {
-          const { publicUrl } = await updateS3Resource(
-            typeof chapter.video === "string" ? chapter.video : undefined,
-            chapter.video,
-            "video"
-          );
-          updatedSections[i].chapters[j] = {
-            ...chapter,
-            video: publicUrl,
-            type: "Video",
-          };
-        } catch (error) {
-          console.error(`Failed to upload video for chapter ${chapter.chapterId}:`, error);
-          throw error;
+      const video = chapter.video;
+      
+      // Check if video is a File object
+      if (video && typeof video !== 'string') {
+        // Use type assertion to tell TypeScript this is a File
+        const videoFile = video as unknown as File;
+        
+        if (videoFile.type && videoFile.type.startsWith("video/")) {
+          try {
+            const { publicUrl } = await updateS3Resource(
+              undefined,
+              videoFile,
+              "video"
+            );
+            updatedSections[i].chapters[j] = {
+              ...chapter,
+              video: publicUrl,
+              type: "Video",
+            };
+          } catch (error) {
+            console.error(`Failed to upload video for chapter ${chapter.chapterId}:`, error);
+            throw error;
+          }
         }
       }
     }
@@ -181,7 +189,6 @@ export const uploadAllVideos = async (localSections: Section[]) => {
 
   return updatedSections;
 };
-
 
 export const updateS3Resource = async (
   oldUrl: string | undefined,

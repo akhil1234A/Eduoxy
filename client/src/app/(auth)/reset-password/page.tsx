@@ -4,6 +4,26 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
+import { Suspense } from "react";
+
+// Skeleton Component
+const ResetPasswordSkeleton = () => {
+  return (
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="bg-[#25262F] p-8 rounded-lg shadow-md w-96">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-700 rounded w-3/4 mx-auto mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-10 bg-gray-700 rounded"></div>
+            <div className="h-10 bg-gray-700 rounded"></div>
+            <div className="h-10 bg-gray-700 rounded"></div>
+          </div>
+          <div className="h-4 bg-gray-700 rounded w-1/2 mx-auto mt-6"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const passwordSchema = z
   .string()
@@ -21,7 +41,6 @@ const ResetPassword = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  
   useEffect(() => {
     const tokenFromUrl = searchParams.get("token");
     if (tokenFromUrl) setToken(tokenFromUrl);
@@ -46,7 +65,6 @@ const ResetPassword = () => {
     }
 
     try {
-    
       passwordSchema.parse(newPassword);
 
       const response = await fetch(
@@ -124,4 +142,13 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;
+
+const ResetPasswordWithSuspense = () => {
+  return (
+    <Suspense fallback={<ResetPasswordSkeleton />}>
+      <ResetPassword />
+    </Suspense>
+  );
+};
+
+export default ResetPasswordWithSuspense;

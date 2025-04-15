@@ -48,7 +48,7 @@ const Course = () => {
   if (!course || !userProgress) return <div>Error loading course</div>;
 
   const subtitleProxyUrl = currentChapter?.subtitle
-    ? `/api/proxy-subtitles?url=${encodeURIComponent(currentChapter.subtitle)}`
+    ? `/api/proxy-subtitles?url=${encodeURIComponent(currentChapter.subtitle as string)}`
     : null;
 
   return (
@@ -81,9 +81,12 @@ const Course = () => {
           <CardContent className="course__video-container">
             {currentChapter?.video ? (
               <>
-                {console.log("Video URL:", currentChapter.video)}
-                {console.log("Original Subtitle URL:", currentChapter.subtitle)}
-                {console.log("Proxied Subtitle URL:", subtitleProxyUrl)}
+                {(() => {
+                  console.log("Video URL:", currentChapter.video);
+                  console.log("Original Subtitle URL:", currentChapter.subtitle);
+                  console.log("Proxied Subtitle URL:", subtitleProxyUrl);
+                  return null;
+                })()}
                 <ReactPlayer
                   ref={playerRef}
                   url={currentChapter.video as string}
@@ -156,8 +159,8 @@ const Course = () => {
                     <div>
                       <p>PDF Resource:</p>
                       <Button asChild variant="link">
-                        <a href={currentChapter.pdf} target="_blank" rel="noopener noreferrer">
-                          Download PDF ({currentChapter.pdf.split("/").pop()})
+                        <a href={currentChapter.pdf as string} target="_blank" rel="noopener noreferrer">
+                          Download PDF ({(currentChapter.pdf as string).split("/").pop()})
                         </a>
                       </Button>
                     </div>

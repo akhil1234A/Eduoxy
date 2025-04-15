@@ -9,6 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
+
+interface StudentData {
+  userId: string;
+  courseId: string;
+  courseTitle: string;
+  name: string;
+}
+
 export default function InstructorChatPage() {
   const senderId = Cookies.get("userId"); 
   const [selectedChat, setSelectedChat] = useState<{
@@ -18,21 +26,25 @@ export default function InstructorChatPage() {
     studentName: string;
   } | null>(null);
 
-  const { data: courses, isLoading } = useGetTeacherCoursesQuery(senderId || "", {
+  const { data: courses, isLoading } = useGetTeacherCoursesQuery({}, {
     skip: !senderId,
   });
 
-  const students = courses?.data?.reduce((acc: Course[], course) => {
-    course.enrollments.forEach((student: Enrollment) => {
-      if (!acc.find((s) => s.userId === student.userId)) {
-        acc.push({
-          ...student,
-          courseId: course.courseId,
-          courseTitle: course.title,
-          name: student.studentName || "Unknown",
-        });
-      }
-    });
+ 
+  const students = courses?.data?.reduce<StudentData[]>((acc, course) => {
+    if (course.enrollments) {
+      course.enrollments.forEach((enrollment) => {
+       
+        if (!acc.find((s) => s.userId === enrollment.userId)) {
+          acc.push({
+            userId: enrollment.userId,
+            courseId: course.courseId,
+            courseTitle: course.title,
+            name: enrollment.userName || "Unknown",
+          });
+        }
+      });
+    }
     return acc;
   }, []);
 
@@ -55,7 +67,7 @@ export default function InstructorChatPage() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px]">
-              {students?.length > 0 ? (
+              {students && students.length > 0 ? (
                 students.map((student) => (
                   <Button
                     key={`${student.userId}-${student.courseId}`}

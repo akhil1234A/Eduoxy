@@ -31,7 +31,12 @@ const PaymentPage = () => {
           userId,
           courseId,
         }).unwrap();
-        setClientSecret(paymentIntentResponse.data.clientSecret);
+        
+        if (paymentIntentResponse.data?.clientSecret) {
+          setClientSecret(paymentIntentResponse.data.clientSecret);
+        } else {
+          console.error("No client secret in payment intent response");
+        }
       } catch (error) {
         console.error("Error creating payment intent:", error);
       }
@@ -59,7 +64,7 @@ const PaymentPage = () => {
   const options = {
     clientSecret, 
     appearance: {
-      theme: "night",
+      theme: "night" as const,
       variables: {
         colorPrimary: "#6366F1",
         colorBackground: "#1B1C22",
@@ -88,7 +93,7 @@ const PaymentPage = () => {
       </div>
       <Elements stripe={stripePromise} options={options}>
         <Suspense fallback={<div className="min-h-[200px] flex items-center justify-center"><Loading /></div>}>
-          <CheckoutForm courseId={courseId} amount={course.price} />
+          <CheckoutForm courseId={courseId} amount={course.price || 0} />
         </Suspense>
       </Elements>
     </div>

@@ -1,13 +1,16 @@
 declare global {
 
 
-  interface IUser {
-    id: string;
+  interface IUser extends Record<string, unknown>{
+    _id: string;
     name: string;
     email: string;
     userType: "student" | "admin" | "teacher";
     isVerified: boolean;
     isBlocked: boolean;
+    title?: string;
+    bio?: string;
+    profileImage?: string;
   }
 
   interface Course {
@@ -24,6 +27,7 @@ declare global {
     sections: Section[];
     enrollments?: Array<{
       userId: string;
+      userName: string
     }>;
   }
 
@@ -40,6 +44,7 @@ declare global {
     amount?: number
     earning?: number
     paymentProvider: string
+    [key: string]: unknown; 
   }
 
   interface DateRange {
@@ -84,8 +89,10 @@ declare global {
     title: string;
     content: string;
     video?: string;
+    pdf?: string;
+    subtitle?: string;
     freePreview?: boolean;
-    type: "Text" | "Quiz" | "Video";
+    type: "Text" | "Quiz" | "Video" | "PDF";
   }
 
   interface ChapterProgress {
@@ -184,6 +191,7 @@ declare global {
     courseCategory: string;
     coursePrice: string;
     courseStatus: string;
+    courseImage: File | string;
   }
   interface CustomFixedModalProps {
     isOpen: boolean;
@@ -237,6 +245,12 @@ declare global {
     needsVerification?: boolean;
   }
 
+  interface VerifyOtpResponse {
+    accessToken?: string;
+    refreshToken?: string;
+    user?: IUser;
+  }
+
   export interface AdminDasboard {
     totalRevenue: number
     activeCourses: number
@@ -245,7 +259,7 @@ declare global {
     recentTransactions: RecentTransactionAdmin[]
   }
   
-  export interface RecentTransactionAdmin {
+  export interface RecentTransactionAdmin extends Record<string, unknown> {
     transactionId: string
     date: string
     courseName: string
@@ -261,7 +275,7 @@ declare global {
     recentEnrollments: RecentEnrollmentTeacher[]
   }
   
-  export interface RecentEnrollmentTeacher {
+  export interface RecentEnrollmentTeacher extends Record<string, unknown> {
     studentName: string
     courseName: string
     date: string
@@ -276,6 +290,7 @@ declare global {
     createdAt?: string
     updatedAt?: string
     __v?: number
+    [key: string]: unknown;
   }
   
   export interface RoadmapSection {
@@ -296,8 +311,18 @@ declare global {
     id: string
     title: string
     url: string
+    type: "article" | "video" | "link"
   }
   
+  interface AppNotification {
+    _id: string;
+    title: string;
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+    isRead: boolean;
+    link?: string;
+    createdAt: Date;
+  }
   
 }
 

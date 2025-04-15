@@ -30,7 +30,7 @@ export const authApi = createApi({
         credentials: "include", // Send refreshToken cookie
       }),
     }),
-    verifyOtp: builder.mutation<ApiResponse<void>, VerifyOtpRequest>({
+    verifyOtp: builder.mutation<ApiResponse<VerifyOtpResponse>, VerifyOtpRequest>({
       query: (body) => ({
         url: "/auth/verify-otp",
         method: "POST",

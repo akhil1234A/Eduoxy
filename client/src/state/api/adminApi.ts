@@ -32,7 +32,7 @@ export const adminApi = createApi({
       providesTags: ["Dashboard"],
     }),
 
-    getTeacherDashboard: builder.query<{ message: string; data: TeacherDasboard }, string>({
+    getTeacherDashboard: builder.query<ApiResponse<TeacherDasboard>, string>({
       query: (teacherId) => ({
         url: `/dashboard/teacher/${teacherId}`,
         method: "GET",

@@ -7,12 +7,6 @@ import { useGetRoadmapsQuery, useDeleteRoadmapMutation } from "@/state/api/roadm
 import { Button } from "@/components/ui/button";
 import DynamicTable from "@/components/DynamicTable";
 
-interface Roadmap {
-  _id: string; 
-  title: string;
-  description: string;
-  sections: unknown[];
-}
 
 interface ApiResponse {
   data: Roadmap[];
@@ -23,12 +17,12 @@ const RoadmapsPage = () => {
   const roadmaps = (data as ApiResponse)?.data || [];
   const [deleteRoadmap] = useDeleteRoadmapMutation();
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState(""); // Add search state
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this roadmap?")) {
       try {
-      await deleteRoadmap(id);
+        await deleteRoadmap(id);
       } catch (error) {
         console.error("Failed to delete roadmap:", error);
       }
@@ -39,17 +33,17 @@ const RoadmapsPage = () => {
     {
       key: "title",
       label: "Title",
-      render: (value: string) => value,
+      render: (value: unknown) => String(value),
     },
     {
       key: "description",
       label: "Description",
-      render: (value: string) => value,
+      render: (value: unknown) => String(value),
     },
     {
       key: "sections",
       label: "Sections",
-      render: (value: unknown[]) => value.length,
+      render: (value: unknown) => Array.isArray(value) ? value.length : 0,
     },
     {
       key: "actions",
@@ -66,7 +60,7 @@ const RoadmapsPage = () => {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => handleDelete(item._id)}
+            onClick={() => item._id && handleDelete(item._id)}
           >
             <Trash2 className="mr-2 h-4 w-4" /> Delete
           </Button>
@@ -90,7 +84,7 @@ const RoadmapsPage = () => {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         isLoading={isLoading}
-        rowKeyExtractor={(item) => item._id}
+        rowKeyExtractor={(item) => item._id || ''}
         filterFn={(item, term) =>
           [item.title, item.description].some((field) =>
             String(field).toLowerCase().includes(term.toLowerCase())

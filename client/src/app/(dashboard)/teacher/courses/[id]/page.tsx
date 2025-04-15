@@ -21,6 +21,7 @@ import ChapterModal from "./ChapterModal";
 import SectionModal from "./SectionModal";
 import Image from "next/image";
 
+
 const CourseEditor = () => {
   const router = useRouter();
   const params = useParams();
@@ -31,7 +32,7 @@ const CourseEditor = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
 
-  const course = useMemo(() => data?.data || {}, [data?.data]);
+  const course = useMemo(() => data?.data as Course || {} as Course, [data?.data]);
 
   const dispatch = useAppDispatch();
   const sections = useAppSelector((state) => state.global.courseEditor.sections) || [];
@@ -43,7 +44,7 @@ const CourseEditor = () => {
       courseDescription: "",
       courseCategory: "",
       coursePrice: "0",
-      courseStatus: false,
+      courseStatus: "Draft",
       courseImage: "",
     },
   });
@@ -55,7 +56,7 @@ const CourseEditor = () => {
         courseDescription: course.description || "",
         courseCategory: course.category || "",
         coursePrice: course.price?.toString() || "0",
-        courseStatus: course.status === "Published",
+        courseStatus: course.status === "Published" ? "Published" : "Draft",
         courseImage: course.image || "",
       });
       setImagePreview(course.image || "");
@@ -123,8 +124,11 @@ const CourseEditor = () => {
       }
 
       toast.loading("Uploading videos and updating course...");
-      const updatedSections = await uploadAllVideos(sections, id);
-      const formData = await createCourseFormData(data, updatedSections);
+      const updatedSections = await uploadAllVideos(sections);
+      const formData = await createCourseFormData({
+        ...data,
+        courseImage: data.courseImage || "",
+      }, updatedSections);
       await updateCourse({ courseId: id, formData }).unwrap();
 
       toast.dismiss();
@@ -171,11 +175,11 @@ const CourseEditor = () => {
                   <>
                     <CustomFormField
                       name="courseStatus"
-                      label={methods.watch("courseStatus") ? "Published" : "Draft"}
+                      label={methods.watch("courseStatus") === "Published" ? "Published" : "Draft"}
                       type="switch"
                       className="flex items-center space-x-2"
                       labelClassName={`text-sm font-medium ${
-                        methods.watch("courseStatus") ? "text-green-500" : "text-yellow-500"
+                        methods.watch("courseStatus") === "Published" ? "text-green-500" : "text-yellow-500"
                       }`}
                       inputClassName="data-[state=checked]:bg-green-500"
                     />
@@ -183,7 +187,7 @@ const CourseEditor = () => {
                       type="submit"
                       className="bg-primary-700 hover:bg-primary-600"
                     >
-                      {methods.watch("courseStatus") ? "Update Published Course" : "Save Draft"}
+                      {methods.watch("courseStatus") === "Published" ? "Update Published Course" : "Save Draft"}
                     </Button>
                   </>
                 )}

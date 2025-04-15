@@ -42,7 +42,7 @@ const ProfilePage = () => {
     mode: "onChange",
   });
 
-  const { handleSubmit, reset, trigger } = methods;
+  const { handleSubmit, reset } = methods;
 
   useEffect(() => {
     if (profileData?.data && !isProfileLoading) {
@@ -64,27 +64,6 @@ const ProfilePage = () => {
     }
   }, [profileData, isProfileLoading, reset]);
 
-  const handleImageChange = (file?: File) => {
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-        methods.setValue("profileImage", file, { shouldValidate: true });
-        trigger("profileImage");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleFormChange = (field: keyof ProfileFormData, value: string) => {
-    setLocalProfileData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    methods.setValue(field, value, { shouldValidate: true });
-    trigger(field);
-  };
-
   const onSubmit = async (data: ProfileFormData) => {
     if (!userId) {
       toast.error("Please sign in to update your profile.");
@@ -102,26 +81,29 @@ const ProfilePage = () => {
 
       toast.success(result.message);
 
-      setLocalProfileData((prev) => ({
-        ...prev,
-        name: result.data.name || prev.name,
-        title: result.data.title || prev.title,
-        bio: result.data.bio || prev.bio,
-      }));
+      if (result.data?.user) {
+        const userData = result.data.user;
+        setLocalProfileData((prev) => ({
+          ...prev,
+          name: userData.name || prev.name,
+          title: userData.title || prev.title,
+          bio: userData.bio || prev.bio,
+        }));
 
-      if (result.data.profileImage) {
-        setProfileImage(result.data.profileImage);
+        if (userData.profileImage) {
+          setProfileImage(userData.profileImage);
+        }
+
+        reset({
+          name: userData.name || "",
+          title: userData.title || "",
+          bio: userData.bio || "",
+          profileImage: undefined,
+        });
       }
-
-      reset({
-        name: result.data.name || "",
-        title: result.data.title || "",
-        bio: result.data.bio || "",
-        profileImage: undefined,
-      });
-    } catch (error) {
-      const errorMessage = error as Error
-      toast.error(errorMessage.data?.message || "Something went wrong.");
+    } catch (error: unknown) {
+      const errorObj = error as { data?: { message?: string } };
+      toast.error(errorObj?.data?.message || "Something went wrong.");
     }
   };
 
@@ -189,31 +171,24 @@ const ProfilePage = () => {
                   label="Name"
                   type="text"
                   placeholder="e.g., John Doe"
-                  onChange={(e) => handleFormChange("name", e.target.value)}
                 />
                 <CustomFormField
                   name="title"
                   label="Title"
                   type="text"
                   placeholder="e.g., Senior React Developer"
-                  onChange={(e) => handleFormChange("title", e.target.value)}
                 />
                 <CustomFormField
                   name="bio"
                   label="Bio"
                   type="text"
                   placeholder="e.g., Experienced developer with 10+ years..."
-                  onChange={(e) => handleFormChange("bio", e.target.value)}
                 />
                 <CustomFormField
                   name="profileImage"
                   label="Profile Image"
                   type="file"
                   accept="image/jpeg,image/png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    handleImageChange(file);
-                  }}
                   disabled={isUpdating}
                 />
                 <Button

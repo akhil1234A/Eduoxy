@@ -18,20 +18,14 @@ import { updateS3Resource } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; 
 
-interface Chapter extends ChapterFormData {
-  chapterId: string;
-  type: "Video" | "Text" | "PDF";
-}
-
 const ChapterModal = () => {
   const dispatch = useAppDispatch();
   const { isChapterModalOpen, selectedSectionIndex, selectedChapterIndex, sections } =
     useAppSelector((state) => state.global.courseEditor);
 
-  const chapter: Chapter | undefined =
-    selectedSectionIndex !== null && selectedChapterIndex !== null
-      ? sections[selectedSectionIndex].chapters[selectedChapterIndex]
-      : undefined;
+  const chapter = selectedSectionIndex !== null && selectedChapterIndex !== null
+    ? sections[selectedSectionIndex].chapters[selectedChapterIndex]
+    : undefined;
 
   const methods = useForm<ChapterFormData>({
     resolver: zodResolver(chapterSchema),
@@ -178,9 +172,9 @@ const ChapterModal = () => {
         title: data.title,
         content: data.content,
         type: videoUrl ? "Video" : pdfUrl ? "PDF" : "Text",
-        video: videoUrl,
-        pdf: pdfUrl,
-        subtitle: subtitleUrl,
+        video: videoUrl || undefined,
+        pdf: pdfUrl || undefined,
+        subtitle: subtitleUrl || undefined,
       };
 
       if (selectedChapterIndex === null) {

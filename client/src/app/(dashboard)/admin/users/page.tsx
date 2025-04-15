@@ -7,13 +7,6 @@ import { toast } from "sonner";
 import DynamicTable from "@/components/DynamicTable";
 import { Button } from "@/components/ui/button";
 
-interface Student {
-  _id: string;
-  name: string;
-  email: string;
-  isBlocked: boolean;
-  isVerified: boolean;
-}
 
 const ManageUsers = () => {
   const { data, isLoading } = useGetStudentsQuery();
@@ -49,25 +42,25 @@ const ManageUsers = () => {
     {
       key: "isBlocked",
       label: "Status",
-      render: (value: boolean) => (value ? "Blocked" : "Active"),
+      render: (value: unknown, item: IUser) => (item.isBlocked ? "Blocked" : "Active"),
     },
     {
       key: "isVerified",
       label: "Verified",
-      render: (value: boolean) => (value ? "Yes" : "No"),
+      render: (value: unknown, item: IUser) => (item.isVerified ? "Yes" : "No"),
     },
     {
       key: "actions",
       label: "Actions",
-      render: (_:void, student: Student) => (
-                        <Button
+      render: (_: unknown, student: IUser) => (
+        <Button
           onClick={() => (student.isBlocked ? handleUnblock(student._id) : handleBlock(student._id))}
-                          variant="outline"
-                          size="sm"
-                          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
-                        >
+          variant="outline"
+          size="sm"
+          className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
+        >
           {student.isBlocked ? "Unblock" : "Block"}
-                        </Button>
+        </Button>
       ),
     },
   ];
@@ -75,7 +68,7 @@ const ManageUsers = () => {
   return (
     <div className="manage-users w-full h-full">
       <Header title="Manage Users" subtitle="View and manage student accounts" />
-      <DynamicTable
+      <DynamicTable<IUser>
         items={students}
         columns={columns}
         searchTerm={searchTerm}
@@ -90,7 +83,7 @@ const ManageUsers = () => {
         searchPlaceholder="Search students by name or email..."
         noResultsComponent={<div>No students found</div>}
       />
-      </div>
+    </div>
   );
 };
 

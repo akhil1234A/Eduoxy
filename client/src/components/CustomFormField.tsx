@@ -74,7 +74,7 @@ export const CustomFormField: React.FC<FormFieldProps> = ({
   multiple = false,
   isIcon = false,
   initialValue,
-}) => {
+}) => { 
   const { control } = useFormContext();
 
   const renderFormControl = (

@@ -7,7 +7,7 @@ export const transactionApi = createApi({
   tagTypes: ["Transactions", "Courses"],
   endpoints: (builder) => ({
     createPaymentIntent: builder.mutation<
-      { clientSecret: string },
+      ApiResponse<{ clientSecret: string }>,
       { amount: number; userId: string; courseId: string }
     >({
       query: (data) => ({
@@ -19,7 +19,7 @@ export const transactionApi = createApi({
     }),
 
     createTransaction: builder.mutation<
-      { message: string; data: Transaction },
+      ApiResponse<Transaction>,
       {
         userId: string;
         courseId: string;
@@ -36,7 +36,7 @@ export const transactionApi = createApi({
       invalidatesTags: ["Courses", "Transactions"],
     }),
 
-    getAdminEarnings: builder.query<{ message: string; data: Transaction[] }, void>({
+    getAdminEarnings: builder.query<ApiResponse<Transaction[]>, void>({
       query: () => ({
         url: "/transactions/admin/earnings",
         method: "GET",
@@ -44,7 +44,7 @@ export const transactionApi = createApi({
       providesTags: ["Transactions"],
     }),
 
-    getTeacherEarnings: builder.query<{ message: string; data: Transaction[] }, string>({
+    getTeacherEarnings: builder.query<ApiResponse<Transaction[]>, string>({
       query: (teacherId) => ({
         url: `/transactions/teacher/earnings/${teacherId}`,
         method: "GET",
@@ -52,7 +52,7 @@ export const transactionApi = createApi({
       providesTags: ["Transactions"],
     }),
 
-    getStudentPurchases: builder.query<{ message: string; data: Transaction[] }, string>({
+    getStudentPurchases: builder.query<ApiResponse<Transaction[]>, string>({
       query: (userId) => ({
         url: `/transactions/student/purchases/${userId}`,
         method: "GET",

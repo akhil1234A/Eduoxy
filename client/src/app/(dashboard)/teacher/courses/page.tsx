@@ -55,7 +55,7 @@ const Courses = () => {
         toast.success("Course deleted successfully!");
       } catch (error) {
         const errorMessage = error as Error
-        toast.error(errorMessage.data?.message || "Failed to delete course");
+        toast.error(errorMessage.message || "Failed to delete course");
       }
     }
   };
@@ -71,7 +71,7 @@ const Courses = () => {
 
     } catch (error) {
       const errorMessage = error as Error
-      toast.error(errorMessage.data?.message || "Failed to create course");
+      toast.error(errorMessage.message || "Failed to create course");
     }
   };
 

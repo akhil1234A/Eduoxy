@@ -12,6 +12,8 @@ import { ArrowLeft, FileText, Video, LinkIcon, ExternalLink, CheckCircle2, Circl
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 
+
+
 interface RoadmapDetailProps {
   roadmapId: string
   initialData: Roadmap
@@ -38,8 +40,9 @@ export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailP
         isCompleted: !isCompleted,
       }).unwrap()
 
-      // Update local state with the new roadmap data
-      setRoadmap(result.data)
+      if (result.data) {
+        setRoadmap(result.data)
+      }
 
       toast.success(!isCompleted ? "Topic completed" : "Topic marked as incomplete")
     } catch (error) {
@@ -107,7 +110,7 @@ export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailP
             <span className="font-medium">{progress.percentage}%</span>
           </div>
           <div className="h-2 bg-customgreys-darkGrey rounded-full overflow-hidden">
-            <div className="h-full bg-primary-750 rounded-full" style={{ width: `${progress.percentage}%` }} />
+            <div className={`h-full bg-primary-750 rounded-full progress-bar`} style={{ width: `${progress.percentage}%` }} />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>
@@ -153,7 +156,7 @@ export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailP
                               </span>
                               <div className="w-16 h-1 bg-customgreys-darkGrey rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-primary-750 rounded-full"
+                                  className={`h-full bg-primary-750 rounded-full progress-bar`}
                                   style={{ width: `${sectionProgress}%` }}
                                 />
                               </div>
@@ -243,9 +246,9 @@ export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailP
                                 className="flex items-center gap-2 p-2 rounded-md bg-customgreys-darkGrey hover:bg-customgreys-darkerGrey transition-colors"
                               >
                                 <div className="flex items-center justify-center p-1 bg-customgreys-darkerGrey rounded-md">
-                                  {resource.type === "article" && <FileText className="h-4 w-4" />}
-                                  {resource.type === "video" && <Video className="h-4 w-4" />}
-                                  {resource.type === "link" && <LinkIcon className="h-4 w-4" />}
+                                  {(resource as RoadmapResource).type === "article" && <FileText className="h-4 w-4" />}
+                                  {(resource as RoadmapResource).type === "video" && <Video className="h-4 w-4" />}
+                                  {(resource as RoadmapResource).type === "link" && <LinkIcon className="h-4 w-4" />}
                                 </div>
                                 <span className="flex-1 line-clamp-1">{resource.title}</span>
                                 <ExternalLink className="h-3 w-3 text-muted-foreground" />
@@ -360,9 +363,9 @@ export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailP
                               className="flex items-center gap-3 p-3 rounded-md bg-customgreys-darkGrey hover:bg-customgreys-darkerGrey transition-colors"
                             >
                               <div className="flex items-center justify-center p-2 bg-customgreys-darkerGrey rounded-md">
-                                {resource.type === "article" && <FileText className="h-5 w-5" />}
-                                {resource.type === "video" && <Video className="h-5 w-5" />}
-                                {resource.type === "link" && <LinkIcon className="h-5 w-5" />}
+                                {(resource as RoadmapResource).type === "article" && <FileText className="h-5 w-5" />}
+                                {(resource as RoadmapResource).type === "video" && <Video className="h-5 w-5" />}
+                                {(resource as RoadmapResource).type === "link" && <LinkIcon className="h-5 w-5" />}
                               </div>
                               <div className="flex-1">
                                 <h4 className="font-medium line-clamp-1">{resource.title}</h4>

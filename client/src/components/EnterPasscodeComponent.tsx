@@ -52,11 +52,11 @@ const EnterPasscodeComponent = ({ email }: Props) => {
         setSuccess("OTP verified successfully. Redirecting...");
         localStorage.removeItem("signupEmail");
 
-        const { user } = response.data;
-        const targetRoute = user.userType === "teacher" ? "/teacher/courses" : "/user/courses";
+        const { user } = response.data || {};
+        const targetRoute = user?.userType === "teacher" ? "/teacher/courses" : "/user/courses";
         setTimeout(() => router.push(targetRoute), 2000);
       } else {
-        throw new Error(response.error || "OTP verification failed");
+        throw new Error(response.error as string || "OTP verification failed");
       }
     } catch (err) {
       if (err instanceof z.ZodError) {

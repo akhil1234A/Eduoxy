@@ -7,13 +7,7 @@ import { toast } from "sonner";
 import DynamicTable from "@/components/DynamicTable";
 import { Button } from "@/components/ui/button";
 
-interface Teacher {
-  id: string;
-  name: string;
-  email: string;
-  isBlocked: boolean;
-  isVerified: boolean;
-}
+
 
 const ManageInstructors = () => {
   const { data, isLoading } = useGetTeachersQuery();
@@ -51,19 +45,19 @@ const ManageInstructors = () => {
     {
       key: "isBlocked",
       label: "Status",
-      render: (value: boolean) => (value ? "Blocked" : "Active"),
+      render: (value: unknown, item: IUser) => (item.isBlocked ? "Blocked" : "Active"),
     },
     {
       key: "isVerified",
       label: "Verified",
-      render: (value: boolean) => (value ? "Yes" : "No"),
+      render: (value: unknown, item: IUser) => (item.isVerified ? "Yes" : "No"),
     },
     {
       key: "actions",
       label: "Actions",
-      render: (_: unknown, teacher: Teacher) => (
+      render: (_: unknown, teacher: IUser) => (
         <Button
-          onClick={() => (teacher.isBlocked ? handleUnblock(teacher.id) : handleBlock(teacher.id))}
+          onClick={() => (teacher.isBlocked ? handleUnblock(teacher._id) : handleBlock(teacher._id))}
           variant="outline"
           size="sm"
           className="bg-customgreys-primarybg text-customgreys-dirtyGrey hover:bg-customgreys-darkerGrey hover:text-white-50"
@@ -77,13 +71,13 @@ const ManageInstructors = () => {
   return (
     <div className="manage-instructors w-full h-full">
       <Header title="Manage Instructors" subtitle="View and manage teacher accounts" />
-      <DynamicTable
+      <DynamicTable<IUser>
         items={teachers}
         columns={columns}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         isLoading={isLoading}
-        rowKeyExtractor={(teacher) => teacher.id}
+        rowKeyExtractor={(teacher) => teacher._id}
         filterFn={(teacher, term) =>
           [teacher.name, teacher.email].some((field) =>
             field.toLowerCase().includes(term.toLowerCase())

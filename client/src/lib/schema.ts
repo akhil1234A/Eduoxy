@@ -79,7 +79,7 @@ export const courseSchema = z.object({
     .min(1, "Price is required")
     .regex(/^\d+(\.\d{1,2})?$/, "Price must be a valid number")
     .refine((val) => parseFloat(val) >= 0, { message: "Price cannot be negative" }),
-  courseStatus: z.boolean(),
+  courseStatus: z.enum(["Draft", "Published"]),
   courseImage: z
     .union([
       z.string().url("Invalid image URL").optional(),

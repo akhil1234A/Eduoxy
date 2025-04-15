@@ -51,7 +51,7 @@ const SettingsPage = () => {
       methods.reset();
     } catch (error) {
       const errorMessage = error as Error
-      toast.error(errorMessage.data?.message || "Something went wrong.");
+      toast.error(errorMessage.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -70,19 +70,19 @@ const SettingsPage = () => {
               name="currentPassword"
               label="Current Password"
               type="password"
-              methods={methods}
+            
             />
             <CustomFormField
               name="newPassword"
               label="New Password"
               type="password"
-              methods={methods}
+          
             />
             <CustomFormField
               name="confirmPassword"
               label="Confirm New Password"
               type="password"
-              methods={methods}
+       
             />
           </div>
           <Button

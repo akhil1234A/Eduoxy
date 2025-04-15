@@ -27,17 +27,19 @@ const ChaptersSidebar = ({ courseId: propCourseId }: ChaptersSidebarProps) => {
     userId,
     course,
     userProgress,
-    chapterId,
+    chapterId: paramChapterId,
     courseId,
     isLoading,
     updateChapterProgress,
   } = useCourseProgressData(propCourseId);
 
+  const chapterId = typeof paramChapterId === 'string' ? paramChapterId : undefined;
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOpen(false);
-  }, []); 
+  }, [setOpen]); 
 
   if (isLoading) return <Loading />;
   if (!userId) return <div>Please sign in to view course progress.</div>;
@@ -73,8 +75,7 @@ const ChaptersSidebar = ({ courseId: propCourseId }: ChaptersSidebarProps) => {
           sectionProgress={safeUserProgress.sections.find(
             (s) => s.sectionId === section.sectionId
           )}
-          chapterId={chapterId as string}
-          courseId={courseId as string}
+          chapterId={chapterId}
           expandedSections={expandedSections}
           toggleSection={toggleSection}
           handleChapterClick={handleChapterClick}
@@ -90,17 +91,15 @@ const Section = ({
   index,
   sectionProgress,
   chapterId,
-  courseId,
   expandedSections,
   toggleSection,
   handleChapterClick,
   updateChapterProgress,
 }: {
-  section: any;
+  section: Section;
   index: number;
-  sectionProgress: any;
-  chapterId: string;
-  courseId: string;
+  sectionProgress?: SectionProgress;
+  chapterId?: string;
   expandedSections: string[];
   toggleSection: (sectionTitle: string) => void;
   handleChapterClick: (sectionId: string, chapterId: string) => void;
@@ -111,7 +110,7 @@ const Section = ({
   ) => void;
 }) => {
   const completedChapters =
-    sectionProgress?.chapters.filter((c: any) => c.completed).length || 0;
+    sectionProgress?.chapters.filter((c: ChapterProgress) => c.completed).length || 0;
   const totalChapters = section.chapters.length;
   const isExpanded = expandedSections.includes(section.sectionTitle);
 
@@ -149,7 +148,6 @@ const Section = ({
             section={section}
             sectionProgress={sectionProgress}
             chapterId={chapterId}
-            courseId={courseId}
             handleChapterClick={handleChapterClick}
             updateChapterProgress={updateChapterProgress}
           />
@@ -166,8 +164,8 @@ const ProgressVisuals = ({
   completedChapters,
   totalChapters,
 }: {
-  section: any;
-  sectionProgress: any;
+  section: Section;
+  sectionProgress?: SectionProgress;
   completedChapters: number;
   totalChapters: number;
 }) => {
@@ -175,9 +173,9 @@ const ProgressVisuals = ({
     <>
       <div className="chapters-sidebar__progress">
         <div className="chapters-sidebar__progress-bars">
-          {section.chapters.map((chapter: any) => {
+          {section.chapters.map((chapter: Chapter) => {
             const isCompleted = sectionProgress?.chapters.find(
-              (c: any) => c.chapterId === chapter.chapterId
+              (c: ChapterProgress) => c.chapterId === chapter.chapterId
             )?.completed;
             return (
               <div
@@ -205,14 +203,12 @@ const ChaptersList = ({
   section,
   sectionProgress,
   chapterId,
-  courseId,
   handleChapterClick,
   updateChapterProgress,
 }: {
-  section: any;
-  sectionProgress: any;
-  chapterId: string;
-  courseId: string;
+  section: Section;
+  sectionProgress?: SectionProgress;
+  chapterId?: string;
   handleChapterClick: (sectionId: string, chapterId: string) => void;
   updateChapterProgress: (
     sectionId: string,
@@ -222,7 +218,7 @@ const ChaptersList = ({
 }) => {
   return (
     <ul className="chapters-sidebar__chapters">
-      {section.chapters.map((chapter: any, index: number) => (
+      {section.chapters.map((chapter: Chapter, index: number) => (
         <Chapter
           key={chapter.chapterId}
           chapter={chapter}
@@ -230,7 +226,6 @@ const ChaptersList = ({
           sectionId={section.sectionId}
           sectionProgress={sectionProgress}
           chapterId={chapterId}
-          courseId={courseId}
           handleChapterClick={handleChapterClick}
           updateChapterProgress={updateChapterProgress}
         />
@@ -245,16 +240,14 @@ const Chapter = ({
   sectionId,
   sectionProgress,
   chapterId,
-  courseId,
   handleChapterClick,
   updateChapterProgress,
 }: {
-  chapter: any;
+  chapter: Chapter;
   index: number;
   sectionId: string;
-  sectionProgress: any;
-  chapterId: string;
-  courseId: string;
+  sectionProgress?: SectionProgress;
+  chapterId?: string;
   handleChapterClick: (sectionId: string, chapterId: string) => void;
   updateChapterProgress: (
     sectionId: string,
@@ -263,7 +256,7 @@ const Chapter = ({
   ) => void;
 }) => {
   const chapterProgress = sectionProgress?.chapters.find(
-    (c: any) => c.chapterId === chapter.chapterId
+    (c: ChapterProgress) => c.chapterId === chapter.chapterId
   );
   const isCompleted = chapterProgress?.completed;
   const isCurrentChapter = chapterId === chapter.chapterId;
