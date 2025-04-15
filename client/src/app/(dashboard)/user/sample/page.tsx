@@ -32,7 +32,7 @@ const StudentLiveClass = () => {
 
   useEffect(() => {
     peerRef.current = new Peer({
-      host: "localhost",
+      host: `${process.env.NEXT_PUBLIC_HOST}`,
       port: 9000,
       path: "/myapp",
       debug: 3,

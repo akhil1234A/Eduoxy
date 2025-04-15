@@ -78,7 +78,7 @@ const CourseView = () => {
 
   useEffect(() => {
     if (courseId) {
-      fetch(`http://localhost:8000/api/live-classes/${courseId}`, { credentials: "include" })
+      fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/live-classes/${courseId}`, { credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
           console.log("Live classes response:", data)
@@ -114,7 +114,7 @@ const CourseView = () => {
   
   const handleStartClass = async (liveClassId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/live-classes/${liveClassId}/start`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/live-classes/${liveClassId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacherId: userId }),

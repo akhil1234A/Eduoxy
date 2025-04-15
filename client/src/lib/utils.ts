@@ -72,7 +72,7 @@ export const uploadToS3 = async (
   try {
     console.log(`Fetching presigned URL for ${type}: ${file.name}`);
     const res = await fetch(
-      `http://localhost:8000/api/upload/presigned-url?type=${type}&fileName=${encodeURIComponent(file.name)}`,
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/presigned-url?type=${type}&fileName=${encodeURIComponent(file.name)}`,
       {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ export const uploadToS3 = async (
 
     if (!uploadResponse.ok) {
       console.error(`Upload failed: ${uploadResponse.status} - ${await uploadResponse.text()}`);
-      await fetch("http://localhost:8000/api/upload/delete", {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/delete`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key }),
@@ -217,7 +217,7 @@ export const updateS3Resource = async (
         } else {
           console.log(`Attempting to delete old key: "${oldKey}"`);
           try {
-            const deleteResponse = await fetch("http://localhost:8000/api/upload/delete", {
+            const deleteResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/delete`, {
               method: "DELETE",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ key: oldKey }),

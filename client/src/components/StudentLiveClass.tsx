@@ -100,7 +100,7 @@ export default function StudentLiveClass({
   }, [handleIncomingStream]);
 
   const initializeWebRTCAndSocket = useCallback(() => {
-    const socket = io("http://localhost:8000", {
+    const socket = io(`${process.env.NEXT_PUBLIC_API_URL}`, {
       query: { userId },
       path: "/socket.io/",
       transports: ["websocket"],
@@ -143,7 +143,7 @@ export default function StudentLiveClass({
     socket.on("disconnect", () => toast.info("Disconnected from server"));
 
     const peer = new Peer({
-      host: "localhost",
+      host: `${process.env.NEXT_PUBLIC_HOST}`,
       port: 9000,
       path: "/myapp",
       config: {

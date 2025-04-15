@@ -38,7 +38,7 @@ const Chat = ({ courseId, senderId, receiverId }: ChatProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
+    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL, {
       query: { userId: senderId },
       path: "/socket.io/",
       transports: ["websocket", "polling"],

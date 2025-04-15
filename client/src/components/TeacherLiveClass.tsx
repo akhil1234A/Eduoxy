@@ -44,7 +44,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
   const callsRef = useRef<Map<string, MediaConnection>>(new Map());
 
   const initializeWebRTCAndSocket = useCallback(async () => {
-    const socket = io("http://localhost:8000", {
+    const socket = io(`${process.env.NEXT_PUBLIC_API_URL}`, {
       query: { userId },
       path: "/socket.io/",
       transports: ["websocket"],
@@ -78,7 +78,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     socket.on("error", (error: { message: string }) => toast.error(error.message));
 
     peerRef.current = new Peer({
-      host: 'localhost',
+      host: `${process.env.NEXT_PUBLIC_HOST}`,
       port: 9000,
       path: '/myapp',
       debug: 3,
@@ -230,7 +230,7 @@ const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassPro
     if (peerRef.current) {
       peerRef.current.destroy();
       peerRef.current = new Peer({
-        host: 'localhost',
+        host: `${process.env.NEXT_PUBLIC_HOST}`,
         port: 9000,
         path: '/myapp',
         config: {

@@ -65,7 +65,7 @@ const ChapterModal = () => {
   const cleanupUploadedFiles = async () => {
     for (const key of uploadedKeys) {
       try {
-        const response = await fetch("http://localhost:8000/api/upload/delete", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/upload/delete`, {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ key }),
