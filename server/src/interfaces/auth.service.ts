@@ -10,5 +10,5 @@ export interface IAuthService {
   requestPasswordReset(email: string): Promise<void>;
   resetPassword(token: string, newPassword: string): Promise<void>;
   loginWithRefresh(userId: string, refreshToken: string): Promise<AuthTokens & { user: UserResponse }>;
-  findUserById(userId: string): Promise<any>;
+  findUserById(userId: string): Promise<UserResponse>;
 }

@@ -9,6 +9,7 @@ import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import IAuthController from "../interfaces/auth.controller";
 import { apiLogger } from "../utils/logger";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 @injectable()
 export class AuthController implements IAuthController {
   constructor(@inject(TYPES.IAuthService) private _authService: IAuthService, @inject(TYPES.IJwtService) private _jwtService: IJwtService, @inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
@@ -17,10 +18,10 @@ export class AuthController implements IAuthController {
     try {
       const { name, email, password, userType } = req.body;
       await this._authService.signUp(name, email, password, userType);
-      res.status(HttpStatus.CREATED).json(successResponse("User registered. OTP sent to email."));
+      res.status(HttpStatus.CREATED).json(successResponse(RESPONSE_MESSAGES.AUTH.SIGNUP_SUCCESS));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Signup failed", err.message));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.AUTH.SIGNUP_FAILURE, err.message));
     }
   }
 
@@ -32,17 +33,17 @@ export class AuthController implements IAuthController {
 
       if (result.needsVerification) {
         apiLogger.info("User not verified. OTP sent to email.", { result });
-        res.json(successResponse("User not verified. OTP sent to email.", result));
+        res.json(successResponse(RESPONSE_MESSAGES.AUTH.USER_NOT_VERIFIED, result));
         return;
       }
 
       setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
       apiLogger.info("Login successful", { result });
-      res.json(successResponse("Login successful", { accessToken: result.accessToken, user: result.user }));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { accessToken: result.accessToken, user: result.user }));
     } catch (error) {
       const err = error as Error; 
       apiLogger.error("Login failed", { error: err.message });
-      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Login failed", err.message));
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse(RESPONSE_MESSAGES.AUTH.LOGIN_FAILURE, err.message));
     }
   }
 
@@ -53,10 +54,10 @@ export class AuthController implements IAuthController {
 
       setAuthCookies(res, { accessToken: result.accessToken || "", refreshToken: result.refreshToken || "" }, {id: result.user?.id || "", userType: result.user?.userType || "", userName: result.user?.name || ""});
 
-      res.json(successResponse("OTP verified successfully", result));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.OTP_VERIFIED, result));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("OTP verification failed", err.message));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.AUTH.OTP_VERIFICATION_FAILED, err.message));
     }
   }
 
@@ -75,11 +76,11 @@ export class AuthController implements IAuthController {
 
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: newRefreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       apiLogger.info("Token refreshed", {});
-      res.json(successResponse("Token refreshed", { accessToken, user }));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
       apiLogger.error("Refresh failed", { error: err.message });
-      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Refresh failed", err.message));
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse(RESPONSE_MESSAGES.AUTH.TOKEN_REFRESH_FAILED, err.message));
     }
   }
 
@@ -95,10 +96,10 @@ export class AuthController implements IAuthController {
         res.clearCookie(cookie, { path: "/" })
       );
       
-      res.status(200).json({ message: "Logged out" });
+      res.status(200).json(successResponse(RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Logout failed", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.AUTH.LOGOUT_FAILED, err.message));
     }
   }
 
@@ -111,11 +112,11 @@ export class AuthController implements IAuthController {
       const { accessToken, refreshToken, user } = await this._authService.googleAuth(idToken);
       setAuthCookies(res, { accessToken: accessToken || "", refreshToken: refreshToken || "" }, {id: user?.id || "", userType: user?.userType || "", userName: user?.name || ""});  
       apiLogger.info("Google login successful", { });
-      res.json(successResponse("Google login successful", { accessToken, user }));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.GOOGLE_LOGIN_SUCCESS, { accessToken, user }));
     } catch (error) {
       const err = error as Error; 
       apiLogger.error("Google authentication failed", { error: err.message });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Google authentication failed", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.AUTH.GOOGLE_LOGIN_FAILED, err.message));
     }
   }
 
@@ -125,10 +126,10 @@ export class AuthController implements IAuthController {
       if (!email) throw new Error("Email is required");
 
       await this._authService.requestPasswordReset(email);
-      res.json(successResponse("Password reset token sent successfully"));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_REQUESTED));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to request password reset", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_FAILED, err.message));
     }
   }
 
@@ -142,11 +143,11 @@ export class AuthController implements IAuthController {
       if (newPassword !== confirmPassword) throw new Error("Passwords do not match");
   
       await this._authService.resetPassword(token, newPassword);
-      res.json(successResponse("Password reset successfully"));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS));
     } catch (error) {
       const err = error as Error; 
       res.status(err.message === "Invalid or expired reset token" ? HttpStatus.BAD_REQUEST : HttpStatus.INTERNAL_SERVER_ERROR).json(
-        errorResponse("Failed to reset password", err.message)
+        errorResponse(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_FAILURE, err.message)
       );
     }
   }
@@ -158,10 +159,10 @@ export class AuthController implements IAuthController {
       if (!email) throw new Error("Email is required");
 
       await this._authService.sendOtp(email);
-      res.json(successResponse("OTP sent successfully"));
+      res.json(successResponse(RESPONSE_MESSAGES.AUTH.OTP_SENT_SUCCESS));
     } catch (error) {
       const err = error as Error; 
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to send OTP", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.AUTH.OTP_SENT_FAILURE, err.message));
     }
   }
 }

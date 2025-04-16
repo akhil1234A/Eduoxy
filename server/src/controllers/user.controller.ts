@@ -5,6 +5,7 @@ import { IUserService } from "../interfaces/user.service";
 import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { IUser } from "../models/user.model";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 @injectable()
 export class UserController {
   constructor(

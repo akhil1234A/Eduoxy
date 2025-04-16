@@ -9,6 +9,7 @@ import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types"
+import { User } from "@clerk/express";
 @injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -221,8 +222,16 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken: newRefreshToken, user: userResponse };
   }
 
-  async findUserById(userId: string): Promise<any> {
-    return this._userRepository.findById(userId);
+  async findUserById(userId: string): Promise<UserResponse> {
+    const user = await this._userRepository.findById(userId);
+    if (!user) throw new Error("User not found");
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      userType: user.userType as UserRole,
+      isVerified: user.isVerified,
+    };
   }
 }
 

@@ -5,6 +5,7 @@ import { HttpStatus } from "../utils/httpStatus";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { apiLogger } from "../utils/logger";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 @injectable()
 export class CourseController {
   constructor(@inject(TYPES.ICourseService) private _courseService: ICourseService) {}
@@ -15,13 +16,13 @@ export class CourseController {
     try {
       const course = await this._courseService.unlistCourse(courseId);
       if (!course) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.COURSE.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Course unlisted successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.UNLIST_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error unlisting course", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.UNLIST_ERROR, err.message));
     }
   }
 
@@ -32,13 +33,13 @@ export class CourseController {
     try {
       const course = await this._courseService.publishCourse(courseId);
       if (!course) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.COURSE.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Course published successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.PUBLISH_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error publishing course", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.PUBLISH_ERROR, err.message));
     }
   }
 
@@ -48,12 +49,12 @@ export class CourseController {
 
     try {
       const courses = await this._courseService.listPublicCourses(category as string);
-      res.json(successResponse("Courses retrieved successfully", courses));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, courses));
       
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error retrieving courses", { error: err.message });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving courses", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
     }
   }
 
@@ -62,10 +63,10 @@ export class CourseController {
 
     try {
       const courses = await this._courseService.listAdminCourses(category as string);
-      res.json(successResponse("All courses retrieved successfully", courses));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ALL_SUCCESS, courses));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving courses", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
     }
   }
 
@@ -74,16 +75,16 @@ export class CourseController {
     const teacherId = req.user?.userId;
 
     if (!teacherId) {
-      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse("Unauthorized", "Teacher ID not found"));
+      res.status(HttpStatus.UNAUTHORIZED).json(errorResponse(RESPONSE_MESSAGES.COURSE.UNAUTHORIZED, "Teacher ID not found"));
       return;
     }
 
     try {
       const courses = await this._courseService.listTeacherCourses(teacherId, category as string);
-      res.json(successResponse("Your courses retrieved successfully", courses));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_TEACHER_SUCCESS, courses));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving courses", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
     }
   }
 
@@ -93,13 +94,13 @@ export class CourseController {
     try {
       const course = await this._courseService.getCourse(courseId);
       if (!course) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.COURSE.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Course retrieved successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving course", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
     }
   }
 
@@ -108,17 +109,17 @@ export class CourseController {
 
     try {
       if (!teacherId || !teacherName) {
-        res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Teacher ID and name are required"));
+        res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.COURSE.TEACHER_REQUIRED));
         return;
       }
 
       const course = await this._courseService.createCourse(teacherId, teacherName);
       apiLogger.info("Course created successfully", { course });
-      res.json(successResponse("Course created successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.CREATE_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error creating course", { error: err.stack });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating course", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.CREATE_ERROR, err.message));
     }
   }
 
@@ -133,27 +134,27 @@ export class CourseController {
         try {
           updateData.sections = JSON.parse(updateData.sections);
         } catch (err) {
-          res.status(400).json(errorResponse("Invalid sections format: Must be an array"));
+          res.status(400).json(errorResponse(RESPONSE_MESSAGES.COURSE.INVALID_SECTIONS));
           return;
         }
       }
   
       if (updateData.sections && !Array.isArray(updateData.sections)) {
-        res.status(400).json(errorResponse("Invalid sections format: Must be an array"));
+        res.status(400).json(errorResponse(RESPONSE_MESSAGES.COURSE.INVALID_SECTIONS));
         return;
       }
   
       const course = await this._courseService.updateCourse(courseId, userId!, updateData);
       if (!course) {
-        res.status(404).json(errorResponse("Course not found or not authorized"));
+        res.status(404).json(errorResponse(RESPONSE_MESSAGES.COURSE.NOT_FOUND_OR_UNAUTHORIZED));
         return;
       }
   
-      res.json(successResponse("Course updated successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.UPDATE_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error updating course", { error: err.message });
-      res.status(500).json(errorResponse("Error updating course", err.message));
+      res.status(500).json(errorResponse(RESPONSE_MESSAGES.COURSE.UPDATE_ERROR, err.message));
     }
   }
   
@@ -165,13 +166,13 @@ export class CourseController {
     try {
       const course = await this._courseService.deleteCourse(courseId, userId!);
       if (!course) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Course not found or not authorized"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.COURSE.NOT_FOUND_OR_UNAUTHORIZED));
         return;
       }
-      res.json(successResponse("Course deleted successfully", course));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.DELETE_SUCCESS, course));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error deleting course", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.DELETE_ERROR, err.message));
     }
   }
 
@@ -180,7 +181,7 @@ export class CourseController {
     apiLogger.info("Searching courses", { searchTerm, category });
     try {
       if (!searchTerm || typeof searchTerm !== 'string') {
-        res.json(successResponse("Courses retrieved successfully", []));
+        res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, []));
         return;
       }
 
@@ -188,13 +189,13 @@ export class CourseController {
         searchTerm,
         category as string
       );
-      res.json(successResponse("Courses retrieved successfully", courses));
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, courses));
       apiLogger.info("Courses retrieved successfully", { courses });
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error searching courses", { error: err.message });
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
-        errorResponse("Error searching courses", err.message)
+        errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message)
       );
     }
   }

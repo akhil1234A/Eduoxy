@@ -4,6 +4,7 @@ import { IRoadmapService } from "../interfaces/roadmap.service";
 import TYPES from "../di/types";
 import { successResponse, errorResponse } from "../types/types";
 import { HttpStatus } from "../utils/httpStatus";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 @injectable()
 export class RoadmapController {
@@ -12,10 +13,10 @@ export class RoadmapController {
   async createRoadmap(req: Request, res: Response): Promise<void> {
     try {
       const roadmap = await this._roadmapService.createRoadmap(req.body);
-      res.status(HttpStatus.CREATED).json(successResponse("Roadmap created successfully", roadmap));
+      res.status(HttpStatus.CREATED).json(successResponse(RESPONSE_MESSAGES.ROADMAP.CREATE_SUCCESS, roadmap));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to create roadmap", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.CREATE_FAIL, err.message));
     }
   }
 
@@ -23,23 +24,23 @@ export class RoadmapController {
     try {
       const roadmap = await this._roadmapService.getRoadmapById(req.params.id);
       if (!roadmap) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Roadmap not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Roadmap retrieved successfully", roadmap));
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_SUCCESS, roadmap));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to get roadmap", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_FAIL, err.message));
     }
   }
 
   async getAllRoadmaps(req: Request, res: Response): Promise<void> {
     try {
       const roadmaps = await this._roadmapService.getAllRoadmaps();
-      res.json(successResponse("Roadmaps retrieved successfully", roadmaps));
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_ALL_SUCCESS, roadmaps));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to get roadmaps", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_FAIL, err.message));
     }
   }
 
@@ -47,13 +48,13 @@ export class RoadmapController {
     try {
       const roadmap = await this._roadmapService.updateRoadmap(req.params.id, req.body);
       if (!roadmap) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Roadmap not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Roadmap updated successfully", roadmap));
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.UPDATE_SUCCESS, roadmap));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to update roadmap", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.UPDATE_FAIL, err.message));
     }
   }
 
@@ -61,13 +62,13 @@ export class RoadmapController {
     try {
       const success = await this._roadmapService.deleteRoadmap(req.params.id);
       if (!success) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Roadmap not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.NOT_FOUND));
         return;
       }
-      res.json(successResponse("Roadmap deleted successfully"));
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.DELETE_SUCCESS));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to delete roadmap", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.DELETE_FAIL, err.message));
     }
   }
 
@@ -84,14 +85,14 @@ export class RoadmapController {
       );
       
       if (!roadmap) {
-        res.status(HttpStatus.NOT_FOUND).json(errorResponse("Roadmap, section, or topic not found"));
+        res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.TOPIC_NOT_FOUND));
         return;
       }
       
-      res.json(successResponse("Topic progress updated successfully", roadmap));
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.TOPIC_UPDATE_SUCCESS, roadmap));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Failed to update topic progress", err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.TOPIC_UPDATE_FAIL, err.message));
     }
   }
 } 

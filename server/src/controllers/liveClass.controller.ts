@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { ILiveClassService } from "../interfaces/liveClass.service";
+import { successResponse, errorResponse } from "../types/types";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+import { HttpStatus } from "../utils/httpStatus";
+
 
 @injectable()
 export class LiveClassController {
@@ -13,9 +17,10 @@ export class LiveClassController {
     const { courseId, teacherId, title, startTime, endTime } = req.body;
     try {
       const liveClass = await this.liveClassService.createLiveClass(courseId, teacherId, title, startTime, endTime);
-      res.status(201).json(liveClass);
+      res.status(HttpStatus.CREATED).json(successResponse(RESPONSE_MESSAGES.LIVE_CLASS.CREATE_SUCCESS, liveClass));
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.LIVE_CLASS.CREATE_FAIL, err.message));
     }
   }
 
@@ -23,9 +28,10 @@ export class LiveClassController {
     const { courseId } = req.params;
     try {
       const schedule = await this.liveClassService.getSchedule(courseId);
-      res.json(schedule);
+      res.json(successResponse(RESPONSE_MESSAGES.LIVE_CLASS.SCHEDULE_SUCCESS, schedule));
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.LIVE_CLASS.SCHEDULE_FAIL, err.message));
     }
   }
 
@@ -34,9 +40,10 @@ export class LiveClassController {
     const { userId } = req.body; 
     try {
       const liveClass = await this.liveClassService.joinLiveClass(liveClassId, userId);
-      res.json(liveClass);
+      res.json(successResponse(RESPONSE_MESSAGES.LIVE_CLASS.JOIN_SUCCESS, liveClass));
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.LIVE_CLASS.JOIN_FAIL, err.message));
     }
   }
 
@@ -45,9 +52,10 @@ export class LiveClassController {
     const { userId } = req.body;
     try {
       const liveClass = await this.liveClassService.leaveLiveClass(liveClassId, userId);
-      res.json(liveClass);
+      res.json(successResponse(RESPONSE_MESSAGES.LIVE_CLASS.LEAVE_SUCCESS, liveClass));
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.LIVE_CLASS.LEAVE_FAIL, err.message));
     }
   }
 
@@ -56,9 +64,10 @@ export class LiveClassController {
     const { teacherId } = req.body;
     try {
       const liveClass = await this.liveClassService.startLiveClass(liveClassId, teacherId);
-      res.json(liveClass);
+      res.json(successResponse(RESPONSE_MESSAGES.LIVE_CLASS.START_SUCCESS, liveClass));
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      const err = error as Error;
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.LIVE_CLASS.START_FAIL, err.message));
     }
   }
 }

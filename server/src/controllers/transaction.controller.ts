@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { apiLogger } from "../utils/logger";
+import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: "2025-02-24.acacia" });
 
@@ -20,7 +21,7 @@ export class TransactionController {
     const { amount, userId, courseId } = req.body;
     apiLogger.info("Creating stripe payment intent", { amount, userId, courseId });
     if (!amount || amount <= 0 || !userId || !courseId) {
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Invalid request parameters"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.CREATE_PAYMENT_INTENT_FAIL));
       apiLogger.error("Invalid request parameters", { amount, userId, courseId });
       return;
     }
@@ -41,11 +42,11 @@ export class TransactionController {
         { idempotencyKey }
       );
       apiLogger.info("Stripe payment intent created successfully", { paymentIntent });
-      res.json(successResponse("Stripe payment intent created successfully", { clientSecret: paymentIntent.client_secret }));
+      res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.CREATE_PAYMENT_INTENT_SUCCESS, { clientSecret: paymentIntent.client_secret }));
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error creating stripe payment intent", { error: err.message });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating stripe payment intent", err));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.CREATE_PAYMENT_INTENT_FAIL, err));
     }
   }
 
@@ -61,51 +62,51 @@ export class TransactionController {
         paymentProvider
       );
       apiLogger.info("Transaction created successfully", { transaction });
-      res.json(successResponse("Purchased Course successfully", { transaction }));
+      res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.CREATE_TRANSACTION_SUCCESS, { transaction }));
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Error creating transaction", { error: err.message });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error creating transaction", err));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.CREATE_TRANSACTION_FAIL, err));
     }
   }
 
   async getAdminEarnings(req: Request, res: Response): Promise<void> {
     try {
       const earnings = await this._transactionService.getAdminEarnings();
-      res.json(successResponse("Admin earnings retrieved successfully", earnings));
+      res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_ADMIN_EARNINGS_SUCCESS, earnings));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving admin earnings", err));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.GET_ADMIN_EARNINGS_FAIL, err));
     }
   }
 
   async getTeacherEarnings(req: Request, res: Response): Promise<void> {
     const { teacherId } = req.params;
     if (!teacherId) {
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Teacher ID is required"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.TEACHER_ID_REQUIRED));
       return;
     }
     try {
       const earnings = await this._transactionService.getTeacherEarnings(teacherId);
-      res.json(successResponse("Teacher earnings retrieved successfully", earnings));
+      res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_TEACHER_EARNINGS_SUCCESS, earnings));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving teacher earnings", err));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.GET_TEACHER_EARNINGS_FAIL, err));
     }
   }
 
   async getStudentPurchases(req: Request, res: Response): Promise<void> {
     const { userId } = req.params;
     if (!userId) {
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("User ID is required"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.USER_ID_REQUIRED));
       return;
     }
     try {
       const purchases = await this._transactionService.getStudentPurchases(userId);
-      res.json(successResponse("Student purchases retrieved successfully", purchases));
+      res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_STUDENT_PURCHASES_SUCCESS, purchases));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse("Error retrieving student purchases", err));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.GET_STUDENT_PURCHASES_FAIL, err));
     }
   }
 }
