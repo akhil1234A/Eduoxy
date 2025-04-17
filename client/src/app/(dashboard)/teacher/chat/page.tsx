@@ -31,7 +31,7 @@ export default function InstructorChatPage() {
   });
 
  
-  const students = courses?.data?.reduce<StudentData[]>((acc, course) => {
+  const students = courses?.data?.courses?.reduce<StudentData[]>((acc, course) => {
     if (course.enrollments) {
       course.enrollments.forEach((enrollment) => {
        

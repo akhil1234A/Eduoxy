@@ -164,5 +164,6 @@ export const RESPONSE_MESSAGES = {
     UPDATE_PROFILE_FAIL: "Failed to update instructor profile",
     GET_PROFILE_SUCCESS: "Profile fetched successfully",
     GET_PROFILE_FAIL: "Failed to fetch profile",
+    MISSING_FIELDS: "Missing required fields",
   },
 };

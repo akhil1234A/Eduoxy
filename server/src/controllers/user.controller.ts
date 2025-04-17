@@ -16,16 +16,16 @@ export class UserController {
     const { userId, currentPassword, newPassword } = req.body;
 
     if (!userId || !currentPassword || !newPassword) {
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Missing required fields"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.MISSING_FIELDS));
       return;
     }
 
     try {
       await this._userService.updatePassword(userId, currentPassword, newPassword);
-      res.json(successResponse("Password updated successfully"));
+      res.json(successResponse(RESPONSE_MESSAGES.USER.UPDATE_PASSWORD_SUCCESS));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to update password", err.message));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.UPDATE_PASSWORD_FAIL, err.message));
     }
   }
 
@@ -35,16 +35,16 @@ export class UserController {
     const profileImage = req.file;
     
     if (!userId) {
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("User ID is required"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.MISSING_FIELDS));
       return;
     }
 
     try {
       const updatedUser = await this._userService.updateInstructorProfile(userId, name, title, bio, profileImage);
-      res.json(successResponse("Instructor profile updated successfully", updatedUser as IUser));
+      res.json(successResponse(RESPONSE_MESSAGES.USER.UPDATE_PROFILE_SUCCESS, updatedUser as IUser));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to update instructor profile", err.message));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.UPDATE_PROFILE_FAIL, err.message));
     }
   }
 
@@ -52,16 +52,16 @@ export class UserController {
     const userId = req.query.userId as string;
 
     if(!userId || typeof userId !== "string"){
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("User ID is required"));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.MISSING_FIELDS));
       return;
     }
 
     try{
      const user = await this._userService.getProfile(userId);
-     res.json(successResponse("Profile fetched successfully", user as IUser));
+     res.json(successResponse(RESPONSE_MESSAGES.USER.GET_PROFILE_SUCCESS, user as IUser));
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.BAD_REQUEST).json(errorResponse("Failed to fetch profile", err.message));
+      res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.GET_PROFILE_FAIL, err.message));
     }
   }
 }
