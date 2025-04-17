@@ -16,25 +16,57 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return this.model.findOne({ courseId }).exec();
   }
 
-  async findPublicCourses(category?: string): Promise<ICourseDocument[]> {
+  async findPublicCourses(category?: string, skip?: number, limit?: number): Promise<ICourseDocument[]> {
     const query: Record<string, unknown> = { status: CourseStatus.Published };
     if (category && category !== "all") {
       query["category"] = category;
     }
-    return this.model.find(query).exec();
+    return this.model.find(query)
+      .skip(skip || 0)
+      .limit(limit || 10)
+      .exec();
   }
 
-  async findAdminCourses(category?: string): Promise<ICourseDocument[]> {
+  async countPublicCourses(category?: string): Promise<number> {
+    const query: Record<string, unknown> = { status: CourseStatus.Published };
+    if (category && category !== "all") {
+      query["category"] = category;
+    }
+    return this.model.countDocuments(query).exec();
+  }
+
+  async findAdminCourses(category?: string, skip: number = 0, limit: number = 10): Promise<ICourseDocument[]> {
     const query = category && category !== "all" ? { category } : {};
-    return this.model.find(query).exec();
+    return this.model
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .exec();
   }
-
-  async findTeacherCourses(teacherId: string, category?: string): Promise<ICourseDocument[]> {
+  
+  async countAdminCourses(category?: string): Promise<number> {
+    const query = category && category !== "all" ? { category } : {};
+    return this.model.countDocuments(query).exec();
+  }
+  
+  async findTeacherCourses(teacherId: string, category?: string, skip: number = 0, limit: number = 10): Promise<ICourseDocument[]> {
     const query: Record<string, unknown> = { teacherId };
     if (category && category !== "all") {
       query["category"] = category;
     }
-    return this.model.find(query).exec();
+    return this.model
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .exec();
+  }
+  
+  async countTeacherCourses(teacherId: string, category?: string): Promise<number> {
+    const query: Record<string, unknown> = { teacherId };
+    if (category && category !== "all") {
+      query["category"] = category;
+    }
+    return this.model.countDocuments(query).exec();
   }
 
   async unlist(courseId: string): Promise<ICourseDocument | null> {
@@ -120,19 +152,45 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     ).exec();
   }
 
-  async searchPublicCourses(searchTerm: string, category?: string): Promise<ICourseDocument[]> {
-    const query: Record<string, any> = { 
+  async searchPublicCourses(
+    searchTerm: string,
+    category?: string,
+    skip: number = 0,
+    limit: number = 10
+  ): Promise<ICourseDocument[]> {
+    const query: Record<string, any> = {
       status: CourseStatus.Published,
       $or: [
-        { title: { $regex: searchTerm, $options: 'i' } },
-        { description: { $regex: searchTerm, $options: 'i' } }
-      ]
+        { title: { $regex: searchTerm, $options: "i" } },
+        { description: { $regex: searchTerm, $options: "i" } },
+      ],
     };
-    
+  
     if (category && category !== "all") {
       query.category = category;
     }
-    
-    return this.model.find(query).exec();
+  
+    return this.model
+      .find(query)
+      .skip(skip)
+      .limit(limit)
+      .exec();
   }
+  
+  async countSearchPublicCourses(searchTerm: string, category?: string): Promise<number> {
+    const query: Record<string, any> = {
+      status: CourseStatus.Published,
+      $or: [
+        { title: { $regex: searchTerm, $options: "i" } },
+        { description: { $regex: searchTerm, $options: "i" } },
+      ],
+    };
+  
+    if (category && category !== "all") {
+      query.category = category;
+    }
+  
+    return this.model.countDocuments(query).exec();
+  }
+  
 }

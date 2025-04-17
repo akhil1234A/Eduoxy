@@ -323,6 +323,14 @@ declare global {
     link?: string;
     createdAt: Date;
   }
+
+  interface InitialCoursesType {
+    courses: Course[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }
   
 }
 

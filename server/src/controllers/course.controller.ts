@@ -44,12 +44,15 @@ export class CourseController {
   }
 
   async listPublicCourses(req: Request, res: Response): Promise<void> {
-    const { category } = req.query;
-    apiLogger.info("Listing public courses", { category });
+    const { category, page='1', limit='10' } = req.query;
+    apiLogger.info("Listing public courses", { category, page, limit });
 
     try {
-      const courses = await this._courseService.listPublicCourses(category as string);
-      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, courses));
+      const pageNumber = parseInt(page as string, 10);
+      const limitNumber = parseInt(limit as string, 10);
+      
+      const result = await this._courseService.listPublicCourses(category as string, pageNumber, limitNumber);
+      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, result));
       
     } catch (error) {
       const err = error as Error;
@@ -59,29 +62,51 @@ export class CourseController {
   }
 
   async listAdminCourses(req: Request, res: Response): Promise<void> {
-    const { category } = req.query;
-
+    const { category, page = "1", limit = "10" } = req.query;
+  
     try {
-      const courses = await this._courseService.listAdminCourses(category as string);
-      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ALL_SUCCESS, courses));
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+  
+      const { courses, total } = await this._courseService.listAdminCourses(category as string, pageNum, limitNum);
+      res.json(
+        successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ALL_SUCCESS, {
+          courses,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
     }
   }
-
+  
   async listTeacherCourses(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { category } = req.query;
+    const { category, page = "1", limit = "10" } = req.query;
     const teacherId = req.user?.userId;
-
+  
     if (!teacherId) {
       res.status(HttpStatus.UNAUTHORIZED).json(errorResponse(RESPONSE_MESSAGES.COURSE.UNAUTHORIZED, "Teacher ID not found"));
       return;
     }
-
+  
     try {
-      const courses = await this._courseService.listTeacherCourses(teacherId, category as string);
-      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_TEACHER_SUCCESS, courses));
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+  
+      const { courses, total } = await this._courseService.listTeacherCourses(teacherId, category as string, pageNum, limitNum);
+      res.json(
+        successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_TEACHER_SUCCESS, {
+          courses,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ERROR, err.message));
@@ -177,19 +202,40 @@ export class CourseController {
   }
 
   async searchCourses(req: Request, res: Response): Promise<void> {
-    const { q: searchTerm, category } = req.query;
-    apiLogger.info("Searching courses", { searchTerm, category });
+    const { q: searchTerm, category, page = "1", limit = "10" } = req.query;
+    apiLogger.info("Searching courses", { searchTerm, category, page, limit });
+  
     try {
-      if (!searchTerm || typeof searchTerm !== 'string') {
-        res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, []));
+      if (!searchTerm || typeof searchTerm !== "string") {
+        res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, {
+          courses: [],
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 0,
+        }));
         return;
       }
-
-      const courses = await this._courseService.searchCourses(
-        searchTerm,
-        category as string
+  
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+  
+      const { courses, total } = await this._courseService.searchCourses(
+        searchTerm as string,
+        category as string,
+        pageNum,
+        limitNum
       );
-      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, courses));
+  
+      res.json(
+        successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, {
+          courses,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
       apiLogger.info("Courses retrieved successfully", { courses });
     } catch (error) {
       const err = error as Error;

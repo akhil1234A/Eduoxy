@@ -1,5 +1,6 @@
 import { Request } from "express";
 import { IUser } from "../models/user.model";
+import { ICourseDocument } from "../models/course.model";
 
 export enum UserRole {
   ADMIN = "admin",
@@ -82,4 +83,9 @@ export interface LoginResponse {
 export interface CourseCreationInput {
   teacherId: string;
   teacherName: string;
+}
+
+export interface IInitialCoursesResponse {
+  courses: ICourseDocument[];
+  total: number;
 }

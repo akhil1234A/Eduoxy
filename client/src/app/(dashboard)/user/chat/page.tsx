@@ -17,17 +17,16 @@ export default function StudentChatPage() {
     teacherName: string;
   } | null>(null);
 
-  const { data: courses, isLoading } = useGetUserEnrolledCoursesQuery(senderId || "", {
-    skip: !senderId,
-  });
-
-
+  const { data: courses, isLoading } = useGetUserEnrolledCoursesQuery(
+    { userId: senderId || "" },
+    { skip: !senderId }
+  );
 
   const uniqueTeachers = useMemo(() => {
-    if (!courses?.data?.length) return [];
+    if (!courses?.data?.courses?.length) return [];
 
     const teacherMap = new Map<string, { courseId: string; receiverId: string; teacherName: string }>();
-    courses.data.forEach((course: Course) => {
+    courses.data.courses.forEach((course: Course) => {
       if (!teacherMap.has(course.teacherName)) {
         teacherMap.set(course.teacherName, {
           courseId: course.courseId,

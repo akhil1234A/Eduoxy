@@ -15,13 +15,27 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
   ) {}
 
 
-  async getUserEnrolledCourses(userId: string): Promise<ICourseDocument[]> {
-    const userProgress = await this._userCourseProgressModel.find({ userId }).exec();
-    const courseIds = userProgress.map(progress => progress.courseId);
-    const courses = await this._courseModel.find({
-      courseId: { $in: courseIds }
-    }).exec();
+  async getUserEnrolledCourses(
+    userId: string,
+    skip: number = 0,
+    limit: number = 10
+  ): Promise<ICourseDocument[]> {
+    const userProgress = await this._userCourseProgressModel
+      .find({ userId })
+      .skip(skip)
+      .limit(limit)
+      .exec();
+    const courseIds = userProgress.map((progress) => progress.courseId);
+    const courses = await this._courseModel
+      .find({
+        courseId: { $in: courseIds },
+      })
+      .exec();
     return courses;
+  }
+  
+  async countUserEnrolledCourses(userId: string): Promise<number> {
+    return this._userCourseProgressModel.countDocuments({ userId }).exec();
   }
 
 

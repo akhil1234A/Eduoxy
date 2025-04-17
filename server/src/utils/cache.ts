@@ -8,8 +8,12 @@ export class CacheUtil {
     return `course:${courseId}`;
   }
 
-  static getCoursesListCacheKey(type: string, filter: string = "all"): string {
-    return `courses:${type}:${filter}`;
+  static getCoursesListCacheKey(type: string, filter: string = "all", page?: number, limit?: number): string {
+    let key = `courses:${type}:${filter}`;
+    if (page !== undefined && limit !== undefined) {
+      key += `:page:${page}:limit:${limit}`;
+    }
+    return key;
   }
 
   static async get<T>(key: string): Promise<T | null> {

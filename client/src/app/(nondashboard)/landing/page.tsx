@@ -1,7 +1,14 @@
 import LandingClient from "@/components/LandingClient";
 
 export default async function Landing() {
-  let initialCourses = [];
+  
+  let initialCourses = {
+    courses: [],
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  };
 
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/courses/public`, {
@@ -10,7 +17,7 @@ export default async function Landing() {
     if (!response.ok) throw new Error('Failed to fetch courses');
 
     const data = await response.json();
-    initialCourses = data?.data || [];
+    initialCourses = data?.data || initialCourses;
   } catch (error) {
     console.error('Error fetching courses:', error);
   }

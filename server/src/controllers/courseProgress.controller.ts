@@ -15,11 +15,31 @@ export class UserCourseProgressController {
   async getUserEnrolledCourses(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const enrolledCourses = await this._userCourseProgressService.getUserEnrolledCourses(userId);
-      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.USER_COURSE_PROGRESS.ENROLLED_COURSES_SUCCESS, enrolledCourses));
+      const { page = "1", limit = "10" } = req.query;
+  
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+  
+      const { courses, total } = await this._userCourseProgressService.getUserEnrolledCourses(
+        userId,
+        pageNum,
+        limitNum
+      );
+  
+      res.status(HttpStatus.OK).json(
+        successResponse(RESPONSE_MESSAGES.USER_COURSE_PROGRESS.ENROLLED_COURSES_SUCCESS, {
+          courses,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
     } catch (error) {
       const err = error as Error;
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.USER_COURSE_PROGRESS.ENROLLED_COURSES_ERROR, err.message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+        errorResponse(RESPONSE_MESSAGES.USER_COURSE_PROGRESS.ENROLLED_COURSES_ERROR, err.message)
+      );
     }
   }
 

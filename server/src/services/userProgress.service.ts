@@ -5,6 +5,7 @@ import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repo
 import { mergeSections, calculateOverallProgress } from "../utils/course.progress";
 import { IUserCourseProgressService } from "../interfaces/courseProgress.service";
 import { ICourseDocument } from "../models/course.model";
+import { CacheUtil } from "../utils/cache";
 
 @injectable()
 export class UserCourseProgressService implements IUserCourseProgressService {
@@ -12,9 +13,25 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository
   ) {}
 
-  async getUserEnrolledCourses(userId: string): Promise<ICourseDocument[]> {
-    return this._userCourseProgressRepository.getUserEnrolledCourses(userId);
-  } 
+  async getUserEnrolledCourses(
+    userId: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ courses: ICourseDocument[]; total: number }> {
+    const cacheKey = CacheUtil.getCoursesListCacheKey(`enrolled:${userId}`, "all", page, limit);
+    const cachedData = await CacheUtil.get<{ courses: ICourseDocument[]; total: number }>(cacheKey);
+    if (cachedData) return cachedData;
+  
+    const skip = (page - 1) * limit;
+    const [courses, total] = await Promise.all([
+      this._userCourseProgressRepository.getUserEnrolledCourses(userId, skip, limit),
+      this._userCourseProgressRepository.countUserEnrolledCourses(userId),
+    ]);
+  
+    const result = { courses, total };
+    await CacheUtil.set(cacheKey, result, 300); 
+    return result;
+  }
 
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
     return this._userCourseProgressRepository.getUserCourseProgress(userId, courseId);

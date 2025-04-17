@@ -7,29 +7,35 @@ export const coursesApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Courses", "UserCourseProgress"],
   endpoints: (build) => ({
-    getPublicCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
-      query: ({ category }) => ({
+    getPublicCourses: build.query<ApiResponse<InitialCoursesType>, { category?: string, page?: number, limit?: number }>({
+      query: ({ category, page = 1, limit = 10 }) => ({
         url: "/courses/public",
-        params: { category },
+        params: { category, page, limit },
       }),
       providesTags: ["Courses"],
     }),
 
-    getAdminCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
-      query: ({ category }) => ({
-        url: "/courses/admin",
-        params: { category },
-      }),
-      providesTags: ["Courses"],
+    getAdminCourses: build.query<
+    ApiResponse<InitialCoursesType>,
+    { category?: string; page?: number; limit?: number }
+  >({
+    query: ({ category, page = 1, limit = 10 }) => ({
+      url: "/courses/admin",
+      params: { category, page, limit },
     }),
-
-    getTeacherCourses: build.query<ApiResponse<Course[]>, { category?: string }>({
-      query: ({ category }) => ({
-        url: "/courses/teacher",
-        params: { category },
-      }),
-      providesTags: ["Courses"],
+    providesTags: ["Courses"],
+  }),
+  
+  getTeacherCourses: build.query<
+    ApiResponse<InitialCoursesType>,
+    { category?: string; page?: number; limit?: number }
+  >({
+    query: ({ category, page = 1, limit = 10 }) => ({
+      url: "/courses/teacher",
+      params: { category, page, limit },
     }),
+    providesTags: ["Courses"],
+  }),
 
     getCourse: build.query<ApiResponse<Course>, string>({
       query: (id) => `/courses/${id}`,
@@ -98,8 +104,14 @@ export const coursesApi = createApi({
       invalidatesTags: ["Courses"],
     }),
 
-    getUserEnrolledCourses: build.query<ApiResponse<Course[]>, string>({
-      query: (userId) => `/users/course-progress/${userId}/enrolled-courses`,
+    getUserEnrolledCourses: build.query<
+    ApiResponse<InitialCoursesType>,
+    { userId: string; page?: number; limit?: number }
+  >({
+    query: ({ userId, page = 1, limit = 10 }) => ({
+      url: `/users/course-progress/${userId}/enrolled-courses`,
+        params: { page, limit },
+      }),
       providesTags: ["Courses", "UserCourseProgress"],
     }),
 
@@ -147,14 +159,17 @@ export const coursesApi = createApi({
       },
     }),
 
-    searchCourses: build.query<ApiResponse<Course[]>, { searchTerm: string; category?: string }>({
-      query: ({ searchTerm, category }) => ({
+    searchCourses: build.query<ApiResponse<InitialCoursesType>, { searchTerm: string; category?: string; page?: number; limit?: number }>({
+      query: ({ searchTerm, category, page = 1, limit = 10 }) => ({
         url: "/courses/search",
         params: { 
           q: searchTerm,
-          category 
+          category,
+          page,
+          limit
         },
       }),
+      providesTags: ["Courses"],
     }),
   }),
 });

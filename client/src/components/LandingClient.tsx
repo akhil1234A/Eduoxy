@@ -8,7 +8,9 @@ import { useCarousel } from "@/hooks/useCarousel";
 import CourseCardSearch from "@/components/CourseCardSearch";
 import { useRouter } from "next/navigation";
 
-export default function LandingClient({ initialCourses }: { initialCourses: Course[] }) {
+
+
+export default function LandingClient({ initialCourses }: { initialCourses: InitialCoursesType }) {
   const router = useRouter();
   const currentImage = useCarousel({ totalImages: 3 });
 
@@ -18,7 +20,7 @@ export default function LandingClient({ initialCourses }: { initialCourses: Cour
     });
   };
 
-  const slicedCourses = initialCourses.slice(0, 4);
+  const slicedCourses = initialCourses.courses.slice(0, 4);
 
   return (
     <motion.div

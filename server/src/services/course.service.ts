@@ -1,7 +1,7 @@
 import { ICourseService } from "../interfaces/course.service";
 import { ICourseRepository } from "../interfaces/course.repository";
 import { ICourseDocument } from "../models/course.model";
-import { CourseStatus } from "../types/types";
+import { IInitialCoursesResponse } from "../types/types";
 import { CacheUtil } from "../utils/cache";
 import { v4 as uuidv4, v4 } from "uuid";
 import { injectable, inject } from "inversify";
@@ -31,34 +31,58 @@ export class CourseService implements ICourseService {
     return course;
   }
 
-  async listPublicCourses(category?: string): Promise<ICourseDocument[]> {
-    const cacheKey = CacheUtil.getCoursesListCacheKey("public", category);
-    const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
+  async listPublicCourses(category?: string, page: number = 1, limit: number = 10): Promise<{ courses: ICourseDocument[], total: number, page: number, limit: number, totalPages: number }> {
+    const skip = (page - 1) * limit;
+    const cacheKey = CacheUtil.getCoursesListCacheKey("public", category, page, limit);
+    const cachedData = await CacheUtil.get<{ courses: ICourseDocument[], total: number, page: number, limit: number, totalPages: number }>(cacheKey);
     if (cachedData) return cachedData;
 
-    const courses = await this._courseRepository.findPublicCourses(category);
-    await CacheUtil.set(cacheKey, courses);
-    return courses;
+    const courses = await this._courseRepository.findPublicCourses(category, skip, limit);
+    const total = await this._courseRepository.countPublicCourses(category);
+    const totalPages = Math.ceil(total / limit);
+    
+    const result = {
+      courses,
+      total,
+      page,
+      limit,
+      totalPages
+    };
+    
+    await CacheUtil.set(cacheKey, result);
+    return result;
   }
 
-  async listAdminCourses(category?: string): Promise<ICourseDocument[]> {
-    const cacheKey = CacheUtil.getCoursesListCacheKey("admin", category);
-    const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
+  async listAdminCourses(category?: string, page: number = 1, limit: number = 10): Promise<{ courses: ICourseDocument[]; total: number }> {
+    const cacheKey = CacheUtil.getCoursesListCacheKey("admin", category || "all", page, limit);
+    const cachedData = await CacheUtil.get<{ courses: ICourseDocument[]; total: number }>(cacheKey);
     if (cachedData) return cachedData;
-
-    const courses = await this._courseRepository.findAdminCourses(category);
-    await CacheUtil.set(cacheKey, courses);
-    return courses;
+  
+    const skip = (page - 1) * limit;
+    const [courses, total] = await Promise.all([
+      this._courseRepository.findAdminCourses(category, skip, limit),
+      this._courseRepository.countAdminCourses(category),
+    ]);
+  
+    const result = { courses, total };
+    await CacheUtil.set(cacheKey, result);
+    return result;
   }
-
-  async listTeacherCourses(teacherId: string, category?: string): Promise<ICourseDocument[]> {
-    const cacheKey = CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`, category);
-    const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
+  
+  async listTeacherCourses(teacherId: string, category?: string, page: number = 1, limit: number = 10): Promise<{ courses: ICourseDocument[]; total: number }> {
+    const cacheKey = CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`, category || "all", page, limit);
+    const cachedData = await CacheUtil.get<{ courses: ICourseDocument[]; total: number }>(cacheKey);
     if (cachedData) return cachedData;
-
-    const courses = await this._courseRepository.findTeacherCourses(teacherId, category);
-    await CacheUtil.set(cacheKey, courses);
-    return courses;
+  
+    const skip = (page - 1) * limit;
+    const [courses, total] = await Promise.all([
+      this._courseRepository.findTeacherCourses(teacherId, category, skip, limit),
+      this._courseRepository.countTeacherCourses(teacherId, category),
+    ]);
+  
+    const result = { courses, total };
+    await CacheUtil.set(cacheKey, result);
+    return result;
   }
 
   async updateCourse(courseId: string, teacherId: string, updateData: Partial<ICourseDocument>): Promise<ICourseDocument | null> {
@@ -186,13 +210,29 @@ export class CourseService implements ICourseService {
     return course;
   }
 
-  async searchCourses(searchTerm: string, category?: string): Promise<ICourseDocument[]> {
-    const cacheKey = CacheUtil.getCoursesListCacheKey(`search:${searchTerm}:${category || 'all'}`);
-    const cachedData = await CacheUtil.get<ICourseDocument[]>(cacheKey);
+  async searchCourses(
+    searchTerm: string,
+    category?: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<IInitialCoursesResponse> {
+    const cacheKey = CacheUtil.getCoursesListCacheKey(
+      `search:${searchTerm}:${category || "all"}`,
+      "all",
+      page,
+      limit
+    );
+    const cachedData = await CacheUtil.get<IInitialCoursesResponse>(cacheKey);
     if (cachedData) return cachedData;
-
-    const courses = await this._courseRepository.searchPublicCourses(searchTerm, category);
-    await CacheUtil.set(cacheKey, courses, 300); // Cache for 5 minutes
-    return courses;
+  
+    const skip = (page - 1) * limit;
+    const [courses, total] = await Promise.all([
+      this._courseRepository.searchPublicCourses(searchTerm, category, skip, limit),
+      this._courseRepository.countSearchPublicCourses(searchTerm, category),
+    ]);
+  
+    const result = { courses, total };
+    await CacheUtil.set(cacheKey, result, 300); 
+    return result;
   }
 }
