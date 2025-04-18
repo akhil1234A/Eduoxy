@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -11,7 +11,18 @@ import { useGetUserEnrolledCoursesQuery } from "@/state/redux";
 import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const Courses = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <CoursesContent />
+    </Suspense>
+  );
+};
+
+const CoursesContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);

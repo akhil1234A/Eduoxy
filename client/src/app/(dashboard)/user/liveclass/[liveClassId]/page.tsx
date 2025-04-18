@@ -1,10 +1,22 @@
 "use client"
+import React, { Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import StudentLiveClass from "@/components/StudentLiveClass"
 import Cookies from "js-cookie"
 import Loading from "@/components/Loading"
 
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const StudentLiveClassPage = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <StudentLiveClassContent />
+    </Suspense>
+  );
+};
+
+const StudentLiveClassContent = () => {
   const params = useParams()
   const searchParams = useSearchParams()
   const liveClassId = params.liveClassId as string

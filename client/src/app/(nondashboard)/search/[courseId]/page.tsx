@@ -1,10 +1,8 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useGetCourseQuery, useGetProfileQuery } from "@/state/redux"
+import { useGetCourseQuery, useGetProfileQuery, useGetReviewsByCourseIdQuery, useAddReviewMutation, useDeleteReviewMutation } from "@/state/redux"
 import Cookies from "js-cookie"
 import Loading from "@/components/Loading"
 import { motion, AnimatePresence } from "framer-motion"
@@ -15,12 +13,14 @@ import AccordionSections from "@/components/AccordionSections"
 import Image from "next/image"
 import { Star, Trash2, Calendar, Clock, User } from "lucide-react"
 import { toast } from "sonner"
-import { useGetReviewsByCourseIdQuery, useAddReviewMutation, useDeleteReviewMutation } from "@/state/api/reviewApi"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
+
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic'
 
 interface Instructor {
   _id: string

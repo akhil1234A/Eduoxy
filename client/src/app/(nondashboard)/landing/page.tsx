@@ -1,5 +1,9 @@
 import LandingClient from "@/components/LandingClient";
 
+// Add export for static generation
+export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Revalidate every 60 seconds
+
 export default async function Landing() {
   
   let initialCourses = {
@@ -12,7 +16,7 @@ export default async function Landing() {
 
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/courses/public`, {
-      cache: 'no-store', 
+      next: { revalidate: 60 }, // Use Next.js revalidation instead of cache: 'no-store'
     });
     if (!response.ok) throw new Error('Failed to fetch courses');
 

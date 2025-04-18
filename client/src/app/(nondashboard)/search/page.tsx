@@ -1,7 +1,7 @@
 "use client";
 
+import React, { useState, useMemo, useCallback, Suspense } from "react";
 import Loading from "@/components/Loading";
-import { useState, useMemo, useCallback } from "react";
 import { useGetPublicCoursesQuery, useSearchCoursesQuery } from "@/state/redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { debounce } from "lodash";
@@ -10,7 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CourseCardSearch from "@/components/CourseCardSearch";
 
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const Search = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <SearchContent />
+    </Suspense>
+  );
+};
+
+const SearchContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);

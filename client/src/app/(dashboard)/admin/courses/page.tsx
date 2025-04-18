@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, Suspense } from "react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -15,7 +15,18 @@ import {
   usePublishCourseMutation,
 } from "@/state/api/coursesApi";
 
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const Courses = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <CoursesContent />
+    </Suspense>
+  );
+};
+
+const CoursesContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);

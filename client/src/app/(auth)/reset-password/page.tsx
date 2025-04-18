@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { z } from "zod";
-import { Suspense } from "react";
 
 // Skeleton Component
 const ResetPasswordSkeleton = () => {
@@ -32,6 +31,14 @@ const passwordSchema = z
   .regex(/[0-9]/, "Password must contain at least one number");
 
 const ResetPassword = () => {
+  return (
+    <Suspense fallback={<ResetPasswordSkeleton />}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+};
+
+const ResetPasswordContent = () => {
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -142,13 +149,4 @@ const ResetPassword = () => {
   );
 };
 
-
-const ResetPasswordWithSuspense = () => {
-  return (
-    <Suspense fallback={<ResetPasswordSkeleton />}>
-      <ResetPassword />
-    </Suspense>
-  );
-};
-
-export default ResetPasswordWithSuspense;
+export default ResetPassword;

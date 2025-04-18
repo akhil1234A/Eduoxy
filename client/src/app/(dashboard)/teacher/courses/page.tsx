@@ -11,11 +11,22 @@ import {
   useGetTeacherCoursesQuery,
 } from "@/state/api/coursesApi";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, Suspense } from "react";
 import { toast } from "sonner";
 import Cookies from "js-cookie";
 
+// Add export for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 const Courses = () => {
+  return (
+    <Suspense fallback={<Loading />}>
+      <CoursesContent />
+    </Suspense>
+  );
+};
+
+const CoursesContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get("page") || "1", 10);
