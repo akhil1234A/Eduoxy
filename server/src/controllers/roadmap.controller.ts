@@ -36,8 +36,12 @@ export class RoadmapController {
 
   async getAllRoadmaps(req: Request, res: Response): Promise<void> {
     try {
-      const roadmaps = await this._roadmapService.getAllRoadmaps();
-      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_ALL_SUCCESS, roadmaps));
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const searchTerm = (req.query.searchTerm as string) || "";
+
+      const result = await this._roadmapService.getAllRoadmaps(page, limit, searchTerm);
+      res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_ALL_SUCCESS, result));
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_FAIL, err.message));

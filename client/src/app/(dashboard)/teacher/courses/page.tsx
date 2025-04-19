@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 
 const Courses = () => {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<div>Loading...</div>}>
       <CoursesContent />
     </Suspense>
   );

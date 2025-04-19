@@ -39,11 +39,40 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
     return updatedUser !== null;
   }
 
-  async listByUserType(userType: "student" | "teacher" | "admin"): Promise<IUser[]> {
+  async listByUserType(
+    userType: "student" | "teacher" | "admin",
+    skip: number = 0,
+    limit: number = 10,
+    searchTerm: string = ""
+  ): Promise<IUser[]> {
+    const query: any = { userType };
+    
+    if (searchTerm) {
+      query.$or = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+    
     return this._userModel
-      .find({ userType })
-      .select("-password") 
+      .find(query)
+      .select("-password")
+      .skip(skip)
+      .limit(limit)
       .exec();
+  }
+
+  async countByUserType(userType: "student" | "teacher" | "admin", searchTerm: string = ""): Promise<number> {
+    const query: any = { userType };
+    
+    if (searchTerm) {
+      query.$or = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { email: { $regex: searchTerm, $options: 'i' } }
+      ];
+    }
+    
+    return this._userModel.countDocuments(query).exec();
   }
 
   async findById(id: string, select="-password"): Promise<IUser | null> {

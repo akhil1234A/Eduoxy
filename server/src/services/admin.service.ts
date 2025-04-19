@@ -4,16 +4,41 @@ import { IUser } from "../models/user.model";
 import { UserRole } from "../types/types";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
+import { CacheUtil } from "../utils/cache";
 @injectable()
 export class AdminService implements IAdminService {
   constructor(@inject(TYPES.IUserRepository) private _userRepository: IUserRepository) {}
 
-  async listStudents(): Promise<IUser[]> {
-    return this._userRepository.listByUserType(UserRole.STUDENT);
+  async listStudents(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ users: IUser[]; total: number }> {
+    const cacheKey = CacheUtil.getListCacheKey("students", page, limit, searchTerm);
+    const cachedData = await CacheUtil.get<{ users: IUser[]; total: number }>(cacheKey);
+    if (cachedData) return cachedData;
+  
+    const skip = (page - 1) * limit;
+    const [users, total] = await Promise.all([
+      this._userRepository.listByUserType(UserRole.STUDENT, skip, limit, searchTerm),
+      this._userRepository.countByUserType(UserRole.STUDENT, searchTerm),
+    ]);
+  
+    const result = { users, total };
+    await CacheUtil.set(cacheKey, result, 300); // Cache for 5 minutes
+    return result;
   }
-
-  async listTeachers(): Promise<IUser[]> {
-    return this._userRepository.listByUserType(UserRole.TEACHER);
+  
+  async listTeachers(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ users: IUser[]; total: number }> {
+    const cacheKey = CacheUtil.getListCacheKey("teachers", page, limit, searchTerm);
+    const cachedData = await CacheUtil.get<{ users: IUser[]; total: number }>(cacheKey);
+    if (cachedData) return cachedData;
+  
+    const skip = (page - 1) * limit;
+    const [users, total] = await Promise.all([
+      this._userRepository.listByUserType(UserRole.TEACHER, skip, limit, searchTerm),
+      this._userRepository.countByUserType(UserRole.TEACHER, searchTerm),
+    ]);
+  
+    const result = { users, total };
+    await CacheUtil.set(cacheKey, result, 300); // Cache for 5 minutes
+    return result;
   }
 
   async blockUser(userId: string): Promise<IUser> {

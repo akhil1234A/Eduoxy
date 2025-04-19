@@ -1,17 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Header from "@/components/Header";
 import DynamicTable from "@/components/DynamicTable";
 import { useGetAdminEarningsQuery } from "@/state/api/transactionApi";
 import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
+import Loading from "@/components/Loading";
 
+const AdminEarningsContent = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "10", 10);
+  const searchTerm = searchParams.get("q") || "";
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
-const AdminEarnings = () => {
-  const { data, isLoading, isError } = useGetAdminEarningsQuery();
-  const [searchTerm, setSearchTerm] = useState("");
+  const { data, isLoading, isError } = useGetAdminEarningsQuery({ 
+    page, 
+    limit, 
+    searchTerm: debouncedSearchTerm 
+  });
 
-  const earnings: Transaction[] = data?.data || [];
+  const earnings: Transaction[] = data?.data?.transactions || [];
+  const total = data?.data?.total || 0;
+  const totalPages = data?.data?.totalPages || 1;
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(localSearchTerm);
+      // Only update URL when debounced search term changes
+      if (localSearchTerm !== searchTerm) {
+        const query = new URLSearchParams({
+          page: "1",
+          limit: limit.toString(),
+          q: localSearchTerm,
+        }).toString();
+        router.push(`/admin/earnings?${query}`, { scroll: false });
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [localSearchTerm, limit, router, searchTerm]);
 
   if (isError) {
     toast.error("Failed to fetch admin earnings");
@@ -35,14 +67,30 @@ const AdminEarnings = () => {
     { key: "paymentProvider", label: "Payment Provider" },
   ];
 
+  const handleSearchChange = (value: string) => {
+    // Update local state immediately for responsive UI
+    setLocalSearchTerm(value);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      const query = new URLSearchParams({
+        page: newPage.toString(),
+        limit: limit.toString(),
+        q: localSearchTerm,
+      }).toString();
+      router.push(`/admin/earnings?${query}`, { scroll: false });
+    }
+  };
+
   return (
     <div className="admin-earnings w-full h-full bg-[#1B1C22] text-white min-h-screen py-8 px-4 md:px-6">
       <Header title="Admin Earnings" subtitle="View platform earnings from all transactions" />
       <DynamicTable<Transaction>
         items={earnings}
         columns={columns}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        searchTerm={localSearchTerm}
+        onSearchChange={handleSearchChange}
         isLoading={isLoading}
         rowKeyExtractor={(item) => item.transactionId as string}
         filterFn={(item, term) =>
@@ -52,9 +100,22 @@ const AdminEarnings = () => {
         }
         searchPlaceholder="Search earnings by transaction ID, course, student, or provider..."
         noResultsComponent={<div className="p-3 text-center text-gray-400">No earnings found</div>}
+        total={total}
+        page={page}
+        limit={limit}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
       />
     </div>
   );
 };
+
+const AdminEarnings = ()=>{
+  return (
+    <Suspense fallback={<Loading />}>
+      <AdminEarningsContent />
+    </Suspense>
+  )
+}
 
 export default AdminEarnings;

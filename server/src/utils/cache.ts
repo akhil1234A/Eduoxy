@@ -16,6 +16,17 @@ export class CacheUtil {
     return key;
   }
 
+  static getListCacheKey(type: string, page?: number, limit?: number, searchTerm?: string): string {
+    let key = `list:${type}`;
+    if (page !== undefined && limit !== undefined) {
+      key += `:page:${page}:limit:${limit}`;
+    }
+    if (searchTerm) {
+      key += `:search:${searchTerm}`;
+    }
+    return key;
+  }
+
   static async get<T>(key: string): Promise<T | null> {
     const data = await redisClientWrapper.get(key);
     return data ? JSON.parse(data) : null;

@@ -257,6 +257,12 @@ declare global {
     totalEnrollments: number
     totalUsers: number
     recentTransactions: RecentTransactionAdmin[]
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }
   }
   
   export interface RecentTransactionAdmin extends Record<string, unknown> {
@@ -273,6 +279,12 @@ declare global {
     totalCourses: number
     pendingCourses: number
     recentEnrollments: RecentEnrollmentTeacher[]
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }
   }
   
   export interface RecentEnrollmentTeacher extends Record<string, unknown> {
@@ -292,6 +304,15 @@ declare global {
     __v?: number
     [key: string]: unknown;
   }
+
+  interface RoadmapResponse {
+    roadmaps: Roadmap[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  
   
   export interface RoadmapSection {
     id: string

@@ -27,8 +27,8 @@ interface Roadmap {
 }
 
 export default function RoadmapsPage() {
-  const { data, isLoading } = useGetRoadmapsQuery()
-  const roadmaps = data?.data || []
+  const { data, isLoading } = useGetRoadmapsQuery({ page: 1, limit: 10, searchTerm: "" })
+  const roadmaps = data?.data?.roadmaps || []
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
 

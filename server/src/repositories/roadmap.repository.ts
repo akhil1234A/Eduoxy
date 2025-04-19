@@ -18,8 +18,12 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
     return this.model.findById(id).exec();
   }
 
-  async findAll(): Promise<IRoadmapDocument[]> {
-    return this.model.find().exec();
+  async find(query: any = {}, skip: number = 0, limit: number = 10): Promise<IRoadmapDocument[]> {
+    return this.model.find(query).skip(skip).limit(limit).exec();
+  }
+
+  async count(query: any = {}): Promise<number> {
+    return this.model.countDocuments(query).exec();
   }
 
   async update(id: string, roadmap: any): Promise<IRoadmapDocument | null> {

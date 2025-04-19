@@ -16,8 +16,37 @@ export class RoadmapService implements IRoadmapService {
     return this._roadmapRepository.findById(id);
   }
 
-  async getAllRoadmaps(): Promise<IRoadmapDocument[]> {
-    return this._roadmapRepository.findAll();
+   async getAllRoadmaps(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{
+    roadmaps: IRoadmapDocument[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
+    const query = searchTerm
+      ? {
+          $or: [
+            { title: { $regex: searchTerm, $options: "i" } },
+            { description: { $regex: searchTerm, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const [roadmaps, total] = await Promise.all([
+      this._roadmapRepository.find(query, skip, limit),
+      this._roadmapRepository.count(query),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      roadmaps,
+      total,
+      page,
+      limit,
+      totalPages,
+    };
   }
 
   async updateRoadmap(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null> {

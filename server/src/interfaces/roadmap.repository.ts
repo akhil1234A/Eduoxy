@@ -9,4 +9,6 @@ export interface IRoadmapRepository {
   findAll(): Promise<IRoadmapDocument[]>;
   update(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null>;
   delete(id: string): Promise<boolean>;
+  find(query: any, skip: number, limit: number): Promise<IRoadmapDocument[]>;
+  count(query: any): Promise<number>;
 } 

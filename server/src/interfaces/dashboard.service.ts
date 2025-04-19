@@ -1,4 +1,14 @@
 export interface IDashboardService {
-  getAdminDashboard(): Promise<any>;
-  getTeacherDashboard(teacherId: string): Promise<any>;
+  getAdminDashboard(
+    page?: number, 
+    limit?: number, 
+    dateFilter?: { type: 'week' | 'month' | 'custom', startDate?: string, endDate?: string }
+  ): Promise<any>;
+  
+  getTeacherDashboard(
+    teacherId: string, 
+    page?: number, 
+    limit?: number, 
+    dateFilter?: { type: 'week' | 'month' | 'custom', startDate?: string, endDate?: string }
+  ): Promise<any>;
 }

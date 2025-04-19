@@ -10,20 +10,46 @@ export class AdminController {
 
   async listStudents(req: Request, res: Response): Promise<void> {
     try {
-      const students = await this._adminService.listStudents();
-      res.json(successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.STUDENT_LISTED_SUCCESS, students));
+      const { page = "1", limit = "10", q = "" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const searchTerm = q as string;
+  
+      const { users, total } = await this._adminService.listStudents(pageNum, limitNum, searchTerm);
+      res.json(
+        successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.STUDENT_LISTED_SUCCESS, {
+          users,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
     } catch (error) {
-      const err = error as Error
+      const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.STUDENT_LISTED_ERROR, err.message));
     }
   }
-
+  
   async listTeachers(req: Request, res: Response): Promise<void> {
     try {
-      const teachers = await this._adminService.listTeachers();
-      res.json(successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.TEACHER_LISTED_SUCCESS, teachers));
+      const { page = "1", limit = "10", q = "" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const searchTerm = q as string;
+  
+      const { users, total } = await this._adminService.listTeachers(pageNum, limitNum, searchTerm);
+      res.json(
+        successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.TEACHER_LISTED_SUCCESS, {
+          users,
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        })
+      );
     } catch (error) {
-      const err = error as Error; 
+      const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.TEACHER_LISTED_ERROR, err.message));
     }
   }

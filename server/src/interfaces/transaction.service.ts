@@ -8,7 +8,7 @@ export interface ITransactionService {
     amount: number,
     paymentProvider: "stripe"
   ): Promise<ITransaction>;
-  getAdminEarnings(): Promise<any[]>;  
-  getTeacherEarnings(teacherId: string): Promise<any[]>;
-  getStudentPurchases(userId: string): Promise<any[]>; 
+  getAdminEarnings(page?: number, limit?: number, searchTerm?: string): Promise<{ transactions: any[]; total: number; totalPages: number }>;  
+  getTeacherEarnings(teacherId: string, page?: number, limit?: number, searchTerm?: string): Promise<{ transactions: any[]; total: number; totalPages: number }>;
+  getStudentPurchases(userId: string, page?: number, limit?: number, searchTerm?: string): Promise<{ transactions: any[]; total: number; totalPages: number }>; 
 }

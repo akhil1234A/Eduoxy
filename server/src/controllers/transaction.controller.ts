@@ -72,7 +72,12 @@ export class TransactionController {
 
   async getAdminEarnings(req: Request, res: Response): Promise<void> {
     try {
-      const earnings = await this._transactionService.getAdminEarnings();
+      const { page = "1", limit = "10", q = "" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const searchTerm = q as string;
+      
+      const earnings = await this._transactionService.getAdminEarnings(pageNum, limitNum, searchTerm);
       res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_ADMIN_EARNINGS_SUCCESS, earnings));
     } catch (error) {
       const err = error as Error;
@@ -87,7 +92,12 @@ export class TransactionController {
       return;
     }
     try {
-      const earnings = await this._transactionService.getTeacherEarnings(teacherId);
+      const { page = "1", limit = "10", q = "" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const searchTerm = q as string;
+      
+      const earnings = await this._transactionService.getTeacherEarnings(teacherId, pageNum, limitNum, searchTerm);
       res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_TEACHER_EARNINGS_SUCCESS, earnings));
     } catch (error) {
       const err = error as Error;
@@ -97,12 +107,19 @@ export class TransactionController {
 
   async getStudentPurchases(req: Request, res: Response): Promise<void> {
     const { userId } = req.params;
+    apiLogger.info("Getting student purchases", { userId });
     if (!userId) {
       res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.TRANSACTION.USER_ID_REQUIRED));
       return;
     }
     try {
-      const purchases = await this._transactionService.getStudentPurchases(userId);
+      const { page = "1", limit = "10", q = "" } = req.query;
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const searchTerm = q as string;
+      
+      const purchases = await this._transactionService.getStudentPurchases(userId, pageNum, limitNum, searchTerm);
+      apiLogger.info("Student purchases fetched successfully", { purchases });
       res.json(successResponse(RESPONSE_MESSAGES.TRANSACTION.GET_STUDENT_PURCHASES_SUCCESS, purchases));
     } catch (error) {
       const err = error as Error;

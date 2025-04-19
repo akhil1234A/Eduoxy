@@ -6,9 +6,11 @@ export const roadmapApi = createApi({
   baseQuery: customBaseQuery,
   tagTypes: ["Roadmap"],
   endpoints: (builder) => ({
-    getRoadmaps: builder.query<ApiResponse<Roadmap[]>, void>({
-      query: () => "/roadmap",
-      providesTags: ["Roadmap"],
+    getRoadmaps: builder.query<ApiResponse<RoadmapResponse>, { page: number; limit: number; searchTerm: string }>({
+      query: ({ page, limit, searchTerm }) => ({
+        url: "/roadmap",
+        params: { page, limit, searchTerm },
+      }),
     }),
     getRoadmapById: builder.query<ApiResponse<Roadmap>, string>({
       query: (id) => `/roadmap/${id}`,

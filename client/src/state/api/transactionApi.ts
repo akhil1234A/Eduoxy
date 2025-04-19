@@ -36,26 +36,38 @@ export const transactionApi = createApi({
       invalidatesTags: ["Courses", "Transactions"],
     }),
 
-    getAdminEarnings: builder.query<ApiResponse<Transaction[]>, void>({
-      query: () => ({
+    getAdminEarnings: builder.query<
+      ApiResponse<{ transactions: Transaction[]; total: number; totalPages: number }>,
+      { page?: number; limit?: number; searchTerm?: string }
+    >({
+      query: ({ page = 1, limit = 10, searchTerm = "" } = {}) => ({
         url: "/transactions/admin/earnings",
         method: "GET",
+        params: { page, limit, q: searchTerm },
       }),
       providesTags: ["Transactions"],
     }),
 
-    getTeacherEarnings: builder.query<ApiResponse<Transaction[]>, string>({
-      query: (teacherId) => ({
+    getTeacherEarnings: builder.query<
+      ApiResponse<{ transactions: Transaction[]; total: number; totalPages: number }>,
+      { teacherId: string; page?: number; limit?: number; searchTerm?: string }
+    >({
+      query: ({ teacherId, page = 1, limit = 10, searchTerm = "" }) => ({
         url: `/transactions/teacher/earnings/${teacherId}`,
         method: "GET",
+        params: { page, limit, q: searchTerm },
       }),
       providesTags: ["Transactions"],
     }),
 
-    getStudentPurchases: builder.query<ApiResponse<Transaction[]>, string>({
-      query: (userId) => ({
+    getStudentPurchases: builder.query<
+      ApiResponse<{ transactions: Transaction[]; total: number; totalPages: number }>,
+      { userId: string; page?: number; limit?: number; searchTerm?: string }
+    >({
+      query: ({ userId, page = 1, limit = 10, searchTerm = "" }) => ({
         url: `/transactions/student/purchases/${userId}`,
         method: "GET",
+        params: { page, limit, q: searchTerm },
       }),
       providesTags: ["Transactions"],
     }),

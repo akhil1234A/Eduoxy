@@ -14,7 +14,22 @@ export class DashboardController {
 
   async getAdminDashboard(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this._dashboardService.getAdminDashboard();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const dateFilterType = req.query.dateFilterType as 'week' | 'month' | 'custom' | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      
+      let dateFilter;
+      if (dateFilterType) {
+        dateFilter = {
+          type: dateFilterType,
+          startDate,
+          endDate
+        };
+      }
+      
+      const dashboard = await this._dashboardService.getAdminDashboard(page, limit, dateFilter);
       res.json(successResponse(RESPONSE_MESSAGES.DASHBOARD.ADMIN_SUCCESS, dashboard));
     } catch (error) {
       const err = error as Error;
@@ -28,8 +43,24 @@ export class DashboardController {
       res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.DASHBOARD.TEACHER_ID_REQUIRED));
       return;
     }
+    
     try {
-      const dashboard = await this._dashboardService.getTeacherDashboard(teacherId);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const dateFilterType = req.query.dateFilterType as 'week' | 'month' | 'custom' | undefined;
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      
+      let dateFilter;
+      if (dateFilterType) {
+        dateFilter = {
+          type: dateFilterType,
+          startDate,
+          endDate
+        };
+      }
+      
+      const dashboard = await this._dashboardService.getTeacherDashboard(teacherId, page, limit, dateFilter);
       res.json(successResponse(RESPONSE_MESSAGES.DASHBOARD.TEACHER_SUCCESS, dashboard));
     } catch (error) {
       const err = error as Error;
