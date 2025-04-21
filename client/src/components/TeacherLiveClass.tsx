@@ -1,437 +1,403 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { io, Socket } from "socket.io-client";
-import Peer, { MediaConnection } from "peerjs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
+import { useEffect, useRef, useState, useCallback } from "react";
+import io, { Socket } from "socket.io-client";
 
+// Define types for WebRTC events
+interface AnswerEvent {
+  answer: RTCSessionDescriptionInit;
+}
+
+interface IceCandidateEvent {
+  candidate: RTCIceCandidateInit;
+}
+
+// Props interface for the component
 interface TeacherLiveClassProps {
   liveClassId: string;
-  courseId: string;
   userId: string;
 }
 
-interface Participant {
-  userId: string;
-  userName: string;
-}
-
-interface ChatMessage {
-  senderId: string;
-  senderName: string;
-  message: string;
-  timestamp: string;
-}
-
-const TeacherLiveClass = ({ liveClassId, courseId, userId }: TeacherLiveClassProps) => {
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isStreamActive, setIsStreamActive] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'streaming'>('idle');
-  const [showPeerId, setShowPeerId] = useState(false);
-
-  const socketRef = useRef<Socket | null>(null);
-  const peerRef = useRef<Peer | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
+export default function TeacherLiveClass({ liveClassId, userId }: TeacherLiveClassProps) {
+  const roomId = liveClassId; // Use liveClassId as the room ID
   const videoRef = useRef<HTMLVideoElement>(null);
-  const callsRef = useRef<Map<string, MediaConnection>>(new Map());
+  const socket = useRef<Socket | null>(null);
+  const peer = useRef<RTCPeerConnection | null>(null);
+  const localStream = useRef<MediaStream | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>("Initializing...");
+  const [error, setError] = useState<string | null>(null);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [studentReady, setStudentReady] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
-  const initializeWebRTCAndSocket = useCallback(async () => {
-    const socket = io(`${process.env.NEXT_PUBLIC_API_URL}`, {
-      query: { userId },
-      path: "/socket.io/",
-      transports: ["websocket"],
-    });
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      console.log("Socket connected");
-      socket.emit("joinLiveClass", { liveClassId, isTeacher: true });
-      toast.success("Connected to live class");
-    });
-
-    socket.on("userJoined", ({ userId: joinedUserId, participants: newParticipants, isTeacher }) => {
-      console.log(`User joined: ${joinedUserId}, isTeacher: ${isTeacher}`);
-      setParticipants(newParticipants);
-    });
-
-    socket.on("userLeft", ({ userId: leftUserId, isTeacher, participants: updatedParticipants }) => {
-      console.log(`User left: ${leftUserId}, isTeacher: ${isTeacher}`);
-      setParticipants(updatedParticipants);
-      
-      if (!isTeacher && callsRef.current.has(leftUserId)) {
-        callsRef.current.get(leftUserId)?.close();
-        callsRef.current.delete(leftUserId);
-      }
-    });
-
-    socket.on("chatHistory", (messages: ChatMessage[]) => setChatMessages(messages));
-    socket.on("liveMessage", (message: ChatMessage) => setChatMessages(prev => [...prev, message]));
-
-    socket.on("error", (error: { message: string }) => toast.error(error.message));
-
-    peerRef.current = new Peer({
-      host: `${process.env.NEXT_PUBLIC_HOST}`,
-      port: 9000,
-      path: '/myapp',
-      debug: 3,
-      config: {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-          { urls: "stun:stun2.l.google.com:19302" },
-          { urls: "stun:stun3.l.google.com:19302" },
-          { urls: "stun:stun4.l.google.com:19302" },
-        ],
-      },
-    });
-
-    peerRef.current.on('open', (id) => {
-      console.log(`Teacher PeerJS ID: ${id}`);
-      if (socketRef.current) {
-        socketRef.current.emit("providePeerId", { liveClassId, peerId: id });
-        console.log("Emitted teacher PeerID to server");
-      }
-    });
-
-    peerRef.current.on('call', (call) => {
-      console.log('Received call from student:', call.peer);
-      console.log('Call metadata:', call.metadata);
-      
-      if (localStreamRef.current && localStreamRef.current.active) {
-        console.log('Answering call with local stream, ensuring unmute');
-        localStreamRef.current.getAudioTracks().forEach(track => track.enabled = true);
-        localStreamRef.current.getVideoTracks().forEach(track => track.enabled = true);
-
-        call.answer(localStreamRef.current);
-        callsRef.current.set(call.peer, call);
-
-        call.on('stream', (remoteStream) => {
-          console.log('Received student stream (if any):', {
-            active: remoteStream.active,
-            id: remoteStream.id,
-            tracks: remoteStream.getTracks().map(t => ({
-              kind: t.kind,
-              enabled: t.enabled,
-              muted: t.muted,
-              readyState: t.readyState,
-            })),
-          });
-        });
-
-        call.on('close', () => {
-          console.log('Call closed with student:', call.peer);
-          callsRef.current.delete(call.peer);
-        });
-
-        call.on('error', (err) => {
-          console.error('Call error:', err);
-          callsRef.current.delete(call.peer);
-          toast.error("Failed to maintain call with student: " + err.message);
-        });
-      } else {
-        console.log('No active local stream available, rejecting call');
-        call.close();
-        toast.error("Teacher is not streaming yet.");
-      }
-    });
-
-    peerRef.current.on('error', (err) => {
-      console.error("PeerJS error:", err);
-      toast.error("PeerJS error: " + err.message);
-      setConnectionStatus('idle');
-    });
-
-    return () => {
-      socket.emit("leaveLiveClass", { liveClassId });
-      socket.disconnect();
-      stopStream();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveClassId, userId]);
-
-  useEffect(() => {
-    initializeWebRTCAndSocket();
-  }, [initializeWebRTCAndSocket]);
-
-  const startStream = async () => {
-    try {
-      setConnectionStatus('connecting');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log('Local stream details:', {
-        active: stream.active,
-        id: stream.id,
-        videoTracks: stream.getVideoTracks().length,
-        audioTracks: stream.getAudioTracks().length,
-        tracks: stream.getTracks().map(t => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-          readyState: t.readyState,
-        })),
-      });
-
-      if (stream.getVideoTracks().length === 0 || stream.getAudioTracks().length === 0) {
-        throw new Error("No video or audio tracks available");
-      }
-
-      stream.getAudioTracks().forEach(track => track.enabled = true);
-      stream.getVideoTracks().forEach(track => track.enabled = true);
-
-      localStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().catch(err => {
-          console.error("Video play error:", err);
-          toast.error("Failed to play video: " + err.message);
-        });
-      }
-
-      setIsStreamActive(true);
-      setConnectionStatus('streaming');
-      toast.success("Stream started");
-
-      // Notify all students that streaming has started
-      if (socketRef.current) {
-        socketRef.current.emit("teacherStreamStarted", { liveClassId });
-      }
-    } catch (error) {
-      console.error("Failed to start stream:", error);
-      toast.error("Failed to start stream: " + (error as Error).message);
-      setConnectionStatus('idle');
-    }
-  };
-
-  const stopStream = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
-      localStreamRef.current = null;
-    }
-    callsRef.current.forEach(call => call.close());
-    callsRef.current.clear();
-
-    setIsStreamActive(false);
-    setIsScreenSharing(false);
-    setIsMuted(false);
-    setIsVideoOff(false);
-    setConnectionStatus('idle');
-
-    if (socketRef.current) {
-      socketRef.current.emit("teacherStreamStopped", { liveClassId });
-    }
-
-    if (peerRef.current) {
-      peerRef.current.destroy();
-      peerRef.current = new Peer({
-        host: `${process.env.NEXT_PUBLIC_HOST}`,
-        port: 9000,
-        path: '/myapp',
-        config: {
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" },
-            { urls: "stun:stun2.l.google.com:19302" },
-            { urls: "stun:stun3.l.google.com:19302" },
-            { urls: "stun:stun4.l.google.com:19302" },
-          ],
-        },
-      });
-    }
-  };
-
-  const toggleScreenShare = async () => {
-    if (!isStreamActive) {
-      toast.error("Start streaming first!");
+  // Function to create and send an offer
+  const createAndSendOffer = useCallback(async () => {
+    if (!peer.current || !socket.current || !isSocketConnected) {
+      console.log("Cannot create offer: peer or socket not ready");
       return;
     }
 
     try {
-      if (!isScreenSharing) {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        localStreamRef.current?.getVideoTracks()[0].stop();
-        localStreamRef.current = screenStream;
+      setConnectionStatus("Creating offer...");
+      const offer = await peer.current.createOffer();
+      await peer.current.setLocalDescription(offer);
 
-        callsRef.current.forEach((call) => {
-          const videoSender = call.peerConnection.getSenders().find((s: RTCRtpSender) => s.track?.kind === "video");
-          videoSender?.replaceTrack(screenStream.getVideoTracks()[0]);
-        });
-
-        if (videoRef.current) videoRef.current.srcObject = screenStream;
-        setIsScreenSharing(true);
-        toast.success("Screen sharing started");
-
-        screenStream.getVideoTracks()[0].onended = () => toggleScreenShare();
-      } else {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localStreamRef.current?.getTracks().forEach(track => track.stop());
-        localStreamRef.current = cameraStream;
-
-        callsRef.current.forEach((call) => {
-          const videoSender = call.peerConnection.getSenders().find((s: RTCRtpSender) => s.track?.kind === "video");
-          videoSender?.replaceTrack(cameraStream.getVideoTracks()[0]);
-        });
-
-        if (videoRef.current) videoRef.current.srcObject = cameraStream;
-        setIsScreenSharing(false);
-        toast.success("Returned to camera");
-      }
-    } catch (error) {
-      console.error("Screen share error:", error);
-      toast.error("Failed to toggle screen share: " + (error as Error).message);
+      console.log("Sending offer to room:", roomId);
+      socket.current.emit("offer", { offer, roomId });
+      setOfferSent(true);
+      setConnectionStatus("Offer sent, waiting for answer...");
+    } catch (err) {
+      console.error("Error creating offer:", err);
+      setError(`Offer error: ${err instanceof Error ? err.message : String(err)}`);
     }
-  };
+  }, [roomId, isSocketConnected]);
 
-  const toggleMute = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!audioTrack.enabled);
-      toast.success(audioTrack.enabled ? "Unmuted" : "Muted");
+  // Initialize peer connection
+  const initializePeerConnection = useCallback(() => {
+    if (peer.current) {
+      peer.current.close();
+    }
 
-      callsRef.current.forEach((call) => {
-        const audioSender = call.peerConnection.getSenders().find((s: RTCRtpSender) => s.track?.kind === "audio");
-        if (audioSender && localStreamRef.current) {
-          audioSender.replaceTrack(localStreamRef.current.getAudioTracks()[0]);
+    peer.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+      ],
+    });
+
+    // Add all tracks to the peer connection if stream is available
+    if (localStream.current) {
+      localStream.current.getTracks().forEach((track) => {
+        if (peer.current) {
+          peer.current.addTrack(track, localStream.current!);
         }
       });
     }
-  };
 
-  const toggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsVideoOff(!videoTrack.enabled);
-      toast.success(videoTrack.enabled ? "Video on" : "Video off");
+    // Handle ICE candidates
+    peer.current.onicecandidate = (e) => {
+      if (e.candidate && socket.current) {
+        console.log("Sending ICE candidate");
+        socket.current.emit("ice-candidate", { candidate: e.candidate, roomId });
+      }
+    };
 
-      callsRef.current.forEach((call) => {
-        const videoSender = call.peerConnection.getSenders().find((s: RTCRtpSender) => s.track?.kind === "video");
-        videoSender?.replaceTrack(videoTrack);
+    // Handle connection state changes
+    peer.current.onconnectionstatechange = () => {
+      console.log("Connection state:", peer.current?.connectionState);
+      setConnectionStatus(`Connection state: ${peer.current?.connectionState}`);
+
+      if (peer.current?.connectionState === "failed" || peer.current?.connectionState === "disconnected") {
+        setError("Connection failed. Preparing to reconnect...");
+        setTimeout(() => {
+          if (studentReady) {
+            initializePeerConnection();
+            createAndSendOffer();
+          }
+        }, 2000);
+      }
+    };
+
+    // Handle ICE connection state changes
+    peer.current.oniceconnectionstatechange = () => {
+      console.log("ICE connection state:", peer.current?.iceConnectionState);
+      if (peer.current?.iceConnectionState === "failed") {
+        console.log("ICE connection failed, restarting ICE");
+        peer.current.restartIce();
+      }
+    };
+  }, [roomId, studentReady, createAndSendOffer]);
+
+  // Setup camera stream
+  const setupCameraStream = useCallback(async () => {
+    try {
+      setConnectionStatus("Requesting camera access...");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localStream.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setConnectionStatus("Camera access granted");
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setError(`Camera error: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  }, []);
+
+  // Setup screen sharing
+  const setupScreenShare = useCallback(async () => {
+    try {
+      setConnectionStatus("Requesting screen share...");
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      localStream.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setConnectionStatus("Screen sharing started");
+      }
+
+      // Update tracks in the peer connection
+      if (peer.current) {
+        const senders = peer.current.getSenders();
+        stream.getTracks().forEach((track) => {
+          const sender = senders.find((s) => s.track?.kind === track.kind);
+          if (sender) {
+            sender.replaceTrack(track);
+          } else {
+            peer.current!.addTrack(track, stream);
+          }
+        });
+      }
+
+      // Stop screen sharing when the user ends it (e.g., clicks "Stop sharing" in the browser)
+      stream.getVideoTracks()[0].onended = () => {
+        setIsScreenSharing(false);
+        setupCameraStream(); // Switch back to camera
+      };
+
+      return true;
+    } catch (err) {
+      console.error("Error starting screen share:", err);
+      setError(`Screen share error: ${err instanceof Error ? err.message : String(err)}`);
+      return false;
+    }
+  }, [setupCameraStream]);
+
+  // Toggle between camera and screen sharing
+  const toggleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      // Stop screen sharing and switch to camera
+      if (localStream.current) {
+        localStream.current.getTracks().forEach((track) => track.stop());
+      }
+      setIsScreenSharing(false);
+      await setupCameraStream();
+    } else {
+      // Start screen sharing
+      setIsScreenSharing(true);
+      await setupScreenShare();
+    }
+
+    // Reinitialize peer connection to ensure tracks are updated
+    if (studentReady) {
+      initializePeerConnection();
+      createAndSendOffer();
+    }
+  }, [isScreenSharing, setupCameraStream, setupScreenShare, studentReady, initializePeerConnection, createAndSendOffer]);
+
+  useEffect(() => {
+    const setupConnection = async () => {
+      // Connect to socket server
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000";
+      console.log("Connecting to socket server:", socketUrl);
+
+      // Use provided userId or fallback to localStorage
+      let teacherId = userId || localStorage.getItem("teacherId");
+      if (!teacherId) {
+        teacherId = `teacher-${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem("teacherId", teacherId);
+      }
+      console.log("Using teacher ID:", teacherId);
+
+      socket.current = io(socketUrl, {
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000,
+        query: { userId: teacherId },
       });
-    }
-  };
 
-  const sendMessage = () => {
-    if (!newMessage.trim() || !socketRef.current) return;
-    socketRef.current.emit("sendLiveMessage", { liveClassId, message: newMessage.trim() });
-    setNewMessage("");
-  };
+      // Socket connection events
+      socket.current.on("connect", async () => {
+        console.log("Socket connected with ID:", socket.current?.id);
+        setConnectionStatus("Connected to signaling server");
+        setIsSocketConnected(true);
 
-  const handleLeave = () => {
-    stopStream();
-    if (socketRef.current) {
-      socketRef.current.emit("leaveLiveClass", { liveClassId });
-      socketRef.current.disconnect();
+        // Join the room immediately after connection
+        socket.current?.emit("joinRoom", { roomId });
+
+        // Setup camera stream if not already done
+        if (!localStream.current) {
+          const success = await setupCameraStream();
+          if (success) {
+            initializePeerConnection();
+          }
+        } else {
+          initializePeerConnection();
+        }
+      });
+
+      socket.current.on("connect_error", (err) => {
+        console.error("Socket connection error:", err);
+        setError(`Connection error: ${err.message}`);
+        setConnectionStatus("Connection failed");
+        setIsSocketConnected(false);
+      });
+
+      socket.current.on("disconnect", () => {
+        console.log("Socket disconnected");
+        setConnectionStatus("Disconnected from server");
+        setIsSocketConnected(false);
+        setStudentReady(false);
+      });
+
+      // Handle student ready event
+      socket.current.on("student-ready", () => {
+        console.log("Student is ready to receive stream");
+        setStudentReady(true);
+
+        // If student just joined and we haven't sent an offer yet, do it now
+        if (!offerSent) {
+          createAndSendOffer();
+        }
+      });
+
+      // Handle student request for offer
+      socket.current.on("request-offer", () => {
+        console.log("Student requested an offer");
+        createAndSendOffer();
+      });
+
+      // Handle answer from student
+      socket.current.on("answer", async ({ answer }: AnswerEvent) => {
+        try {
+          console.log("Received answer from student");
+          setConnectionStatus("Received answer, setting remote description...");
+
+          if (peer.current && peer.current.signalingState !== "closed") {
+            await peer.current.setRemoteDescription(new RTCSessionDescription(answer));
+            setConnectionStatus("Remote description set, connection established");
+          } else {
+            console.log("Peer connection not available for setting remote description");
+            initializePeerConnection();
+            await peer.current?.setRemoteDescription(new RTCSessionDescription(answer));
+          }
+        } catch (err) {
+          console.error("Error setting remote description:", err);
+          setError(`Answer error: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      });
+
+      // Handle ICE candidates from student
+      socket.current.on("ice-candidate", ({ candidate }: IceCandidateEvent) => {
+        try {
+          console.log("Received ICE candidate from student");
+          if (peer.current && peer.current.remoteDescription) {
+            peer.current.addIceCandidate(new RTCIceCandidate(candidate)).catch((err) =>
+              console.error("Error adding ICE candidate:", err)
+            );
+          } else {
+            console.log("Cannot add ICE candidate: peer not ready or no remote description");
+          }
+        } catch (err) {
+          console.error("Error handling ICE candidate:", err);
+        }
+      });
+    };
+
+    // Setup connection only once when component mounts
+    setupConnection();
+
+    // Attempt to reconnect every 5 seconds if socket disconnects
+    const reconnectInterval = setInterval(() => {
+      if (!isSocketConnected && socket.current) {
+        console.log("Attempting to reconnect...");
+        socket.current.connect();
+      }
+    }, 5000);
+
+    return () => {
+      console.log("Cleaning up resources");
+      clearInterval(reconnectInterval);
+
+      if (localStream.current) {
+        localStream.current.getTracks().forEach((track) => track.stop());
+      }
+
+      if (peer.current) {
+        peer.current.close();
+      }
+
+      if (socket.current) {
+        socket.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Handle student ready status
+  useEffect(() => {
+    if (studentReady && isSocketConnected && !offerSent) {
+      createAndSendOffer();
     }
-    window.location.href = `/search/${courseId}`;
+  }, [studentReady, isSocketConnected, offerSent, createAndSendOffer]);
+
+  const handleRetryConnection = () => {
+    setError(null);
+    setOfferSent(false);
+
+    if (socket.current) {
+      socket.current.emit("joinRoom", { roomId });
+
+      if (isSocketConnected && localStream.current) {
+        initializePeerConnection();
+        createAndSendOffer();
+      } else if (!isSocketConnected) {
+        socket.current.connect();
+      }
+    }
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      <div className="w-4/5 p-6 flex flex-col">
-        <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden relative">
-          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-contain" style={{ minHeight: "300px" }} />
-          {!isStreamActive && (
-            <div className="absolute inset-0 flex items-center justify-center flex-col bg-gray-900 bg-opacity-75">
-              {connectionStatus === 'idle' ? (
-                <p className="text-xl mb-4">Click Start Streaming to begin</p>
-              ) : connectionStatus === 'connecting' ? (
-                <p className="text-xl mb-4">Starting stream...</p>
-              ) : null}
-              <Button onClick={startStream} className="bg-green-600 hover:bg-green-700">Start Streaming</Button>
-            </div>
-          )}
-        </div>
-        <div className="mt-4 flex gap-4 flex-wrap">
-          {isStreamActive ? (
-            <>
-              <Button onClick={stopStream} className="bg-red-600 hover:bg-red-700">Stop Streaming</Button>
-              <Button onClick={toggleScreenShare} className="bg-blue-600 hover:bg-blue-700">
-                {isScreenSharing ? "Stop Screen Share" : "Share Screen"}
-              </Button>
-              <Button onClick={toggleMute} className="bg-yellow-600 hover:bg-yellow-700">
-                {isMuted ? "Unmute" : "Mute"}
-              </Button>
-              <Button onClick={toggleVideo} className="bg-purple-600 hover:bg-purple-700">
-                {isVideoOff ? "Turn Video On" : "Turn Video Off"}
-              </Button>
-            </>
-          ) : (
-            <Button onClick={startStream} className="bg-green-600 hover:bg-green-700">Start Streaming</Button>
-          )}
-          <Button onClick={handleLeave} className="bg-red-600 hover:bg-red-700">Leave Class</Button>
-          <Button 
-            onClick={() => setShowPeerId(!showPeerId)} 
-            className="bg-gray-600 hover:bg-gray-700"
+    <div className="flex flex-col items-center p-6">
+      <h2 className="text-2xl font-semibold mb-4">📡 Teacher Live Stream</h2>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full max-w-3xl">
+          <p className="font-bold">Error:</p>
+          <p>{error}</p>
+          <button
+            onClick={handleRetryConnection}
+            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
           >
-            {showPeerId ? "Hide Peer ID" : "Show Peer ID"}
-          </Button>
+            Retry Connection
+          </button>
         </div>
-        
-        {showPeerId && peerRef.current && (
-          <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Your PeerJS ID (For Debugging)</h3>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={peerRef.current.id || "Not connected"}
-                readOnly
-                className="flex-1 bg-gray-700 border-gray-600 text-white"
-              />
-              <Button 
-                onClick={() => {
-                  if (peerRef.current?.id) {
-                    navigator.clipboard.writeText(peerRef.current.id);
-                    toast.success("Peer ID copied to clipboard");
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Copy
-              </Button>
-            </div>
-          </div>
-        )}
+      )}
+      <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full max-w-3xl">
+        <p className="font-bold">Status:</p>
+        <p>{connectionStatus}</p>
+        <p className="mt-1">
+          <strong>Student:</strong> {studentReady ? "Ready to receive" : "Not connected"}
+        </p>
+        <p className="mt-1">
+          <strong>Stream:</strong> {isScreenSharing ? "Screen sharing" : "Camera"}
+        </p>
       </div>
-      <div className="w-1/5 p-6 bg-gray-800 flex flex-col">
-        <h2 className="text-lg font-semibold mb-2">Participants ({participants.length})</h2>
-        <ScrollArea className="h-40 rounded-md border border-gray-700 p-2 mb-6">
-          <ul className="space-y-2">
-            {participants.map((p) => (
-              <li key={p.userId} className="text-sm">
-                {p.userName} {p.userId === userId ? "(You)" : ""}
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
-        <h2 className="text-lg font-semibold mb-2">Live Chat</h2>
-        <ScrollArea className="flex-1 rounded-md border border-gray-700 p-4 mb-4">
-          {chatMessages.map((msg, i) => (
-            <div key={i} className="text-sm">
-              <span className="font-medium text-blue-300">{msg.senderName}:</span> {msg.message}
-              <div className="text-xs text-gray-400 mt-1">{new Date(msg.timestamp).toLocaleTimeString()}</div>
-            </div>
-          ))}
-        </ScrollArea>
-        <div className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 bg-gray-700 border-gray-600 text-white"
-            onKeyPress={(e) => e.key === "Enter" && sendMessage()}
-          />
-          <Button onClick={sendMessage} className="bg-green-600 hover:bg-green-700">Send</Button>
-        </div>
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        className="w-full max-w-3xl rounded-xl shadow-lg"
+      />
+      <div className="mt-4 flex gap-4">
+        <button
+          onClick={toggleScreenShare}
+          className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600"
+        >
+          {isScreenSharing ? "Stop Screen Sharing" : "Share Screen"}
+        </button>
+        <button
+          onClick={handleRetryConnection}
+          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+        >
+          Reconnect
+        </button>
       </div>
     </div>
   );
-};
-
-export default TeacherLiveClass;
+}

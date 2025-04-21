@@ -82,7 +82,7 @@ const CourseView = () => {
         .then((res) => res.json())
         .then((data) => {
           console.log("Live classes response:", data)
-          setLiveClasses(Array.isArray(data) ? data : [])
+          setLiveClasses(data ? data.data : [])
         })
         .catch((err) => {
           console.error("Failed to fetch live classes:", err)

@@ -28,7 +28,7 @@ const TeacherLiveClassContent = () => {
     return <Loading />
   }
 
-  return <TeacherLiveClass liveClassId={liveClassId} courseId={courseId} userId={userId} />
+  return <TeacherLiveClass liveClassId={liveClassId} userId={userId} />
 }
 
 export default TeacherLiveClassPage
