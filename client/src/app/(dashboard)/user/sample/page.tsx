@@ -1,188 +1,328 @@
+// app/live/[roomId]/student/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Peer, { type MediaConnection } from "peerjs";
+import { useEffect, useRef, useState, useCallback } from "react";
+import io, { Socket } from "socket.io-client";
 
-const StudentLiveClass = () => {
-  const [teacherPeerId, setTeacherPeerId] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const peerRef = useRef<Peer | null>(null);
+// Define types for WebRTC events
+interface OfferEvent {
+  offer: RTCSessionDescriptionInit;
+}
+
+interface IceCandidateEvent {
+  candidate: RTCIceCandidateInit;
+}
+
+// Use a static room ID for testing - must match the one in teacher page
+const STATIC_ROOM_ID = "test-room-123";
+
+export default function StudentViewer() {
+  // Use static room ID instead of extracting from params
+  const roomId = STATIC_ROOM_ID;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const callRef = useRef<MediaConnection | null>(null); 
-  const localStreamRef = useRef<MediaStream | null>(null);
+  const socket = useRef<Socket | null>(null);
+  const peer = useRef<RTCPeerConnection | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>("Initializing...");
+  const [error, setError] = useState<string | null>(null);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [offerReceived, setOfferReceived] = useState(false);
+  const [lastOffer, setLastOffer] = useState<RTCSessionDescriptionInit | null>(null);
+  const requestOfferTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const playVideo = async (videoElement: HTMLVideoElement | null) => {
-    if (!videoElement) return;
-
-    try {
-      const playPromise = videoElement.play();
-      if (playPromise !== undefined) {
-        await playPromise;
-        setIsVideoPlaying(true);
-        setIsConnected(true);
-      }
-    } catch (error) {
-      console.error('Error playing video:', error);
-      if (error instanceof Error && error.name === 'NotAllowedError') {
-        console.log('Autoplay blocked, waiting for user interaction');
-      }
+  // Initialize peer connection
+  const initializePeerConnection = useCallback(() => {
+    if (peer.current) {
+      peer.current.close();
     }
-  };
 
-  useEffect(() => {
-    peerRef.current = new Peer({
-      host: `${process.env.NEXT_PUBLIC_HOST}`,
-      port: 9000,
-      path: "/myapp",
-      debug: 3,
-      config: {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" }
-        ],
-        iceTransportPolicy: "all",
-        iceCandidatePoolSize: 0
-      }
+    peer.current = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" }
+      ],
     });
 
-    peerRef.current.on("open", (id) => {
-      console.log(`Student PeerJS ID: ${id}`);
-    });
-
-    peerRef.current.on("connection", (conn) => {
-      console.log("New connection established:", conn.peer);
-    });
-
-    peerRef.current.on("error", (err) => {
-      console.error("PeerJS error:", err);
-      setIsConnected(false);
-    });
-
-    return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if(callRef.current){
-        callRef.current.close();
-      }
-      if (peerRef.current) {
-        peerRef.current.destroy();
+    // Handle incoming tracks
+    peer.current.ontrack = (e) => {
+      console.log("Received track from teacher");
+      if (videoRef.current && e.streams && e.streams[0]) {
+        videoRef.current.srcObject = e.streams[0];
+        setConnectionStatus("Stream received from teacher");
       }
     };
+
+    // Handle ICE candidates
+    peer.current.onicecandidate = (e) => {
+      if (e.candidate && socket.current) {
+        console.log("Sending ICE candidate to teacher");
+        socket.current.emit("ice-candidate", { candidate: e.candidate, roomId });
+      }
+    };
+
+    // Handle connection state changes
+    peer.current.onconnectionstatechange = () => {
+      console.log("Connection state:", peer.current?.connectionState);
+      setConnectionStatus(`Connection state: ${peer.current?.connectionState}`);
+      
+      // Handle failed connections
+      if (peer.current?.connectionState === "failed" || peer.current?.connectionState === "disconnected") {
+        setError("Connection failed. Requesting new offer...");
+        // Request a new offer from the teacher
+        if (socket.current && isSocketConnected) {
+          requestOfferFromTeacher();
+        }
+      }
+    };
+
+    // Handle ICE connection state changes
+    peer.current.oniceconnectionstatechange = () => {
+      console.log("ICE connection state:", peer.current?.iceConnectionState);
+      
+      if (peer.current?.iceConnectionState === "failed") {
+        console.log("ICE connection failed, restarting ICE");
+        peer.current.restartIce();
+      }
+    };
+
+  }, [roomId, isSocketConnected]);
+
+  // Function to handle an offer from the teacher
+  const handleOffer = useCallback(async (offer: RTCSessionDescriptionInit) => {
+    try {
+      console.log("Processing offer from teacher");
+      setConnectionStatus("Received offer, setting up connection...");
+      setOfferReceived(true);
+      setLastOffer(offer);
+      
+      // Initialize peer connection if not already done
+      if (!peer.current) {
+        initializePeerConnection();
+      }
+
+      // Set remote description and create answer
+      setConnectionStatus("Setting remote description...");
+      
+      if (peer.current && peer.current.signalingState !== "closed") {
+        await peer.current.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        setConnectionStatus("Creating answer...");
+        const answer = await peer.current.createAnswer();
+        await peer.current.setLocalDescription(answer);
+        
+        console.log("Sending answer to teacher");
+        socket.current?.emit("answer", { answer, roomId });
+        setConnectionStatus("Answer sent, establishing connection...");
+      } else {
+        console.log("Peer connection not ready for setting remote description");
+        // Re-initialize and try again
+        initializePeerConnection();
+        if (peer.current) {
+          await peer.current.setRemoteDescription(new RTCSessionDescription(offer));
+          
+          const answer = await peer.current.createAnswer();
+          await peer.current.setLocalDescription(answer);
+          
+          socket.current?.emit("answer", { answer, roomId });
+        }
+      }
+    } catch (err) {
+      console.error("Error handling offer:", err);
+      setError(`Offer error: ${err instanceof Error ? err.message : String(err)}`);
+      // Reset state to allow for retrying
+      setOfferReceived(false);
+    }
+  }, [roomId, initializePeerConnection]);
+
+  // Function to request an offer from the teacher
+  const requestOfferFromTeacher = useCallback(() => {
+    if (socket.current && isSocketConnected) {
+      console.log("Requesting offer from teacher");
+      socket.current.emit("request-offer", { roomId });
+      setConnectionStatus("Requested offer from teacher...");
+      
+      // Clear any existing timeout
+      if (requestOfferTimeoutRef.current) {
+        clearTimeout(requestOfferTimeoutRef.current);
+      }
+      
+      // Set a timeout to request again if no response
+      requestOfferTimeoutRef.current = setTimeout(() => {
+        if (!offerReceived) {
+          console.log("No offer received, requesting again");
+          requestOfferFromTeacher();
+        }
+      }, 5000);
+    }
+  }, [roomId, isSocketConnected, offerReceived]);
+
+  useEffect(() => {
+    const setupConnection = async () => {
+      // Connect to socket server
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000";
+      console.log("Connecting to socket server:", socketUrl);
+      
+      // Use a persistent student ID from localStorage or generate a new one
+      let studentId = localStorage.getItem('studentId');
+      if (!studentId) {
+        studentId = `student-${Math.random().toString(36).substring(2, 9)}`;
+        localStorage.setItem('studentId', studentId);
+      }
+      console.log("Using student ID:", studentId);
+      
+      socket.current = io(socketUrl, {
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000,
+        query: { userId: studentId } // Add userId to prevent server disconnection
+      });
+
+      // Socket connection events
+      socket.current.on("connect", () => {
+        console.log("Socket connected with ID:", socket.current?.id);
+        setConnectionStatus("Connected to signaling server");
+        setIsSocketConnected(true);
+        
+        // Join the room immediately after connection
+        socket.current?.emit("joinRoom", { roomId });
+        
+        // Notify teacher that student is ready
+        socket.current?.emit("student-ready", { roomId });
+        
+        // Initialize peer connection
+        initializePeerConnection();
+        
+        // Request an offer if we haven't received one
+        if (!offerReceived) {
+          requestOfferFromTeacher();
+        }
+      });
+
+      socket.current.on("connect_error", (err) => {
+        console.error("Socket connection error:", err);
+        setError(`Connection error: ${err.message}`);
+        setConnectionStatus("Connection failed");
+        setIsSocketConnected(false);
+      });
+
+      socket.current.on("disconnect", () => {
+        console.log("Socket disconnected");
+        setConnectionStatus("Disconnected from server");
+        setIsSocketConnected(false);
+      });
+
+      // Handle offer from teacher
+      socket.current.on("offer", async ({ offer }: OfferEvent) => {
+        await handleOffer(offer);
+      });
+
+      // Handle ICE candidates from teacher
+      socket.current.on("ice-candidate", ({ candidate }: IceCandidateEvent) => {
+        try {
+          console.log("Received ICE candidate from teacher");
+          if (peer.current && peer.current.remoteDescription) {
+            peer.current.addIceCandidate(new RTCIceCandidate(candidate))
+              .catch(err => console.error("Error adding ICE candidate:", err));
+          } else {
+            console.log("Cannot add ICE candidate: peer not ready or no remote description");
+          }
+        } catch (err) {
+          console.error("Error handling ICE candidate:", err);
+        }
+      });
+    };
+
+    // Setup connection only once when component mounts
+    setupConnection();
+
+    // Attempt to reconnect every 5 seconds if socket disconnects
+    const reconnectInterval = setInterval(() => {
+      if (!isSocketConnected && socket.current) {
+        console.log("Attempting to reconnect...");
+        socket.current.connect();
+      }
+    }, 5000);
+
+    return () => {
+      console.log("Cleaning up resources");
+      clearInterval(reconnectInterval);
+      
+      if (requestOfferTimeoutRef.current) {
+        clearTimeout(requestOfferTimeoutRef.current);
+      }
+      
+      if (peer.current) {
+        peer.current.close();
+      }
+      
+      if (socket.current) {
+        socket.current.disconnect();
+      }
+    };
+  // Empty dependency array to ensure this only runs once on mount
   }, []);
 
-  const connectToTeacher = () => {
-    if (!peerRef.current || !teacherPeerId){
-      console.error("Missing peer or teacher ID");
-      return;
-    }
-
-    console.log(`Connecting to teacher with ID: ${teacherPeerId}`);
-    const stream = new MediaStream();
-    localStreamRef.current = stream;
-    const call = peerRef.current.call(teacherPeerId, stream);
-    callRef.current = call;
-
-    call.on("stream", (remoteStream) => {
-      console.log("Received teacher's stream:", {
-        active: remoteStream.active,
-        tracks: remoteStream.getTracks().map(t => ({
-          kind: t.kind,
-          enabled: t.enabled,
-          muted: t.muted,
-        })),
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = remoteStream;
-        playVideo(videoRef.current);
+  const handleRetryConnection = () => {
+    setError(null);
+    setOfferReceived(false);
+    
+    if (socket.current) {
+      // Rejoin the room
+      socket.current.emit("joinRoom", { roomId });
+      
+      // Notify teacher that student is ready
+      socket.current.emit("student-ready", { roomId });
+      
+      // Re-initialize peer connection
+      initializePeerConnection();
+      
+      // Try with the last offer if we have one
+      if (lastOffer) {
+        handleOffer(lastOffer);
+      } else {
+        // Request a new offer
+        requestOfferFromTeacher();
       }
-    });
-
-    call.on("iceStateChanged", (state) => {
-      console.log("ICE connection state changed:", state);
-    });
-
-    call.on("error", (err) => {
-      console.error("Call error:", err);
-      setIsConnected(false);
-    });
-
-    call.on("close", () => {
-      console.log("Call closed");
-      setIsConnected(false);
-    });
-  };
-
-  const handleVideoClick = () => {
-    if (videoRef.current && !isVideoPlaying) {
-      playVideo(videoRef.current);
+    } else if (!isSocketConnected) {
+      // Try reconnecting socket
+      socket.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
+        query: { userId: localStorage.getItem('studentId') }
+      });
+      socket.current.connect();
     }
   };
 
   return (
-    <div style={{ 
-      padding: '20px',
-      color: 'white',
-      backgroundColor: '#1a1a1a',
-      minHeight: '100vh'
-    }}>
-      <h1 style={{ color: '#fff', marginBottom: '20px' }}>Student</h1>
+    <div className="flex flex-col items-center p-6">
+      <h2 className="text-2xl font-semibold mb-4">🎥 Student Viewer</h2>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full max-w-3xl">
+          <p className="font-bold">Error:</p>
+          <p>{error}</p>
+          <button 
+            onClick={handleRetryConnection}
+            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+      <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full max-w-3xl">
+        <p className="font-bold">Status:</p>
+        <p>{connectionStatus}</p>
+      </div>
       <video 
         ref={videoRef} 
         autoPlay 
         playsInline 
-        muted 
-        onClick={handleVideoClick} 
-        style={{ 
-          width: '100%',
-          maxWidth: '500px',
-          backgroundColor: '#333',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          cursor: !isVideoPlaying ? 'pointer' : 'default'
-        }} 
+        className="w-full max-w-3xl rounded-xl shadow-lg" 
       />
-      {!isVideoPlaying && (
-        <p style={{ color: '#ff9800', marginBottom: '20px' }}>Click video to start playback</p>
-      )}
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text"
-          value={teacherPeerId}
-          onChange={(e) => setTeacherPeerId(e.target.value)}
-          placeholder="Enter Teacher Peer ID"
-          style={{
-            padding: '8px',
-            marginRight: '10px',
-            backgroundColor: '#333',
-            color: 'white',
-            border: '1px solid #555',
-            borderRadius: '4px'
-          }}
-        />
-        <button 
-          onClick={connectToTeacher} 
-          disabled={!teacherPeerId}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: !teacherPeerId ? '#666' : '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: !teacherPeerId ? 'not-allowed' : 'pointer'
-          }}
-        >
-          Connect to Teacher
-        </button>
-        <p style={{ color: '#fff', marginTop: '10px' }}>
-          Status: {isConnected ? "Connected" : "Disconnected"}
-        </p>
-        <p style={{ color: '#fff' }}>
-          Your Peer ID: {peerRef.current?.id || "Not connected"}
-        </p>
-      </div>
+      <button
+        onClick={handleRetryConnection}
+        className="mt-4 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+      >
+        Reconnect
+      </button>
     </div>
   );
-};
-
-export default StudentLiveClass;
+}

@@ -6,7 +6,6 @@ import type { IUserService } from "./interfaces/user.service";
 import TYPES from "./di/types";
 import container from "./di/container";
 import type { IForumService } from "./interfaces/forum.service";
-import { socketLogger } from "./utils/socketLogger";
 import redisClient from "./config/redis";
 
 const chatService = container.get<IChatService>(TYPES.IChatService);
@@ -39,29 +38,26 @@ export function initializeSocket(httpServer: HttpServer) {
     upgradeTimeout: 10000,
   });
 
+  const roomUsers: { [key: string]: Set<string> } = {};
+
   io.engine.on("connection_error", (err) => {
     console.error("Socket.IO connection error:", err);
-    socketLogger.error("Socket.IO connection error", { error: err });
   });
 
   io.engine.on("connection", () => {
     console.log("WebSocket connection established");
-    socketLogger.info("WebSocket connection established");
   });
 
   io.engine.on("upgrade", () => {
     console.log("Socket.IO upgrade successful");
-    socketLogger.info("Socket.IO upgrade successful");
   });
 
   io.engine.on("upgradeError", (err) => {
     console.error("Socket.IO upgrade error:", err);
-    socketLogger.error("Socket.IO upgrade error", { error: err });
   });
 
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
-    socketLogger.info("Client connected", { socketId: socket.id });
     const userId = socket.handshake.query.userId as string;
 
     if (!userId) {
@@ -181,132 +177,82 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("joinLiveClass", async ({ liveClassId, isTeacher }) => {
-      try {
-        const liveRoom = `live:${liveClassId}`;
-        const user = await userService.getProfile(userId);
-    
-        await liveClassService.joinLiveClass(liveClassId, userId);
-        if (isTeacher) {
-          await redisClient.set(TEACHER_KEY(liveClassId), userId, { EX: 3600 });
-        }
-    
-        await redisClient.sAdd(PARTICIPANTS_KEY(liveClassId), userId);
-        socket.join(liveRoom);
-    
-        const participants = await redisClient.sMembers(PARTICIPANTS_KEY(liveClassId));
-        const participantsWithNames = await Promise.all(
-          participants.map(async (id) => ({
-            userId: id,
-            userName: (await userService.getProfile(id))?.name || id,
-          }))
-        );
-    
-        io.to(liveRoom).emit("userJoined", {
-          userId,
-          userName: user?.name,
-          participants: participantsWithNames,
-          isTeacher,
-        });
-    
-        const chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
-        socket.emit("chatHistory", chatHistory ? JSON.parse(chatHistory) : []);
-      } catch (err) {
-        socket.emit("error", { message: (err as Error).message });
+    socket.on("joinRoom", ({ roomId }) => {
+      if (!roomId) {
+        socket.emit("error", { message: "Room ID is required to join a room" });
+        return;
       }
-    });
-    
-    socket.on("sendLiveMessage", async ({ liveClassId, message }) => {
-      try {
-        const user = await userService.getProfile(userId);
-        const chatMessage = {
-          senderId: userId,
-          senderName: user?.name || userId,
-          message,
-          timestamp: new Date().toISOString(),
-        };
-    
-        let chatHistory = await redisClient.get(CHAT_HISTORY_KEY(liveClassId));
-        const messages = chatHistory ? JSON.parse(chatHistory) : [];
-        messages.push(chatMessage);
-    
-        await redisClient.set(CHAT_HISTORY_KEY(liveClassId), JSON.stringify(messages), { EX: 3600 });
-        io.to(`live:${liveClassId}`).emit("liveMessage", chatMessage);
-      } catch (err) {
-        socket.emit("error", { message: (err as Error).message });
+      socket.join(roomId);
+      
+      if (!roomUsers[roomId]) {
+        roomUsers[roomId] = new Set();
       }
+      roomUsers[roomId].add(userId);
+      
+      console.log(`User ${userId} joined room ${roomId} for WebRTC signaling`);
+      console.log(`Room ${roomId} now has ${roomUsers[roomId].size} users`);
+      
+      // Notify everyone in the room about the new user
+      io.to(roomId).emit("user-joined", { 
+        userId, 
+        userCount: roomUsers[roomId].size 
+      });
     });
-    
-    socket.on("providePeerId", ({ liveClassId, peerId }) => {
-      redisClient.set(TEACHER_PEER_ID_KEY(liveClassId), peerId, { EX: 3600 });
-    });
-    
-    socket.on("requestStream", async ({ liveClassId, userId: studentId }) => {
-      const teacherPeerId = await redisClient.get(TEACHER_PEER_ID_KEY(liveClassId));
-      if (teacherPeerId) {
-        io.to(studentId).emit("teacherPeerId", { peerId: teacherPeerId });
-      } else {
-        io.to(studentId).emit("error", { message: "Teacher not streaming yet" });
-      }
-    });
-    
 
-    socket.on("disconnect", async () => {
-      console.log("[Socket] Client disconnected:", socket.id);
-      socketLogger.info("Client disconnected", { socketId: socket.id });
-
-      try {
-        const liveClassKeys = await redisClient.keys(`${LIVE_CLASS_PREFIX}*:participants`);
-        
-        for (const participantsKey of liveClassKeys) {
-          const liveClassId = participantsKey.split(':')[2];
-          
-          const isMember = await redisClient.sIsMember(participantsKey, userId);
-          
-          if (isMember) {
-            await redisClient.sRem(participantsKey, userId);
-            
-            const teacherId = await redisClient.get(TEACHER_KEY(liveClassId));
-            const isTeacher = teacherId === userId;
-            
-            if (isTeacher) {
-              await redisClient.del(TEACHER_KEY(liveClassId));
-              await redisClient.del(TEACHER_PEER_ID_KEY(liveClassId));
-            }
-            
-            const participants = await redisClient.sMembers(participantsKey);
-            const participantsWithNames = await Promise.all(
-              participants.map(async (id) => ({
-                userId: id,
-                userName: (await userService.getProfile(id))?.name || id,
-              }))
-            );
-            
-            io.to(`live:${liveClassId}`).emit("userLeft", {
-              userId,
-              isTeacher,
-              participants: participantsWithNames
-            });
-            
-            await liveClassService.leaveLiveClass(liveClassId, userId);
-            
-            socket.leave(`live:${liveClassId}`);
-            
-            console.log(`User ${userId} left live class ${liveClassId}`);
-            socketLogger.info("User left live class", { userId, liveClassId, isTeacher });
-          }
-        }
-      } catch (error) {
-        console.error("Error cleaning up live class on disconnect:", error);
-        socketLogger.error("Error cleaning up live class on disconnect", { 
-          error: (error as Error).message,
-          userId,
-          socketId: socket.id 
-        });
-      }
-    });
+    // Handle student ready notification
+  socket.on("student-ready", ({ roomId }) => {
+    console.log(`Student ${userId} is ready in room ${roomId}`);
+    // Forward to teacher only (everyone except sender)
+    socket.to(roomId).emit("student-ready");
   });
 
+  // Handle offer request
+  socket.on("request-offer", ({ roomId }) => {
+    console.log(`User ${userId} requested an offer in room ${roomId}`);
+    socket.to(roomId).emit("request-offer");
+  });
+
+  socket.on("offer", ({ offer, roomId }) => {
+    console.log(`Received offer from ${userId} in room ${roomId}`);
+    socket.to(roomId).emit("offer", { offer });
+  });
+
+  socket.on("answer", ({ answer, roomId }) => {
+    console.log(`Received answer from ${userId} in room ${roomId}`);
+    socket.to(roomId).emit("answer", { answer });
+  });
+
+  socket.on("ice-candidate", ({ candidate, roomId }) => {
+    console.log(`Received ICE candidate from ${userId} in room ${roomId}`);
+    socket.to(roomId).emit("ice-candidate", { candidate });
+  });
+
+  
+    socket.on("disconnect", async () => {
+      console.log(`User ${userId} disconnected`);
+    
+      // Remove user from all rooms they were in
+      Object.keys(roomUsers).forEach(roomId => {
+        if (roomUsers[roomId].has(userId)) {
+          roomUsers[roomId].delete(userId);
+          console.log(`User ${userId} removed from room ${roomId}`);
+          console.log(`Room ${roomId} now has ${roomUsers[roomId].size} users`);
+          
+          // Notify others in the room
+          io.to(roomId).emit("user-left", { 
+            userId, 
+            userCount: roomUsers[roomId].size 
+          });
+          
+          // Clean up empty rooms
+          if (roomUsers[roomId].size === 0) {
+            delete roomUsers[roomId];
+            console.log(`Room ${roomId} was deleted because it's empty`);
+          }
+        }
+    });
+  });
+  });
   return io;
 }
 

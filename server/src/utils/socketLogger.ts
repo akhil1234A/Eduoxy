@@ -8,8 +8,24 @@ import path from "path";
 
 const { combine, timestamp, printf, colorize } = format;
 
+// Custom replacer function to handle circular references
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key: string, value: any) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "[Circular Reference]";
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
 const socketLogFormat = printf(({ level, message, timestamp, ...metadata }) => {
-  const metaString = Object.keys(metadata).length ? JSON.stringify(metadata, null, 2) : "";
+  const metaString = Object.keys(metadata).length 
+    ? JSON.stringify(metadata, getCircularReplacer(), 2) 
+    : "";
   return `[${timestamp}] 🔌 SOCKET ${level}: ${message} ${metaString}`;
 });
 
@@ -41,7 +57,21 @@ export const logSocketEvent = (event: string, data?: any) => {
 };
 
 export const logSocketError = (event: string, error: any) => {
-  socketLogger.error(`${event}`, { error });
+  // Extract relevant error properties to avoid circular references
+  const errorInfo = {
+    message: error.message,
+    code: error.code,
+    stack: error.stack,
+    // Include any other relevant properties that might be useful
+    ...(error.context && { context: error.context }),
+    ...(error.req && { 
+      url: error.req.url,
+      method: error.req.method,
+      headers: error.req.headers
+    })
+  };
+  
+  socketLogger.error(`${event}`, { error: errorInfo });
 };
 
 interface WebSocketClient extends WebSocket {
