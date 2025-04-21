@@ -46,14 +46,13 @@ export default function LiveClassChat({ socket, roomId, userId }: LiveClassChatP
   useEffect(() => {
     if (!socket) return;
 
+    // Listen for new messages
     socket.on("live-class-message", (message: Message) => {
       setMessages((prev) => [...prev, message]);
+      scrollToBottom();
     });
 
-    socket.on("participant-list", (participantList: { [key: string]: string }) => {
-      setParticipants(participantList);
-    });
-
+    // Listen for participant updates
     socket.on("participant-joined", ({ userId, userName }) => {
       setParticipants((prev) => ({ ...prev, [userId]: userName }));
     });
@@ -66,13 +65,21 @@ export default function LiveClassChat({ socket, roomId, userId }: LiveClassChatP
       });
     });
 
+    // Request initial participant list
+    socket.emit("get-participants", { roomId });
+
+    // Cleanup function
     return () => {
-      socket.off("live-class-message");
-      socket.off("participant-list");
-      socket.off("participant-joined");
-      socket.off("participant-left");
+      if (socket) {
+        socket.off("live-class-message");
+        socket.off("participant-joined");
+        socket.off("participant-left");
+        // Clear messages and participants when component unmounts
+        setMessages([]);
+        setParticipants({});
+      }
     };
-  }, [socket]);
+  }, [socket, roomId]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -103,6 +110,10 @@ export default function LiveClassChat({ socket, roomId, userId }: LiveClassChatP
 
   const formatTime = (date: Date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (

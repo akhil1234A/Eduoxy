@@ -12,6 +12,10 @@ export class LiveClassRepository implements ILiveClassRepository {
     return await LiveClassModel.findById(id).exec();
   }
 
+  async findByIdAndDelete(id: string): Promise<ILiveClass | null> {
+    return await LiveClassModel.findByIdAndDelete(id).exec();
+  }
+
   async findByCourseId(courseId: string): Promise<ILiveClass[]> {
     return await LiveClassModel.find({ courseId }).exec();
   }

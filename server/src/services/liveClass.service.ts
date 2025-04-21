@@ -69,4 +69,14 @@ export class LiveClassService implements ILiveClassService {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
     return liveClass?.teacherId || null;
   }
+
+  async deleteLiveClass(liveClassId: string): Promise<boolean> {
+    try {
+      const result = await this.liveClassRepository.findByIdAndDelete(liveClassId);
+      return !!result;
+    } catch (error) {
+      console.error('Error deleting live class:', error);
+      return false;
+    }
+  }
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import io, { type Socket } from "socket.io-client"
 import LiveClassChat from "./LiveClassChat"
+import { useRouter } from "next/navigation"
 
 // Define types for WebRTC events
 interface OfferEvent {
@@ -17,9 +18,11 @@ interface IceCandidateEvent {
 interface StudentLiveClassProps {
   liveClassId: string
   userId: string
+  courseId: string
 }
 
-export default function StudentLiveClass({ liveClassId, userId }: StudentLiveClassProps) {
+export default function StudentLiveClass({ liveClassId, userId, courseId }: StudentLiveClassProps) {
+  const router = useRouter()
   const roomId = liveClassId // Use liveClassId as the room ID
   const videoRef = useRef<HTMLVideoElement>(null)
   const socket = useRef<Socket | null>(null)
@@ -149,6 +152,58 @@ export default function StudentLiveClass({ liveClassId, userId }: StudentLiveCla
     }
   }, [roomId, isSocketConnected, offerReceived])
 
+  const handleRetryConnection = () => {
+    setError(null)
+    setOfferReceived(false)
+
+    if (socket.current) {
+      socket.current.emit("joinRoom", { roomId })
+      socket.current.emit("student-ready", { roomId })
+      initializePeerConnection()
+
+      if (lastOffer) {
+        handleOffer(lastOffer)
+      } else {
+        requestOfferFromTeacher()
+      }
+    } else if (!isSocketConnected) {
+      socket.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
+        query: { userId: localStorage.getItem("studentId") },
+      })
+      socket.current.connect()
+    }
+  }
+
+  const handleLeaveClass = async () => {
+    if (socket.current && isSocketConnected) {
+      try {
+        // Close peer connection first
+        if (peer.current) {
+          peer.current.close();
+          console.log("Closed peer connection");
+        }
+
+        // Emit leave-class event and wait for acknowledgment
+        socket.current.emit("leave-class", { roomId });
+        
+        // Wait a bit to ensure the server processes the leave-class event
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Finally disconnect socket
+        if (socket.current) {
+          socket.current.disconnect();
+          console.log("Disconnected socket");
+        }
+
+        // Redirect to course page
+        router.push(`/search/${courseId}`);
+      } catch (error) {
+        console.error("Error leaving class:", error);
+        setError("Failed to leave class properly");
+      }
+    }
+  }
+
   useEffect(() => {
     const setupConnection = async () => {
       const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000"
@@ -214,6 +269,36 @@ export default function StudentLiveClass({ liveClassId, userId }: StudentLiveCla
           console.error("Error handling ICE candidate:", err)
         }
       })
+
+      socket.current.on("stream-ended", async ({ roomId: endedRoomId }) => {
+        if (endedRoomId === roomId) {
+          try {
+            setError("Teacher has ended the stream");
+            setConnectionStatus("Stream ended by teacher");
+            
+            // Close peer connection first
+            if (peer.current) {
+              peer.current.close();
+              console.log("Closed peer connection");
+            }
+
+            // Wait a bit before disconnecting
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Finally disconnect socket
+            if (socket.current) {
+              socket.current.disconnect();
+              console.log("Disconnected socket");
+            }
+
+            // Redirect to course page
+            router.push(`/search/${courseId}`);
+          } catch (error) {
+            console.error("Error handling stream end:", error);
+            setError("Failed to handle stream end properly");
+          }
+        }
+      });
     }
 
     setupConnection()
@@ -241,65 +326,49 @@ export default function StudentLiveClass({ liveClassId, userId }: StudentLiveCla
         socket.current.disconnect()
       }
     }
-  }, [])
-
-  const handleRetryConnection = () => {
-    setError(null)
-    setOfferReceived(false)
-
-    if (socket.current) {
-      socket.current.emit("joinRoom", { roomId })
-      socket.current.emit("student-ready", { roomId })
-      initializePeerConnection()
-
-      if (lastOffer) {
-        handleOffer(lastOffer)
-      } else {
-        requestOfferFromTeacher()
-      }
-    } else if (!isSocketConnected) {
-      socket.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:8000", {
-        query: { userId: localStorage.getItem("studentId") },
-      })
-      socket.current.connect()
-    }
-  }
+  }, [router, courseId])
 
   return (
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-100px)] p-6">
       <div className="flex-1 flex flex-col">
-        <h2 className="text-2xl font-semibold mb-4">🎥 Student Viewer</h2>
-        {error && (
+      <h2 className="text-2xl font-semibold mb-4">🎥 Student Viewer</h2>
+      {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-            <p className="font-bold">Error:</p>
-            <p>{error}</p>
-            <button
-              onClick={handleRetryConnection}
-              className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            >
-              Retry Connection
-            </button>
-          </div>
-        )}
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
-          <p className="font-bold">Status:</p>
-          <p>{connectionStatus}</p>
+          <p className="font-bold">Error:</p>
+          <p>{error}</p>
+          <button
+            onClick={handleRetryConnection}
+            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Retry Connection
+          </button>
         </div>
+      )}
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
+        <p className="font-bold">Status:</p>
+        <p>{connectionStatus}</p>
+      </div>
         <div className="flex-1 flex flex-col">
           <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover rounded-xl shadow-lg" />
         </div>
         <div className="mt-4 flex gap-4">
-          <button
-            onClick={handleRetryConnection}
+      <button
+        onClick={handleRetryConnection}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-          >
-            Reconnect
-          </button>
+      >
+        Reconnect
+      </button>
           <button
             onClick={() => setShowChat(!showChat)}
             className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600"
           >
             {showChat ? "Hide Chat" : "Show Chat"}
+          </button>
+          <button
+            onClick={handleLeaveClass}
+            className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
+          >
+            Leave Class
           </button>
         </div>
       </div>

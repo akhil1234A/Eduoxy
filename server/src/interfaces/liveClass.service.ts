@@ -7,4 +7,5 @@ export interface ILiveClassService {
   leaveLiveClass(liveClassId: string, userId: string): Promise<ILiveClass>;
   startLiveClass(liveClassId: string, teacherId: string): Promise<ILiveClass>;
   getTeacherId(liveClassId: string): Promise<string | null>;
+  deleteLiveClass(liveClassId: string): Promise<boolean>;
 }

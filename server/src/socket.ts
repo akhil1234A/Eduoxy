@@ -20,8 +20,11 @@ const TEACHER_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}
 const CHAT_HISTORY_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}:chat`;
 const TEACHER_PEER_ID_KEY = (liveClassId: string) => `peer:${liveClassId}:teacher`;
 
-// Store participant information in memory
+
 const roomParticipants: { [key: string]: { [key: string]: string } } = {};
+
+//Send offers to everyone except the teacher
+const roomTeachers: { [key: string]: string } = {};
 
 export function initializeSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
@@ -180,7 +183,7 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("joinRoom", async ({ roomId }) => {
+    socket.on("joinRoom", async ({ roomId, isTeacher = false }) => {
       if (!roomId) {
         socket.emit("error", { message: "Room ID is required to join a room" });
         return;
@@ -195,13 +198,16 @@ export function initializeSocket(httpServer: HttpServer) {
       console.log(`User ${userId} joined room ${roomId} for WebRTC signaling`);
       console.log(`Room ${roomId} now has ${roomUsers[roomId].size} users`);
       
-      // Notify everyone in the room about the new user
       io.to(roomId).emit("user-joined", { 
         userId, 
         userCount: roomUsers[roomId].size 
       });
 
-      // Add user to participants list and get their name
+      if (isTeacher) {
+        roomTeachers[roomId] = userId;
+        console.log(`Teacher ${userId} registered for room ${roomId}`);
+      }
+
       try {
         const user = await userService.getProfile(userId);
         if (!roomParticipants[roomId]) {
@@ -209,14 +215,12 @@ export function initializeSocket(httpServer: HttpServer) {
         }
         roomParticipants[roomId][userId] = user.name || userId;
         
-        // Notify everyone in the room about the new participant
         io.to(roomId).emit("participant-joined", { 
           userId, 
           userName: user.name || userId 
         });
       } catch (error) {
         console.error(`Error getting user profile for ${userId}:`, error);
-        // Fallback to userId if profile fetch fails
         if (!roomParticipants[roomId]) {
           roomParticipants[roomId] = {};
         }
@@ -229,14 +233,12 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    // Handle student ready notification
     socket.on("student-ready", ({ roomId }) => {
       console.log(`Student ${userId} is ready in room ${roomId}`);
       // Forward to teacher only (everyone except sender)
       socket.to(roomId).emit("student-ready");
     });
 
-    // Handle offer request
     socket.on("request-offer", ({ roomId }) => {
       console.log(`User ${userId} requested an offer in room ${roomId}`);
       socket.to(roomId).emit("request-offer");
@@ -257,14 +259,11 @@ export function initializeSocket(httpServer: HttpServer) {
       socket.to(roomId).emit("ice-candidate", { candidate });
     });
 
-    // Live class chat messaging
     socket.on("live-class-message", ({ roomId, message }) => {
       console.log(`Received message from ${userId} in room ${roomId}: ${message.content}`);
-      // Broadcast the message to everyone in the room
       io.to(roomId).emit("live-class-message", message);
     });
 
-    // Get participants list
     socket.on("get-participants", ({ roomId }) => {
       console.log(`User ${userId} requested participants list for room ${roomId}`);
       if (roomParticipants[roomId]) {
@@ -273,11 +272,66 @@ export function initializeSocket(httpServer: HttpServer) {
         socket.emit("participant-list", {});
       }
     });
+
+    socket.on("end-stream", async ({ roomId }) => {
+      console.log(`Teacher ${userId} is ending stream for room ${roomId}`);
+      
+      if (roomTeachers[roomId] !== userId) {
+        socket.emit("error", { message: "Only the teacher can end the stream" });
+        return;
+      }
+      
+      try {
+        io.to(roomId).emit("stream-ended", { roomId });
+        
+        const deleted = await liveClassService.deleteLiveClass(roomId);
+        if (!deleted) {
+          throw new Error("Failed to delete live class from database");
+        }
+        console.log(`Live class ${roomId} deleted from database`);
+        
+        delete roomUsers[roomId];
+        delete roomParticipants[roomId];
+        delete roomTeachers[roomId];
+        
+        console.log(`Room ${roomId} cleaned up after stream ended`);
+      } catch (error) {
+        console.error(`Error ending stream for room ${roomId}:`, error);
+        socket.emit("error", { message: (error as Error).message });
+      }
+    });
+
+    socket.on("leave-class", ({ roomId }) => {
+      console.log(`User ${userId} is leaving class ${roomId}`);
+      
+      socket.leave(roomId);
+      
+      if (roomUsers[roomId] && roomUsers[roomId].has(userId)) {
+        roomUsers[roomId].delete(userId);
+        console.log(`User ${userId} removed from room ${roomId}`);
+        console.log(`Room ${roomId} now has ${roomUsers[roomId].size} users`);
+        
+        
+        io.to(roomId).emit("user-left", { 
+          userId, 
+          userCount: roomUsers[roomId].size 
+        });
+      }
+      
+      
+      if (roomParticipants[roomId] && roomParticipants[roomId][userId]) {
+        delete roomParticipants[roomId][userId];
+        console.log(`User ${userId} removed from participants list in room ${roomId}`);
+        
+        
+        io.to(roomId).emit("participant-left", { userId });
+      }
+    });
   
     socket.on("disconnect", async () => {
       console.log(`User ${userId} disconnected`);
     
-      // Remove user from all rooms they were in
+      
       Object.keys(roomUsers).forEach(roomId => {
         if (roomUsers[roomId].has(userId)) {
           roomUsers[roomId].delete(userId);
@@ -298,16 +352,16 @@ export function initializeSocket(httpServer: HttpServer) {
         }
       });
 
-      // Remove user from participants list
+     
       Object.keys(roomParticipants).forEach(roomId => {
         if (roomParticipants[roomId] && roomParticipants[roomId][userId]) {
           delete roomParticipants[roomId][userId];
           console.log(`User ${userId} removed from participants list in room ${roomId}`);
           
-          // Notify others in the room
+          
           io.to(roomId).emit("participant-left", { userId });
           
-          // Clean up empty participant lists
+          
           if (Object.keys(roomParticipants[roomId]).length === 0) {
             delete roomParticipants[roomId];
             console.log(`Participants list for room ${roomId} was deleted because it's empty`);

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import io, { type Socket } from "socket.io-client"
 import LiveClassChat from "./LiveClassChat"
+import { useRouter } from "next/navigation"
 
 // Define types for WebRTC events
 interface AnswerEvent {
@@ -17,9 +18,11 @@ interface IceCandidateEvent {
 interface TeacherLiveClassProps {
   liveClassId: string
   userId: string
+  courseId: string
 }
 
-export default function TeacherLiveClass({ liveClassId, userId }: TeacherLiveClassProps) {
+export default function TeacherLiveClass({ liveClassId, userId, courseId }: TeacherLiveClassProps) {
+  const router = useRouter()
   const roomId = liveClassId // Use liveClassId as the room ID
   const videoRef = useRef<HTMLVideoElement>(null)
   const socket = useRef<Socket | null>(null)
@@ -354,56 +357,100 @@ export default function TeacherLiveClass({ liveClassId, userId }: TeacherLiveCla
     }
   }
 
+  const handleEndStream = async () => {
+    if (socket.current && isSocketConnected) {
+      try {
+        // Stop all tracks first
+        if (localStream.current) {
+          localStream.current.getTracks().forEach(track => {
+            track.stop();
+            console.log(`Stopped track: ${track.kind}`);
+          });
+        }
+
+        // Close peer connection
+        if (peer.current) {
+          peer.current.close();
+          console.log("Closed peer connection");
+        }
+
+        // Emit end-stream event and wait for acknowledgment
+        socket.current.emit("end-stream", { roomId });
+        
+        // Wait a bit to ensure the server processes the end-stream event
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Finally disconnect socket
+        if (socket.current) {
+          socket.current.disconnect();
+          console.log("Disconnected socket");
+        }
+
+        // Redirect to course page
+        router.push(`/search/${courseId}`);
+      } catch (error) {
+        console.error("Error ending stream:", error);
+        setError("Failed to end stream properly");
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-100px)] p-6">
       <div className="flex-1 flex flex-col">
-        <h2 className="text-2xl font-semibold mb-4">📡 Teacher Live Stream</h2>
-        {error && (
+      <h2 className="text-2xl font-semibold mb-4">📡 Teacher Live Stream</h2>
+      {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-            <p className="font-bold">Error:</p>
-            <p>{error}</p>
-            <button
-              onClick={handleRetryConnection}
-              className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-            >
-              Retry Connection
-            </button>
-          </div>
-        )}
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
-          <p className="font-bold">Status:</p>
-          <p>{connectionStatus}</p>
-          <p className="mt-1">
-            <strong>Student:</strong> {studentReady ? "Ready to receive" : "Not connected"}
-          </p>
-          <p className="mt-1">
-            <strong>Stream:</strong> {isScreenSharing ? "Screen sharing" : "Camera"}
-          </p>
-        </div>
-        <div className="flex-1 flex flex-col">
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="w-full h-full object-cover rounded-xl shadow-lg"
-          />
-        </div>
-        <div className="mt-4 flex gap-4">
-          <button onClick={toggleScreenShare} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
-            {isScreenSharing ? "Stop Screen Sharing" : "Share Screen"}
-          </button>
+          <p className="font-bold">Error:</p>
+          <p>{error}</p>
           <button
             onClick={handleRetryConnection}
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
           >
-            Reconnect
+            Retry Connection
           </button>
+        </div>
+      )}
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
+        <p className="font-bold">Status:</p>
+        <p>{connectionStatus}</p>
+        <p className="mt-1">
+          <strong>Student:</strong> {studentReady ? "Ready to receive" : "Not connected"}
+        </p>
+        <p className="mt-1">
+          <strong>Stream:</strong> {isScreenSharing ? "Screen sharing" : "Camera"}
+        </p>
+      </div>
+        <div className="flex-1 flex flex-col">
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+            className="w-full h-full object-cover rounded-xl shadow-lg"
+      />
+        </div>
+      <div className="mt-4 flex gap-4">
+          <button onClick={toggleScreenShare} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
+          {isScreenSharing ? "Stop Screen Sharing" : "Share Screen"}
+        </button>
+        <button
+          onClick={handleRetryConnection}
+          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+        >
+          Reconnect
+        </button>
           <button
             onClick={() => setShowChat(!showChat)}
             className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600"
           >
             {showChat ? "Hide Chat" : "Show Chat"}
+          </button>
+          <button
+            onClick={handleEndStream}
+            className="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600"
+          >
+            End Stream
           </button>
         </div>
       </div>

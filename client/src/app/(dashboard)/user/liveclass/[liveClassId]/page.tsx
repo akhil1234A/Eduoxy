@@ -29,7 +29,7 @@ const StudentLiveClassContent = () => {
     return <Loading />
   }
 
-  return <StudentLiveClass liveClassId={liveClassId} userId={userId} />
+  return <StudentLiveClass liveClassId={liveClassId} userId={userId} courseId={courseId} />
 }
 
 export default StudentLiveClassPage
