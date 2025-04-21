@@ -20,6 +20,9 @@ const TEACHER_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}
 const CHAT_HISTORY_KEY = (liveClassId: string) => `${LIVE_CLASS_PREFIX}${liveClassId}:chat`;
 const TEACHER_PEER_ID_KEY = (liveClassId: string) => `peer:${liveClassId}:teacher`;
 
+// Store participant information in memory
+const roomParticipants: { [key: string]: { [key: string]: string } } = {};
+
 export function initializeSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -177,7 +180,7 @@ export function initializeSocket(httpServer: HttpServer) {
       }
     });
 
-    socket.on("joinRoom", ({ roomId }) => {
+    socket.on("joinRoom", async ({ roomId }) => {
       if (!roomId) {
         socket.emit("error", { message: "Room ID is required to join a room" });
         return;
@@ -197,36 +200,79 @@ export function initializeSocket(httpServer: HttpServer) {
         userId, 
         userCount: roomUsers[roomId].size 
       });
+
+      // Add user to participants list and get their name
+      try {
+        const user = await userService.getProfile(userId);
+        if (!roomParticipants[roomId]) {
+          roomParticipants[roomId] = {};
+        }
+        roomParticipants[roomId][userId] = user.name || userId;
+        
+        // Notify everyone in the room about the new participant
+        io.to(roomId).emit("participant-joined", { 
+          userId, 
+          userName: user.name || userId 
+        });
+      } catch (error) {
+        console.error(`Error getting user profile for ${userId}:`, error);
+        // Fallback to userId if profile fetch fails
+        if (!roomParticipants[roomId]) {
+          roomParticipants[roomId] = {};
+        }
+        roomParticipants[roomId][userId] = userId;
+        
+        io.to(roomId).emit("participant-joined", { 
+          userId, 
+          userName: userId 
+        });
+      }
     });
 
     // Handle student ready notification
-  socket.on("student-ready", ({ roomId }) => {
-    console.log(`Student ${userId} is ready in room ${roomId}`);
-    // Forward to teacher only (everyone except sender)
-    socket.to(roomId).emit("student-ready");
-  });
+    socket.on("student-ready", ({ roomId }) => {
+      console.log(`Student ${userId} is ready in room ${roomId}`);
+      // Forward to teacher only (everyone except sender)
+      socket.to(roomId).emit("student-ready");
+    });
 
-  // Handle offer request
-  socket.on("request-offer", ({ roomId }) => {
-    console.log(`User ${userId} requested an offer in room ${roomId}`);
-    socket.to(roomId).emit("request-offer");
-  });
+    // Handle offer request
+    socket.on("request-offer", ({ roomId }) => {
+      console.log(`User ${userId} requested an offer in room ${roomId}`);
+      socket.to(roomId).emit("request-offer");
+    });
 
-  socket.on("offer", ({ offer, roomId }) => {
-    console.log(`Received offer from ${userId} in room ${roomId}`);
-    socket.to(roomId).emit("offer", { offer });
-  });
+    socket.on("offer", ({ offer, roomId }) => {
+      console.log(`Received offer from ${userId} in room ${roomId}`);
+      socket.to(roomId).emit("offer", { offer });
+    });
 
-  socket.on("answer", ({ answer, roomId }) => {
-    console.log(`Received answer from ${userId} in room ${roomId}`);
-    socket.to(roomId).emit("answer", { answer });
-  });
+    socket.on("answer", ({ answer, roomId }) => {
+      console.log(`Received answer from ${userId} in room ${roomId}`);
+      socket.to(roomId).emit("answer", { answer });
+    });
 
-  socket.on("ice-candidate", ({ candidate, roomId }) => {
-    console.log(`Received ICE candidate from ${userId} in room ${roomId}`);
-    socket.to(roomId).emit("ice-candidate", { candidate });
-  });
+    socket.on("ice-candidate", ({ candidate, roomId }) => {
+      console.log(`Received ICE candidate from ${userId} in room ${roomId}`);
+      socket.to(roomId).emit("ice-candidate", { candidate });
+    });
 
+    // Live class chat messaging
+    socket.on("live-class-message", ({ roomId, message }) => {
+      console.log(`Received message from ${userId} in room ${roomId}: ${message.content}`);
+      // Broadcast the message to everyone in the room
+      io.to(roomId).emit("live-class-message", message);
+    });
+
+    // Get participants list
+    socket.on("get-participants", ({ roomId }) => {
+      console.log(`User ${userId} requested participants list for room ${roomId}`);
+      if (roomParticipants[roomId]) {
+        socket.emit("participant-list", roomParticipants[roomId]);
+      } else {
+        socket.emit("participant-list", {});
+      }
+    });
   
     socket.on("disconnect", async () => {
       console.log(`User ${userId} disconnected`);
@@ -250,8 +296,25 @@ export function initializeSocket(httpServer: HttpServer) {
             console.log(`Room ${roomId} was deleted because it's empty`);
           }
         }
+      });
+
+      // Remove user from participants list
+      Object.keys(roomParticipants).forEach(roomId => {
+        if (roomParticipants[roomId] && roomParticipants[roomId][userId]) {
+          delete roomParticipants[roomId][userId];
+          console.log(`User ${userId} removed from participants list in room ${roomId}`);
+          
+          // Notify others in the room
+          io.to(roomId).emit("participant-left", { userId });
+          
+          // Clean up empty participant lists
+          if (Object.keys(roomParticipants[roomId]).length === 0) {
+            delete roomParticipants[roomId];
+            console.log(`Participants list for room ${roomId} was deleted because it's empty`);
+          }
+        }
+      });
     });
-  });
   });
   return io;
 }
