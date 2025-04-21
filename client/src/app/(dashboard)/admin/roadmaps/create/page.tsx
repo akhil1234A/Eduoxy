@@ -28,6 +28,8 @@ interface Topic {
   title: string
   description: string
   isCompleted: boolean
+  isInterviewTopic: boolean
+  interviewQuestions: string[]
   resources: Resource[]
 }
 
@@ -41,7 +43,7 @@ interface RoadmapFormData {
   title: string
   description: string
   sections: Section[]
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
 export default function CreateRoadmapPage() {
@@ -58,9 +60,11 @@ export default function CreateRoadmapPage() {
         topics: [
           {
             id: uuidv4(),
-    title: "",
-    description: "",
+            title: "",
+            description: "",
             isCompleted: false,
+            isInterviewTopic: false,
+            interviewQuestions: [],
             resources: [],
           },
         ],
@@ -128,10 +132,10 @@ export default function CreateRoadmapPage() {
   }
 
   const addSection = () => {
-      setFormData({
-        ...formData,
-        sections: [
-          ...formData.sections,
+    setFormData({
+      ...formData,
+      sections: [
+        ...formData.sections,
         {
           id: uuidv4(),
           title: `Section ${formData.sections.length + 1}`,
@@ -141,6 +145,8 @@ export default function CreateRoadmapPage() {
               title: "",
               description: "",
               isCompleted: false,
+              isInterviewTopic: false,
+              interviewQuestions: [],
               resources: [],
             },
           ],
@@ -168,13 +174,15 @@ export default function CreateRoadmapPage() {
         section.id === sectionId
           ? {
               ...section,
-        topics: [
+              topics: [
                 ...section.topics,
-          {
+                {
                   id: uuidv4(),
                   title: "",
                   description: "",
-            isCompleted: false,
+                  isCompleted: false,
+                  isInterviewTopic: false,
+                  interviewQuestions: [],
                   resources: [],
                 },
               ],
@@ -216,7 +224,7 @@ export default function CreateRoadmapPage() {
                 topic.id === topicId
                   ? {
                       ...topic,
-        resources: [
+                      resources: [
                         ...topic.resources,
                         {
                           id: uuidv4(),
@@ -282,36 +290,121 @@ export default function CreateRoadmapPage() {
       ),
     })
   }
+
+  const addInterviewQuestion = (sectionId: string, topicId: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: [...topic.interviewQuestions, ""],
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const removeInterviewQuestion = (sectionId: string, topicId: string, index: number) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: topic.interviewQuestions.filter((_, i) => i !== index),
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const handleInterviewQuestionChange = (sectionId: string, topicId: string, index: number, value: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: topic.interviewQuestions.map((q, i) => (i === index ? value : q)),
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const toggleInterviewTopic = (sectionId: string, topicId: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      isInterviewTopic: !topic.isInterviewTopic,
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-      // Validate form
-      if (!formData.title.trim()) {
-        toast.error("Roadmap title is required")
+    // Validate form
+    if (!formData.title.trim()) {
+      toast.error("Roadmap title is required")
+      return
+    }
+
+    // Validate sections and topics
+    for (const section of formData.sections) {
+      if (!section.title.trim()) {
+        toast.error("All section titles are required")
         return
       }
-  
-      // Validate sections and topics
-      for (const section of formData.sections) {
-        if (!section.title.trim()) {
-          toast.error("All section titles are required")
+
+      for (const topic of section.topics) {
+        if (!topic.title.trim()) {
+          toast.error("All topic titles are required")
           return
         }
-  
-        for (const topic of section.topics) {
-          if (!topic.title.trim()) {
-            toast.error("All topic titles are required")
+
+        // Validate resources
+        for (const resource of topic.resources) {
+          if (!resource.title.trim() || !resource.url.trim()) {
+            toast.error("All resource titles and URLs are required")
             return
-          }
-  
-          // Validate resources
-          for (const resource of topic.resources) {
-            if (!resource.title.trim() || !resource.url.trim()) {
-              toast.error("All resource titles and URLs are required")
-              return
-            }
           }
         }
       }
+    }
     try {
       await createRoadmap(formData).unwrap()
       toast.success("Roadmap created successfully")
@@ -319,7 +412,7 @@ export default function CreateRoadmapPage() {
     } catch (error) {
       toast.error("Failed to create roadmap", {
         description: (error as Error).message,
-      });
+      })
     }
   }
 
@@ -334,35 +427,35 @@ export default function CreateRoadmapPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-      <Card>
-        <CardHeader>
+        <Card>
+          <CardHeader>
             <CardTitle>Roadmap Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
-            <Input
+              <Input
                 id="title"
                 name="title"
-              value={formData.title}
+                value={formData.title}
                 onChange={handleChange}
-              placeholder="Enter roadmap title"
+                placeholder="Enter roadmap title"
                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-            <Textarea
+              <Textarea
                 id="description"
                 name="description"
-              value={formData.description}
+                value={formData.description}
                 onChange={handleChange}
                 placeholder="Enter roadmap description"
                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
-        </CardContent>
-      </Card>
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -406,14 +499,14 @@ export default function CreateRoadmapPage() {
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor={`section-${section.id}-title`}>Section Title</Label>
-            <Input
+                      <Input
                         id={`section-${section.id}-title`}
                         value={section.title}
                         onChange={(e) => handleSectionChange(section.id, "title", e.target.value)}
-              placeholder="Enter section title"
+                        placeholder="Enter section title"
                         className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                      />
+                    </div>
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
@@ -443,26 +536,92 @@ export default function CreateRoadmapPage() {
                               <Label htmlFor={`topic-${topic.id}-title`} className="text-xs">
                                 Title
                               </Label>
-            <Input
+                              <Input
                                 id={`topic-${topic.id}-title`}
                                 value={topic.title}
                                 onChange={(e) => handleTopicChange(section.id, topic.id, "title", e.target.value)}
                                 placeholder="Enter topic title"
                                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                              />
+                            </div>
                             <div className="space-y-2">
                               <Label htmlFor={`topic-${topic.id}-description`} className="text-xs">
                                 Description
                               </Label>
-            <Textarea
+                              <Textarea
                                 id={`topic-${topic.id}-description`}
                                 value={topic.description}
                                 onChange={(e) => handleTopicChange(section.id, topic.id, "description", e.target.value)}
                                 placeholder="Enter topic description"
                                 className="bg-customgreys-darkGrey border-customgreys-darkerGrey"
-            />
-          </div>
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`topic-${topic.id}-interview`} className="text-xs">
+                                  Interview Topic
+                                </Label>
+                                <input
+                                  type="checkbox"
+                                  id={`topic-${topic.id}-interview`}
+                                  checked={topic.isInterviewTopic}
+                                  onChange={() => toggleInterviewTopic(section.id, topic.id)}
+                                  className="h-4 w-4 rounded border-customgreys-darkerGrey"
+                                />
+                              </div>
+                            </div>
+
+                            {topic.isInterviewTopic && (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-xs">Interview Questions</Label>
+                                  <Button
+                                    type="button"
+                                    onClick={() => addInterviewQuestion(section.id, topic.id)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7"
+                                  >
+                                    <Plus className="mr-1 h-3 w-3" /> Add Question
+                                  </Button>
+                                </div>
+
+                                {topic.interviewQuestions.length > 0 ? (
+                                  <div className="space-y-3">
+                                    {topic.interviewQuestions.map((question, index) => (
+                                      <div
+                                        key={index}
+                                        className="grid grid-cols-[1fr_auto] gap-2 items-center p-2 rounded-md bg-customgreys-darkGrey"
+                                      >
+                                        <Input
+                                          value={question}
+                                          onChange={(e) =>
+                                            handleInterviewQuestionChange(section.id, topic.id, index, e.target.value)
+                                          }
+                                          placeholder="Interview question"
+                                          className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeInterviewQuestion(section.id, topic.id, index)}
+                                          className="h-7 w-7 p-0 text-destructive hover:text-destructive/90"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                          <span className="sr-only">Remove Question</span>
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-2 text-sm text-customgreys-dirtyGrey">
+                                    No interview questions added
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
@@ -492,7 +651,7 @@ export default function CreateRoadmapPage() {
                                       </div>
                                       <div className="space-y-2">
                                         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-            <Input
+                                          <Input
                                             value={resource.title}
                                             onChange={(e) =>
                                               handleResourceChange(
@@ -503,7 +662,7 @@ export default function CreateRoadmapPage() {
                                                 e.target.value,
                                               )
                                             }
-              placeholder="Resource title"
+                                            placeholder="Resource title"
                                             className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
                                           />
                                           <Button
@@ -516,9 +675,9 @@ export default function CreateRoadmapPage() {
                                             <Trash2 className="h-3 w-3" />
                                             <span className="sr-only">Remove Resource</span>
                                           </Button>
-          </div>
+                                        </div>
                                         <div className="grid grid-cols-[1fr_auto] gap-2">
-            <Input
+                                          <Input
                                             value={resource.url}
                                             onChange={(e) =>
                                               handleResourceChange(
@@ -529,7 +688,7 @@ export default function CreateRoadmapPage() {
                                                 e.target.value,
                                               )
                                             }
-              placeholder="Resource URL"
+                                            placeholder="Resource URL"
                                             className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
                                           />
                                           <Select
@@ -567,7 +726,7 @@ export default function CreateRoadmapPage() {
                         </Card>
                       ))}
                     </div>
-          </div>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -583,8 +742,7 @@ export default function CreateRoadmapPage() {
             {!isLoading && <Save className="ml-2 h-4 w-4" />}
           </Button>
         </div>
-    </form>
+      </form>
     </div>
   )
 }
-

@@ -11,6 +11,8 @@ export interface ITopic {
   title: string;
   description: string;
   isCompleted: boolean;
+  isInterviewTopic: boolean;
+  interviewQuestions: string[];
   resources: IResource[];
 }
 
@@ -46,6 +48,8 @@ const TopicSchema = new Schema<ITopic>(
     title: { type: String, required: true },
     description: { type: String, required: true },
     isCompleted: { type: Boolean, default: false },
+    isInterviewTopic: { type: Boolean, default: false },
+    interviewQuestions: { type: [String], default: [] },
     resources: { type: [ResourceSchema], default: [] },
   },
   { _id: false }

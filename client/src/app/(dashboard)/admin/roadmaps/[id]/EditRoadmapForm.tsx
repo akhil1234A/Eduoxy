@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { v4 as uuidv4 } from "uuid"
 import { useUpdateRoadmapMutation } from "@/state/api/roadmapApi"
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video} from "lucide-react"
+import { Plus, Trash2, Save, ArrowLeft, LinkIcon, FileText, Video } from "lucide-react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -26,6 +27,8 @@ interface Topic {
   title: string
   description: string
   isCompleted: boolean
+  isInterviewTopic: boolean
+  interviewQuestions: string[]
   resources: Resource[]
 }
 
@@ -39,7 +42,7 @@ interface RoadmapFormData {
   title: string
   description: string
   sections: Section[]
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
 interface EditRoadmapFormProps {
@@ -127,6 +130,118 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
     })
   }
 
+  const handleResourceTypeChange = (
+    sectionId: string,
+    topicId: string,
+    resourceId: string,
+    type: "article" | "video" | "link",
+  ) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      resources: topic.resources.map((resource) =>
+                        resource.id === resourceId ? { ...resource, type } : resource,
+                      ),
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const addInterviewQuestion = (sectionId: string, topicId: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: [...topic.interviewQuestions, ""],
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const removeInterviewQuestion = (sectionId: string, topicId: string, index: number) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: topic.interviewQuestions.filter((_, i) => i !== index),
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const handleInterviewQuestionChange = (sectionId: string, topicId: string, index: number, value: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      interviewQuestions: topic.interviewQuestions.map((q, i) => (i === index ? value : q)),
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
+  const toggleInterviewTopic = (sectionId: string, topicId: string) => {
+    setFormData({
+      ...formData,
+      sections: formData.sections.map((section) =>
+        section.id === sectionId
+          ? {
+              ...section,
+              topics: section.topics.map((topic) =>
+                topic.id === topicId
+                  ? {
+                      ...topic,
+                      isInterviewTopic: !topic.isInterviewTopic,
+                    }
+                  : topic,
+              ),
+            }
+          : section,
+      ),
+    })
+  }
+
   const addSection = () => {
     setFormData({
       ...formData,
@@ -141,6 +256,8 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
               title: "",
               description: "",
               isCompleted: false,
+              isInterviewTopic: false,
+              interviewQuestions: [],
               resources: [],
             },
           ],
@@ -175,6 +292,8 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
                   title: "",
                   description: "",
                   isCompleted: false,
+                  isInterviewTopic: false,
+                  interviewQuestions: [],
                   resources: [],
                 },
               ],
@@ -255,34 +374,6 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
     })
   }
 
-  const handleResourceTypeChange = (
-    sectionId: string,
-    topicId: string,
-    resourceId: string,
-    type: "article" | "video" | "link",
-  ) => {
-    setFormData({
-      ...formData,
-      sections: formData.sections.map((section) =>
-        section.id === sectionId
-          ? {
-              ...section,
-              topics: section.topics.map((topic) =>
-                topic.id === topicId
-                  ? {
-                      ...topic,
-                      resources: topic.resources.map((resource) =>
-                        resource.id === resourceId ? { ...resource, type } : resource,
-                      ),
-                    }
-                  : topic,
-              ),
-            }
-          : section,
-      ),
-    })
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -317,12 +408,12 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
 
     try {
       await updateRoadmap({ id: roadmapId, roadmap: formData }).unwrap()
-      toast.success("Roadmap updated successfully");
+      toast.success("Roadmap updated successfully")
       router.push("/admin/roadmaps")
     } catch (error) {
       toast.error("Failed to update roadmap", {
         description: (error as Error).message,
-      });
+      })
     }
   }
 
@@ -467,6 +558,72 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
                               />
                             </div>
 
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`topic-${topic.id}-interview`} className="text-xs">
+                                  Interview Topic
+                                </Label>
+                                <input
+                                  type="checkbox"
+                                  id={`topic-${topic.id}-interview`}
+                                  checked={topic.isInterviewTopic}
+                                  onChange={() => toggleInterviewTopic(section.id, topic.id)}
+                                  className="h-4 w-4 rounded border-customgreys-darkerGrey"
+                                />
+                              </div>
+                            </div>
+
+                            {topic.isInterviewTopic && (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-xs">Interview Questions</Label>
+                                  <Button
+                                    type="button"
+                                    onClick={() => addInterviewQuestion(section.id, topic.id)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7"
+                                  >
+                                    <Plus className="mr-1 h-3 w-3" /> Add Question
+                                  </Button>
+                                </div>
+
+                                {topic.interviewQuestions.length > 0 ? (
+                                  <div className="space-y-3">
+                                    {topic.interviewQuestions.map((question, index) => (
+                                      <div
+                                        key={index}
+                                        className="grid grid-cols-[1fr_auto] gap-2 items-center p-2 rounded-md bg-customgreys-darkGrey"
+                                      >
+                                        <Input
+                                          value={question}
+                                          onChange={(e) =>
+                                            handleInterviewQuestionChange(section.id, topic.id, index, e.target.value)
+                                          }
+                                          placeholder="Interview question"
+                                          className="h-7 bg-customgreys-primarybg border-customgreys-darkerGrey"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => removeInterviewQuestion(section.id, topic.id, index)}
+                                          className="h-7 w-7 p-0 text-destructive hover:text-destructive/90"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                          <span className="sr-only">Remove Question</span>
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-2 text-sm text-customgreys-dirtyGrey">
+                                    No interview questions added
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             <div className="space-y-3">
                               <div className="flex items-center justify-between">
                                 <Label className="text-xs">Resources</Label>
@@ -589,4 +746,4 @@ export default function EditRoadmapForm({ roadmapId, initialData }: EditRoadmapF
       </form>
     </div>
   )
-} 
+}

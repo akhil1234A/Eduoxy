@@ -325,6 +325,8 @@ declare global {
     title: string
     description: string
     isCompleted: boolean
+    isInterviewTopic: boolean
+    interviewQuestions: string[]
     resources: RoadmapResource[]
   }
   
