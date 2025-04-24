@@ -71,11 +71,12 @@ export const otpSchema = z.string().length(6, 'Passcode must be 6 digits');
 
 // Course Editor Schemas
 export const courseSchema = z.object({
-  courseTitle: z.string().min(1, "Title is required"),
-  courseDescription: z.string().min(1, "Description is required"),
-  courseCategory: z.string().min(1, "Category is required"),
+  courseTitle: z.string().trim().min(1, "Title is required"),
+  courseDescription: z.string().trim().min(1, "Description is required"),
+  courseCategory: z.string().trim().min(1, "Category is required"),
   coursePrice: z
     .string()
+    .trim()
     .min(1, "Price is required")
     .regex(/^\d+(\.\d{1,2})?$/, "Price must be a valid number")
     .refine((val) => parseFloat(val) >= 0, { message: "Price cannot be negative" }),
@@ -97,8 +98,8 @@ export type CourseFormData = z.infer<typeof courseSchema>;
 
 // Chapter Schemas
 export const chapterSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters"),
-  content: z.string().min(10, "Content must be at least 10 characters"),
+  title: z.string().trim().min(2, "Title must be at least 2 characters"),
+  content: z.string().trim().min(10, "Content must be at least 10 characters"),
   video: z.union([z.string(), z.instanceof(File)]).optional(),
   pdf: z.union([z.instanceof(File), z.string()]).optional(),
   subtitle: z.union([z.instanceof(File), z.string()]).optional(),
@@ -108,8 +109,8 @@ export type ChapterFormData = z.infer<typeof chapterSchema>;
 
 // Section Schemas
 export const sectionSchema = z.object({
-  title: z.string().min(2, "Title must be at least 2 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  title: z.string().trim().min(2, "Title must be at least 2 characters"),
+  description: z.string().trim().min(10, "Description must be at least 10 characters"),
 });
 
 export type SectionFormData = z.infer<typeof sectionSchema>;
@@ -120,4 +121,52 @@ export const guestSchema = z.object({
 });
 
 export type GuestFormData = z.infer<typeof guestSchema>;
+
+
+export const ForumSchema = z.object({
+  title: z.string().trim().min(1, "Title is required"),
+  description: z.string().trim().min(1, "Description is required"),
+  topics: z.string().optional(),
+});
+
+export type ForumSchemaType = z.infer<typeof ForumSchema>;
+
+export const PostSchema = z.object({
+  content: z.string().trim().min(1, "Content is required"),
+  topic: z.string().trim().min(1, "Topic is required"),
+  files: z
+    .array(
+      z.object({
+        url: z.string(),
+        type: z.string().refine((type) => ["image/jpeg", "image/png", "application/pdf"].includes(type), {
+          message: "File must be JPEG, PNG, or PDF",
+        }),
+        size: z.number().max(5 * 1024 * 1024, "File size must be less than 5MB").optional(),
+        name: z.string().optional(),
+      })
+    )
+    .max(5, "Maximum 5 files allowed")
+    .optional(),
+});
+
+export type PostSchemaType = z.infer<typeof PostSchema>;
+export const ReplySchema = z.object({
+  content: z.string().trim().min(1, "Content is required"),
+  files: z
+    .array(
+      z.object({
+        url: z.string(),
+        type: z.string().refine((type) => ["image/jpeg", "image/png", "application/pdf"].includes(type), {
+          message: "File must be JPEG, PNG, or PDF",
+        }),
+        size: z.number().max(5 * 1024 * 1024, "File size must be less than 5MB").optional(),
+        name: z.string().optional(),
+      })
+    )
+    .max(5, "Maximum 5 files allowed")
+    .optional(),
+});
+
+export type ReplySchemaType = z.infer<typeof ReplySchema>;
+
 

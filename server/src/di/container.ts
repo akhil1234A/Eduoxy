@@ -76,6 +76,7 @@ import { IReviewDocument } from "../interfaces/review.interface";
 import { ReviewService } from "../services/review.service";
 import { IReviewService } from "../interfaces/review.service";
 import { IReviewRepository } from "../interfaces/review.repository";
+import { ForumController } from "../controllers/forum.controller";
 
 const container = new Container();
 
@@ -139,6 +140,7 @@ container.bind<ChatController>(TYPES.IChatController).to(ChatController).inSingl
 container.bind<LiveClassController>(TYPES.ILiveClassController).to(LiveClassController).inSingletonScope();
 container.bind<RoadmapController>(TYPES.IRoadmapController).to(RoadmapController).inSingletonScope();
 container.bind<ReviewController>(TYPES.ReviewController).to(ReviewController);
+container.bind<ForumController>(TYPES.IForumController).to(ForumController).inSingletonScope();
 
 
 
@@ -153,5 +155,6 @@ export const chatController = container.get<ChatController>(TYPES.IChatControlle
 export const liveClassController = container.get<LiveClassController>(TYPES.ILiveClassController);
 export const roadmapController = container.get<RoadmapController>(TYPES.IRoadmapController);
 export const reviewController = container.get<ReviewController>(TYPES.ReviewController);
+export const forumController = container.get<ForumController>(TYPES.IForumController);
 
 export default container;

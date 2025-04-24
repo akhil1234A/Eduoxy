@@ -1,67 +1,137 @@
+import { injectable, inject } from "inversify";
+import { IForum, IPost, IReply, IPaginated, IFile } from "../interfaces/forum.model";
+import { IUserService } from "../interfaces/user.service";
+import TYPES from "../di/types";
 import { IForumService } from "../interfaces/forum.service";
 import { IForumRepository } from "../interfaces/forum.repository";
-import { IUserService } from "../interfaces/user.service";
+import { apiLogger } from "../utils/logger";
 
+@injectable()
 export class ForumService implements IForumService {
   constructor(
-    private forumRepository: IForumRepository,
-    private userService: IUserService
+    @inject(TYPES.IForumRepository) private repository: IForumRepository,
+    @inject(TYPES.IUserService) private userService: IUserService,
   ) {}
 
-  async getPosts(forumId: string) {
-    console.log(`Getting posts for forum ${forumId}`);
-    return this.forumRepository.getPosts(forumId);
+  async getForums(page: number, pageSize: number, query?: string): Promise<IPaginated<IForum>> {
+    return this.repository.getForums(page, pageSize, query);
   }
 
-  async createPost(forumId: string, userId: string, content: string, topic: string) {
-    try {
-      const user = await this.userService.getProfile(userId);
-      console.log(`User profile for ${userId}:`, user);
-      const post = {
-        userId,
-        userName: user?.name || userId, // Fallback to userId if name is unavailable
-        content,
-        topic,
-        timestamp: new Date(),
-        replies: [],
-      };
-      return this.forumRepository.createPost(forumId, post);
-    } catch (error) {
-      console.error(`Error creating post for user ${userId} in forum ${forumId}:`, error);
-      throw error;
+  async createForum(
+    userId: string,
+    title: string,
+    description: string,
+    topics: string[] = []
+  ): Promise<IForum> {
+    const user = await this.userService.getProfile(userId);
+    if (!user) throw new Error("User not found");
+
+    return this.repository.createForum({ title, description, topics });
+  }
+
+  async getPosts(forumId: string, page: number, pageSize: number): Promise<IPaginated<IPost>> {
+    return this.repository.getPosts(forumId, page, pageSize);
+  }
+
+  async searchPosts(
+    forumId: string,
+    query: string,
+    page: number,
+    pageSize: number
+  ): Promise<IPaginated<IPost>> {
+    return this.repository.searchPosts(forumId, query, page, pageSize);
+  }
+
+  async getPost(postId: string): Promise<IPost> {
+    return this.repository.getPost(postId);
+  }
+
+  async createPost(forumId: string, userId: string, userName: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
+    // Validate files
+    if (files && !files.every(file => file.url && file.key)) {
+      throw new Error("Invalid file metadata: url and key are required");
     }
+
+    return this.repository.createPost({
+      forumId,
+      userId,
+      userName,
+      content,
+      topic,
+      files,
+    });
   }
 
-  async createReply(forumId: string, postId: string, userId: string, content: string) {
-    try {
-      const user = await this.userService.getProfile(userId);
-      console.log(`User profile for ${userId}:`, user);
-      const reply = {
-        userId,
-        userName: user?.name || userId,
-        content,
-        timestamp: new Date(),
-      };
-      return this.forumRepository.createReply(forumId, postId, reply);
-    } catch (error) {
-      console.error(`Error creating reply for user ${userId} in forum ${forumId}:`, error);
-      throw error;
+  async updatePost(postId: string, userId: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
+    // Validate files
+    if (files && !files.every(file => file.url && file.key)) {
+      throw new Error("Invalid file metadata: url and key are required");
     }
+
+    return this.repository.updatePost(postId, userId, content, topic, files);
   }
 
-  async deletePost(forumId: string, postId: string, userId: string) {
-    const posts = await this.forumRepository.getPosts(forumId);
-    const post = posts.find((p) => p._id === postId);
-    if (!post) throw new Error("Post not found");
-    if (post.userId !== userId) throw new Error("You can only delete your own posts");
-    await this.forumRepository.deletePost(forumId, postId, userId);
+  async deletePost(postId: string, userId: string): Promise<void> {
+    const user = await this.userService.getProfile(userId);
+    if (!user) throw new Error("User not found");
+    return this.repository.deletePost(postId, userId);
   }
 
-  async getPostsByTopic(forumId: string, topic: string) {
-    return this.forumRepository.getPostsByTopic(forumId, topic);
+  async getReplies(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>> {
+    return this.repository.getReplies(postId, page, pageSize);
   }
 
-  async searchPosts(forumId: string, query: string) {
-    return this.forumRepository.searchPosts(forumId, query);
+  async createReply(postId: string, userId: string, userName: string, content: string, files: IFile[] = []): Promise<IReply> {
+    // Validate files
+    if (files && !files.every(file => file.url && file.key)) {
+      throw new Error("Invalid file metadata: url and key are required");
+    }
+
+    return this.repository.createReply({
+      postId,
+      userId,
+      userName,
+      content,
+      files,
+    });
+  }
+
+  async updateReply(replyId: string, userId: string, content: string, files: IFile[] = []): Promise<IReply> {
+    // Validate files
+    if (files && !files.every(file => file.url && file.key)) {
+      throw new Error("Invalid file metadata: url and key are required");
+    }
+
+    return this.repository.updateReply(replyId, userId, content, files);
+  }
+
+  async deleteReply(replyId: string, userId: string): Promise<void> {
+    const user = await this.userService.getProfile(userId);
+    if (!user) throw new Error("User not found");
+    return this.repository.deleteReply(replyId, userId);
+  }
+
+  async getForum(forumId: string): Promise<IForum> {
+    return this.repository.getForum(forumId);
+  }
+
+  async updateForum(forumId: string, userId: string, title: string, description: string, topics: string[] = []): Promise<IForum> {
+    const user = await this.userService.getProfile(userId);
+    if (!user) throw new Error("User not found");
+
+    const forum = await this.repository.getForum(forumId);
+    if (!forum) throw new Error("Forum not found");
+
+    return this.repository.updateForum(forumId, { title, description, topics });
+  }
+
+  async deleteForum(forumId: string, userId: string): Promise<void> {
+    const user = await this.userService.getProfile(userId);
+    if (!user) throw new Error("User not found");
+
+    const forum = await this.repository.getForum(forumId);
+    if (!forum) throw new Error("Forum not found");
+
+    return this.repository.deleteForum(forumId);
   }
 }

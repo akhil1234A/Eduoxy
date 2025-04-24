@@ -68,7 +68,7 @@ export const customDataGridStyles = {
 export const uploadToS3 = async (
   file: File,
   type: "image" | "video" | "pdf" | "subtitle" | "chat_file" 
-): Promise<{ publicUrl: string; key: string }> => {
+): Promise<{ publicUrl: string; key: string; url: string }> => {
   try {
     console.log(`Fetching presigned URL for ${type}: ${file.name}`);
     const res = await fetch(
@@ -111,7 +111,7 @@ export const uploadToS3 = async (
     }
 
     console.log(`Upload successful: ${publicUrl}`);
-    return { publicUrl, key }; 
+    return { publicUrl, key, url }; 
   } catch (error) {
     console.error(`${type} upload error:`, error);
     throw error;

@@ -36,7 +36,7 @@ const TYPES = {
   ILiveClassController: Symbol.for("ILiveClassController"),
   IRoadmapController: Symbol.for("IRoadmapController"),
   ReviewController: Symbol.for("ReviewController"),
-
+  IForumController: Symbol.for("IForumController"),
 
   //Utils
   IMailService: Symbol.for("IMailService"),

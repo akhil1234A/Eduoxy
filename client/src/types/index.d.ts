@@ -354,6 +354,47 @@ declare global {
     limit: number;
     totalPages: number;
   }
+
+ 
+  
+  export interface IPost {
+    _id: string;
+    forumId: string;
+    userId: string;
+    userName: string;
+    content: string;
+    topic: string;
+    files: IFile[];
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  export interface IReply {
+    _id: string;
+    postId: string;
+    userId: string;
+    userName: string;
+    content: string;
+    files: IFile[];
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  export interface IForum {
+    _id: string;
+    title: string;
+    description: string;
+    topics: string[];
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  export interface IPaginated<T> {
+    items: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }
   
 }
 

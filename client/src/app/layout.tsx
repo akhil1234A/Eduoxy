@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import Providers from "./providers";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -23,11 +24,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className={`${dmSans.className}`}>
-        <NotificationProvider>
-          <Providers>
-            <div className="root-layout">{children}</div>
-          </Providers>
-        </NotificationProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <Providers>
+              <div className="root-layout">{children}</div>
+            </Providers>
+          </NotificationProvider>
+        </SocketProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>

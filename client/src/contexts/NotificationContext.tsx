@@ -1,11 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { toast } from "sonner";
-import { io} from "socket.io-client";
-
-
+import { useSocket } from "./SocketContext";
 
 interface NotificationContextType {
   notifications: AppNotification[];
@@ -19,26 +16,12 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const userId = Cookies.get("userId");
+  const { socket } = useSocket();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!socket) return;
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL, {
-      query: { userId },
-      path: "/socket.io/",
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    socketInstance.on("connect", () => {
-      console.log("Notification socket connected:", socketInstance.id);
-      socketInstance.emit("joinNotifications", { userId });
-    });
-
-    socketInstance.on("notification", (notification: AppNotification) => {
+    socket.on("notification", (notification: AppNotification) => {
       console.log("Received notification:", notification);
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
@@ -68,21 +51,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     });
 
-    socketInstance.on("connect_error", (err) => {
-      console.error("Notification socket error:", err);
-      toast.error("Failed to connect to notification server");
-    });
-
-
     // Fetch existing notifications
     fetchNotifications();
 
     return () => {
-      if (socketInstance.connected) {
-        socketInstance.disconnect();
-      }
+      socket.off("notification");
     };
-  }, [userId]);
+  }, [socket]);
 
   const fetchNotifications = async () => {
     try {
