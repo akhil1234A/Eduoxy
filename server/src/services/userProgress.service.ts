@@ -6,11 +6,13 @@ import { mergeSections, calculateOverallProgress } from "../utils/course.progres
 import { IUserCourseProgressService } from "../interfaces/courseProgress.service";
 import { ICourseDocument } from "../models/course.model";
 import { CacheUtil } from "../utils/cache";
+import { IRedisClient } from "../config/redis";
 
 @injectable()
 export class UserCourseProgressService implements IUserCourseProgressService {
   constructor(
-    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository
+    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository,
+    @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
   ) {}
 
   async getUserEnrolledCourses(
@@ -58,6 +60,16 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     }
     progress.lastAccessedTimestamp = new Date().toISOString();
     progress.overallProgress = calculateOverallProgress(progress.sections);
-    return this._userCourseProgressRepository.saveUserCourseProgress(progress);
+    
+    const updatedProgress = await this._userCourseProgressRepository.saveUserCourseProgress(progress);
+    
+    // Invalidate all paginated enrolled courses caches for this user
+    const enrolledPattern = `enrolled:${userId}*`;
+    const keysToDelete = await this._redisClient.keys(enrolledPattern);
+    if (keysToDelete.length > 0) {
+      await Promise.all(keysToDelete.map(key => this._redisClient.del(key)));
+    }
+    
+    return updatedProgress;
   }
 }

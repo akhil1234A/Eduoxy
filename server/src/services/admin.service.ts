@@ -5,9 +5,14 @@ import { UserRole } from "../types/types";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { CacheUtil } from "../utils/cache";
+import { IRedisClient } from "../config/redis";
+
 @injectable()
 export class AdminService implements IAdminService {
-  constructor(@inject(TYPES.IUserRepository) private _userRepository: IUserRepository) {}
+  constructor(
+    @inject(TYPES.IUserRepository) private _userRepository: IUserRepository,
+    @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
+  ) {}
 
   async listStudents(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ users: IUser[]; total: number }> {
     const cacheKey = CacheUtil.getListCacheKey("students", page, limit, searchTerm);
@@ -49,6 +54,20 @@ export class AdminService implements IAdminService {
     const success = await this._userRepository.blockUser(userId);
     if (!success) throw new Error("Failed to block user");
 
+    // Invalidate all paginated caches for both students and teachers lists
+    const studentKeysPattern = "list:students*";
+    const teacherKeysPattern = "list:teachers*";
+    
+    const keysToDelete = await Promise.all([
+      this._redisClient.keys(studentKeysPattern),
+      this._redisClient.keys(teacherKeysPattern)
+    ]);
+
+    const allKeys = keysToDelete.flat();
+    if (allKeys.length > 0) {
+      await Promise.all(allKeys.map(key => this._redisClient.del(key)));
+    }
+
     const updatedUser = await this._userRepository.findById(userId);
     if (!updatedUser) throw new Error("User not found after update");
     return updatedUser;
@@ -60,6 +79,20 @@ export class AdminService implements IAdminService {
 
     const success = await this._userRepository.unblockUser(userId);
     if (!success) throw new Error("Failed to unblock user");
+
+    // Invalidate all paginated caches for both students and teachers lists
+    const studentKeysPattern = "list:students*";
+    const teacherKeysPattern = "list:teachers*";
+    
+    const keysToDelete = await Promise.all([
+      this._redisClient.keys(studentKeysPattern),
+      this._redisClient.keys(teacherKeysPattern)
+    ]);
+
+    const allKeys = keysToDelete.flat();
+    if (allKeys.length > 0) {
+      await Promise.all(allKeys.map(key => this._redisClient.del(key)));
+    }
 
     const updatedUser = await this._userRepository.findById(userId);
     if (!updatedUser) throw new Error("User not found after update");

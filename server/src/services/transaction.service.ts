@@ -80,10 +80,25 @@ export class TransactionService implements ITransactionService {
 
       await this._courseRepository.addEnrollment(courseId, userId, user.name);
 
+      // Invalidate all related caches using pattern matching
+      const adminEarningsPattern = "admin:earnings*";
+      const teacherEarningsPattern = `teacher:earnings:${course.teacherId}*`;
+      const studentPurchasesPattern = `student:purchases:${userId}*`;
+      const enrolledCoursesPattern = `enrolled:${userId}*`;
       
-      await this._redisClient.del("admin:earnings");
-      await this._redisClient.del(`teacher:earnings:${course.teacherId}`);
-      await this._redisClient.del(`student:purchases:${userId}`);
+      const keysToDelete = await Promise.all([
+        this._redisClient.keys(adminEarningsPattern),
+        this._redisClient.keys(teacherEarningsPattern),
+        this._redisClient.keys(studentPurchasesPattern),
+        this._redisClient.keys(enrolledCoursesPattern)
+      ]);
+
+      // Flatten the array of arrays and delete all matching keys
+      const allKeys = keysToDelete.flat();
+      if (allKeys.length > 0) {
+        await Promise.all(allKeys.map(key => this._redisClient.del(key)));
+      }
+
       await CacheUtil.invalidateCourseListCaches();
 
       await this._notificationService.createNotification({

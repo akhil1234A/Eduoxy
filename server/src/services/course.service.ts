@@ -7,9 +7,14 @@ import { v4 as uuidv4, v4 } from "uuid";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { s3Service } from "./s3.service";
+import { IRedisClient } from "../config/redis";
+
 @injectable()
 export class CourseService implements ICourseService {
-  constructor(@inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository) {}
+  constructor(
+    @inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository,
+    @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
+  ) {}
 
   async createCourse(teacherId: string, teacherName: string): Promise<ICourseDocument> {
     const courseData: Partial<ICourseDocument> = { 
@@ -17,7 +22,26 @@ export class CourseService implements ICourseService {
       teacherName,
     }; 
     const course = await this._courseRepository.createCourse(courseData); 
-    await CacheUtil.del(CacheUtil.getCoursesListCacheKey(`teacher:${teacherId}`));
+    
+    // Invalidate all related caches using pattern matching
+    const teacherCoursesPattern = `courses:teacher:${teacherId}*`;
+    const publicCoursesPattern = "courses:public*";
+    const adminCoursesPattern = "courses:admin*";
+    const searchCoursesPattern = "courses:search*";
+    
+    const keysToDelete = await Promise.all([
+      this._redisClient.keys(teacherCoursesPattern),
+      this._redisClient.keys(publicCoursesPattern),
+      this._redisClient.keys(adminCoursesPattern),
+      this._redisClient.keys(searchCoursesPattern)
+    ]);
+
+    // Flatten the array of arrays and delete all matching keys
+    const allKeys = keysToDelete.flat();
+    if (allKeys.length > 0) {
+      await Promise.all(allKeys.map((key: string) => this._redisClient.del(key)));
+    }
+
     return course;
   }
 
