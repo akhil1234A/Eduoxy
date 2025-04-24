@@ -331,7 +331,7 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
   return (
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-100px)] p-6">
       <div className="flex-1 flex flex-col">
-      <h2 className="text-2xl font-semibold mb-4">🎥 Student Viewer</h2>
+      <h2 className="text-2xl font-semibold mb-4">Student Viewer</h2>
       {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
           <p className="font-bold">Error:</p>

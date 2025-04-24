@@ -27,7 +27,7 @@ declare global {
     sections: Section[];
     enrollments?: Array<{
       userId: string;
-      userName: string
+      studentName: string
     }>;
   }
 

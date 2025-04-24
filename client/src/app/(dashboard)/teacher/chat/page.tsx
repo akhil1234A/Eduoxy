@@ -30,6 +30,8 @@ export default function InstructorChatPage() {
     skip: !senderId,
   });
 
+  console.log(courses);
+
  
   const students = courses?.data?.courses?.reduce<StudentData[]>((acc, course) => {
     if (course.enrollments) {
@@ -40,7 +42,7 @@ export default function InstructorChatPage() {
             userId: enrollment.userId,
             courseId: course.courseId,
             courseTitle: course.title,
-            name: enrollment.userName || "Unknown",
+            name: enrollment.studentName || "Unknown",
           });
         }
       });

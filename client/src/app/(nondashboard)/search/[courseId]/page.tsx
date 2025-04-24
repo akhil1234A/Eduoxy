@@ -355,9 +355,27 @@ const CourseView = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-semibold text-white">Student Reviews</h2>
-                <p className="text-gray-400 text-sm mt-1">
-                  {reviewsData?.length || 0} {reviewsData?.length === 1 ? "review" : "reviews"} for this course
-                </p>
+                <div className="flex items-center mt-1">
+                  {reviewsData && reviewsData.length > 0 && (
+                    <>
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < Math.round(reviewsData.reduce((acc, review) => acc + review.rating, 0) / reviewsData.length)
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-500"
+                            }`}
+                          />
+                        ))}
+                        <span className="ml-2 text-sm text-gray-400">
+                          ({reviewsData.length} {reviewsData.length === 1 ? "review" : "reviews"})
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               {isEnrolled && (
                 <Button

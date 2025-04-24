@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import CourseCardSearch from "@/components/CourseCardSearch";
 
-// Add export for dynamic rendering
-export const dynamic = 'force-dynamic';
+
 
 const Search = () => {
   return (
