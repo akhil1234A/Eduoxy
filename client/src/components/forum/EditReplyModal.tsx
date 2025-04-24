@@ -36,21 +36,28 @@ export function EditReplyModal({ isOpen, onClose, reply }: EditReplyModalProps) 
   const onSubmit = async (data: { content: string }) => {
     try {
       const userId = Cookies.get("userId");
-      if (!userId) {
+      const userName = Cookies.get("userName");
+
+      if (!userId || !userName) {
         toast.error("Please sign in to update your reply");
+        return;
+      }
+
+      if (!data.content.trim()) {
+        toast.error("Content is required");
         return;
       }
 
       await updateReply({
         replyId: reply.id,
         userId,
-        content: data.content,
+        content: data.content.trim(),
         files: files.map((file) => ({
           url: file.url,
-          key: file.key,
+          key: file.key || '',
           type: file.type,
-          size: file.size,
-          name: file.name,
+          size: file.size || 0,
+          name: file.name || '',
           publicUrl: file.publicUrl,
         })),
       }).unwrap();
@@ -75,6 +82,7 @@ export function EditReplyModal({ isOpen, onClose, reply }: EditReplyModalProps) 
               id="content"
               {...form.register("content")}
               placeholder="Enter your reply"
+              required
             />
             {form.formState.errors.content && (
               <p className="text-sm text-red-500">

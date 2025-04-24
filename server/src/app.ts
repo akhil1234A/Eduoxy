@@ -28,6 +28,7 @@ const server = http.createServer(app);
 
 // Initialize only Socket.IO
 export const io = initializeSocket(server);
+app.set('io', io);
 
 // Middlewares
 app.use(express.json());

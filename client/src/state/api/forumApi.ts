@@ -131,21 +131,11 @@ export const forumApi = createApi({
       providesTags: ["Reply"],
     }),
     createReply: builder.mutation<ApiResponse<IReply>, CreateReplyRequest>({
-      query: ({ postId, userId, userName, content, files }) => {
-        const formData = new FormData();
-        formData.append("userId", userId);
-        formData.append("userName", userName);
-        formData.append("content", content);
-        if (files) {
-          formData.append("files", JSON.stringify(files));
-        }
-        return {
-          url: `/forums/posts/${postId}/replies`,
-          method: "POST",
-          body: formData,
-          formData: true,
-        };
-      },
+      query: ({ postId, userId, userName, content, files }) => ({
+        url: `/forums/posts/${postId}/replies`,
+        method: "POST",
+        body: { userId, userName, content, files },
+      }),
       invalidatesTags: ["Reply"],
     }),
     updateReply: builder.mutation<ApiResponse<IReply>, UpdateReplyRequest>({

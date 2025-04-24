@@ -45,7 +45,7 @@ export function ForumCard({ forum }: ForumCardProps) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Link href={`/forums/${forum._id}`}>
+          <Link href={`/user/forums/${forum._id}`}>
             <CardTitle className="text-xl font-bold">{forum.title}</CardTitle>
           </Link>
           {userType === "admin" && (
@@ -72,7 +72,7 @@ export function ForumCard({ forum }: ForumCardProps) {
             </DropdownMenu>
           )}
         </CardHeader>
-        <Link href={`/forums/${forum._id}`}>
+        <Link href={`/user/forums/${forum._id}`}>
           <CardContent>
             <p className="text-sm text-muted-foreground">{forum.description}</p>
             {forum.topics.length > 0 && (

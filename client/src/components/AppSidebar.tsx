@@ -52,7 +52,7 @@ const AppSidebar = () => {
       { icon: User, label: "Profile", href: "/user/profile" },
       { icon: Settings, label: "Settings", href: "/user/settings" },
       { icon: MessageCircle, label: "Chat", href: "/user/chat" },
-      { icon: MessageSquareMore, label: "Forum", href: "/forums" },
+      { icon: MessageSquareMore, label: "Forum", href: "/user/forums" },
       { icon: BookOpen, label: "Roadmaps", href: "/user/roadmaps" },
     ],
     teacher: [
@@ -62,7 +62,7 @@ const AppSidebar = () => {
       { icon: User, label: "Profile", href: "/teacher/profile" },
       { icon: Settings, label: "Settings", href: "/teacher/settings" },
       { icon: MessageCircle, label: "Chat", href: "/teacher/chat" },
-      { icon: MessageSquareMore, label: "Forum", href: "/forums" },
+      { icon: MessageSquareMore, label: "Forum", href: "/teacher/forums" },
     ],
     admin: [
       { icon: BarChart, label: "Dashboard", href: "/admin/dashboard" },

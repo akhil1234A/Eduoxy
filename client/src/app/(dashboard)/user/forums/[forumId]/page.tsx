@@ -48,7 +48,7 @@ export default function ForumPostsPage() {
           <h1 className="text-2xl font-bold">{forum?.title}</h1>
           <p className="text-gray-600">{forum?.description}</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>Create Post</Button>
+        <Button className="teacher-courses__header" onClick={() => setIsCreateModalOpen(true)}>Create Post</Button>
       </div>
 
       <div className="mb-6">

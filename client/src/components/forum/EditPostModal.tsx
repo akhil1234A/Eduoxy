@@ -32,14 +32,18 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
 }) => {
   const [updatePost, { isLoading }] = useUpdatePostMutation();
   const [files, setFiles] = useState<IFile[]>(() => 
-    (post.files || []).map(file => ({
-      url: file.url,
-      key: file.key || '',
-      type: file.type,
-      size: file.size || 0,
-      name: file.name || '',
-      publicUrl: file.publicUrl
-    }))
+    (post.files || []).map(file => {
+      // Extract key from URL if not present
+      const key = file.key || file.url.split('/').pop() || '';
+      return {
+        url: file.url,
+        key: key,
+        type: file.type,
+        size: file.size || 0,
+        name: file.name || key,
+        publicUrl: file.publicUrl
+      };
+    })
   );
   const {
     register,
@@ -54,21 +58,33 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
     },
   });
 
+  const handleFileDelete = (index: number) => {
+    const newFiles = [...files];
+    newFiles.splice(index, 1);
+    setFiles(newFiles);
+  };
+
   const onSubmit = async (data: PostFormData) => {
     try {
+      // Ensure all files have a key
+      const filesWithKeys = files.map(file => {
+        const key = file.key || file.url.split('/').pop() || '';
+        return {
+          url: file.publicUrl || file.url,
+          key: key,
+          type: file.type,
+          size: file.size,
+          name: file.name || key,
+          publicUrl: file.publicUrl
+        };
+      });
+
       await updatePost({
         postId: post._id,
         userId: post.userId,
         content: data.content,
         topic: data.topic,
-        files: files.map(file => ({
-          url: file.publicUrl || file.url,
-          key: file.key,
-          type: file.type,
-          size: file.size,
-          name: file.name,
-          publicUrl: file.publicUrl
-        })),
+        files: filesWithKeys,
       }).unwrap();
       reset();
       setFiles([]);
@@ -107,6 +123,7 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({
               files={files}
               setFiles={setFiles}
               maxFiles={5}
+              onDelete={handleFileDelete}
             />
           </div>
           <div className="flex justify-end gap-2">

@@ -10,14 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { IFile } from "@/types/file";
+import Cookies from "js-cookie";
 
 interface CreateReplyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   postId: string;
-  userId: string;
-  userName: string;
 }
 
 interface ReplyFormData {
@@ -29,8 +28,6 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
   onClose,
   onSuccess,
   postId,
-  userId,
-  userName,
 }) => {
   const [createReply, { isLoading }] = useCreateReplyMutation();
   const [files, setFiles] = useState<IFile[]>([]);
@@ -45,6 +42,14 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
 
   const onSubmit = async (data: ReplyFormData) => {
     try {
+      const userId = Cookies.get("userId");
+      const userName = Cookies.get("userName");
+
+      if (!userId || !userName) {
+        toast.error("Please sign in to create a reply");
+        return;
+      }
+
       await createReply({
         postId,
         userId,
@@ -78,7 +83,12 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="content">Content</Label>
-            <Textarea id="content" {...register("content")} />
+            <Textarea 
+              id="content" 
+              {...register("content")} 
+              placeholder="Enter your reply"
+              required
+            />
             {errors.content && (
               <p className="text-red-500 text-sm">{errors.content.message}</p>
             )}

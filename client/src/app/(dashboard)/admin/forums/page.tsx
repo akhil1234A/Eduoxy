@@ -26,7 +26,7 @@ export default function AdminForumsPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Forums</h1>
-        <Button onClick={() => setIsCreateModalOpen(true)}>Create Forum</Button>
+        <Button className="teacher-courses__header" onClick={() => setIsCreateModalOpen(true)}>Create Forum</Button>
       </div>
 
       <div className="mb-6">

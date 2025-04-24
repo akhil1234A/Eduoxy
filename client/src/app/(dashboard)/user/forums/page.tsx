@@ -19,7 +19,7 @@ export default function UserForumsPage() {
   const { total, pageSize } = data?.data || { total: 0, pageSize: 10 };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container py-8">
       <h1 className="text-2xl font-bold mb-6">Forums</h1>
 
       <div className="mb-6">
