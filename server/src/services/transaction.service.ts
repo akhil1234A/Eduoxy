@@ -85,12 +85,14 @@ export class TransactionService implements ITransactionService {
       const teacherEarningsPattern = `teacher:earnings:${course.teacherId}*`;
       const studentPurchasesPattern = `student:purchases:${userId}*`;
       const enrolledCoursesPattern = `enrolled:${userId}*`;
+      const coursePattern = `course:${courseId}*`;
       
       const keysToDelete = await Promise.all([
         this._redisClient.keys(adminEarningsPattern),
         this._redisClient.keys(teacherEarningsPattern),
         this._redisClient.keys(studentPurchasesPattern),
-        this._redisClient.keys(enrolledCoursesPattern)
+        this._redisClient.keys(enrolledCoursesPattern),
+        this._redisClient.keys(coursePattern)
       ]);
 
       // Flatten the array of arrays and delete all matching keys

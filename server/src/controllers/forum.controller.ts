@@ -92,13 +92,8 @@ export class ForumController {
       const { forumId } = req.params;
       const { content, topic, userId, userName, files } = req.body;
       
-      apiLogger.info(`User found: ${userId}`);
-      apiLogger.info(`User name found: ${userName}`);
-      apiLogger.info(`Content found: ${content}`);
-      apiLogger.info(`Topic found: ${topic}`);
-      apiLogger.info(`Files found: ${JSON.stringify(files)}`);
 
-      // Validate and map files from request body
+
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
           throw new Error("Invalid file metadata: url and key are required");
@@ -136,7 +131,6 @@ export class ForumController {
       const { postId } = req.params;
       const { content, topic, userId, files } = req.body;
 
-      // Validate and map files from request body
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
           throw new Error("Invalid file metadata: url and key are required");
@@ -186,7 +180,6 @@ export class ForumController {
       const { postId } = req.params;
       const { content, userId, userName, files } = req.body;
 
-      // Validate and map files from request body
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
           throw new Error("Invalid file metadata: url and key are required");
@@ -202,7 +195,7 @@ export class ForumController {
 
       const reply = await this._forumService.createReply(postId, userId, userName, content, fileArray);
       
-      // Emit socket event for new reply
+      // Live update for others when somecreates a reply
       const io = req.app.get('io');
       io.to(`post:${postId}`).emit('newReply', reply);
       
@@ -218,7 +211,6 @@ export class ForumController {
       const { replyId } = req.params;
       const { content, userId, files } = req.body;
 
-      // Validate and map files from request body
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
           throw new Error("Invalid file metadata: url and key are required");

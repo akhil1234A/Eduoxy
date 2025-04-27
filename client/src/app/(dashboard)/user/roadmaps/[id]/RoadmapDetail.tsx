@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useUpdateTopicProgressMutation } from "@/state/api/roadmapApi"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -54,15 +55,10 @@ interface Roadmap {
 interface RoadmapDetailProps {
   roadmapId: string
   initialData: Roadmap
-  updateTopicProgress?: (data: {
-    roadmapId: string
-    sectionId: string
-    topicId: string
-    isCompleted: boolean
-  }) => Promise<{ data?: Roadmap }>
+ 
 }
 
-export default function RoadmapDetail({ roadmapId, initialData, updateTopicProgress }: RoadmapDetailProps) {
+export default function RoadmapDetail({ roadmapId, initialData }: RoadmapDetailProps) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<string | null>(
     initialData.sections.length > 0 ? initialData.sections[0].id : null,
@@ -75,6 +71,7 @@ export default function RoadmapDetail({ roadmapId, initialData, updateTopicProgr
   const [roadmap, setRoadmap] = useState<Roadmap>(initialData)
   const [activeTab, setActiveTab] = useState<"learning" | "interview">("learning")
   const [isUpdating, setIsUpdating] = useState(false)
+  const [updateTopicProgress] = useUpdateTopicProgressMutation()
 
   const handleTopicClick = (sectionId: string, topicId: string) => {
     setActiveSection(sectionId)
@@ -84,11 +81,6 @@ export default function RoadmapDetail({ roadmapId, initialData, updateTopicProgr
   const handleToggleComplete = async (sectionId: string, topicId: string, isCompleted: boolean) => {
     setIsUpdating(true)
     try {
-      if (!updateTopicProgress) {
-        toast.error("Cannot update topic progress: updateTopicProgress function not provided")
-        return
-      }
-      
       const result = await updateTopicProgress({
         roadmapId,
         sectionId,
@@ -97,7 +89,27 @@ export default function RoadmapDetail({ roadmapId, initialData, updateTopicProgr
       })
 
       if (result.data) {
-        setRoadmap(result.data)
+        // Update the roadmap state with the new data
+        setRoadmap(prevRoadmap => ({
+          ...prevRoadmap,
+          sections: prevRoadmap.sections.map(section => {
+            if (section.id === sectionId) {
+              return {
+                ...section,
+                topics: section.topics.map(topic => {
+                  if (topic.id === topicId) {
+                    return {
+                      ...topic,
+                      isCompleted: !isCompleted
+                    }
+                  }
+                  return topic
+                })
+              }
+            }
+            return section
+          })
+        }))
       }
 
       toast.success(!isCompleted ? "Topic completed" : "Topic marked as incomplete")

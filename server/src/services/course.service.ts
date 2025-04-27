@@ -20,6 +20,7 @@ export class CourseService implements ICourseService {
     const courseData: Partial<ICourseDocument> = { 
       teacherId,
       teacherName,
+      
     }; 
     const course = await this._courseRepository.createCourse(courseData); 
     

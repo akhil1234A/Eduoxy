@@ -11,7 +11,6 @@ export interface IRedisClient {
   isOpen: boolean;
   connect(): Promise<void>;
   
-  // Set operations
   sAdd(key: string, member: string): Promise<number>;
   sRem(key: string, member: string): Promise<number>;
   sMembers(key: string): Promise<string[]>;
@@ -43,7 +42,6 @@ ensureRedisConnection().catch((err) => {
   console.error("Initial Redis connection failed:", err);
 });
 
-// Wrap or cast to match IRedisClient
 const redisClientWrapper: IRedisClient = {
   get: redisClient.get.bind(redisClient),
   set: redisClient.set.bind(redisClient),
@@ -53,7 +51,7 @@ const redisClientWrapper: IRedisClient = {
   connect: async () => {
     await redisClient.connect();
   },
-  // Set operations
+
   sAdd: redisClient.sAdd.bind(redisClient),
   sRem: redisClient.sRem.bind(redisClient),
   sMembers: redisClient.sMembers.bind(redisClient),
