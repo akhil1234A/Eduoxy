@@ -1,4 +1,4 @@
-FROM node:23-alpine
+FROM node:23-slim
 
 WORKDIR /app
 
@@ -7,6 +7,7 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+
 
 RUN npm run build
 
