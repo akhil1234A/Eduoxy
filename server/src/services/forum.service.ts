@@ -5,6 +5,7 @@ import TYPES from "../di/types";
 import { IForumService } from "../interfaces/forum.service";
 import { IForumRepository } from "../interfaces/forum.repository";
 import { apiLogger } from "../utils/logger";
+import mongoose from "mongoose";
 
 @injectable()
 export class ForumService implements IForumService {
@@ -47,7 +48,6 @@ export class ForumService implements IForumService {
   }
 
   async createPost(forumId: string, userId: string, userName: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
-    // Validate files
     if (files && !files.every(file => file.url && file.key)) {
       throw new Error("Invalid file metadata: url and key are required");
     }
@@ -63,7 +63,6 @@ export class ForumService implements IForumService {
   }
 
   async updatePost(postId: string, userId: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
-    // Validate files
     if (files && !files.every(file => file.url && file.key)) {
       throw new Error("Invalid file metadata: url and key are required");
     }
@@ -78,26 +77,34 @@ export class ForumService implements IForumService {
   }
 
   async getReplies(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>> {
-    return this.repository.getReplies(postId, page, pageSize);
+    return this.repository.getReplyTree(postId, page, pageSize);
   }
 
-  async createReply(postId: string, userId: string, userName: string, content: string, files: IFile[] = []): Promise<IReply> {
-    // Validate files
+  async createReply(postId: string | null, userId: string, userName: string, content: string, files: IFile[] = [], parentReplyId?: string): Promise<IReply> {
     if (files && !files.every(file => file.url && file.key)) {
       throw new Error("Invalid file metadata: url and key are required");
     }
 
+    let finalPostId = postId;
+    if (parentReplyId) {
+      const parentReply = await this.repository.getReply(parentReplyId);
+      if (!parentReply) throw new Error("Parent reply not found");
+      finalPostId = parentReply.postId;
+    }
+
+    if (!finalPostId) throw new Error("Post ID is required");
+
     return this.repository.createReply({
-      postId,
+      postId: finalPostId,
       userId,
       userName,
       content,
       files,
+      parentReplyId: parentReplyId || null,
     });
   }
 
   async updateReply(replyId: string, userId: string, content: string, files: IFile[] = []): Promise<IReply> {
-    // Validate files
     if (files && !files.every(file => file.url && file.key)) {
       throw new Error("Invalid file metadata: url and key are required");
     }

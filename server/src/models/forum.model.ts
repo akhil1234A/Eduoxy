@@ -25,6 +25,7 @@ const ReplySchema = new Schema({
   userId: { type: String, required: true },
   userName: { type: String, required: true },
   content: { type: String, required: true },
+  parentReplyId: { type: Schema.Types.ObjectId, ref: "Reply", default: null, index:true },
   files: [FileSchema],
 }, { timestamps: true });
 

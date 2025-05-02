@@ -92,8 +92,6 @@ export class ForumController {
       const { forumId } = req.params;
       const { content, topic, userId, userName, files } = req.body;
       
-
-
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
           throw new Error("Invalid file metadata: url and key are required");
@@ -178,7 +176,7 @@ export class ForumController {
   async createReply(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
-      const { content, userId, userName, files } = req.body;
+      const { content, userId, userName, files, parentReplyId } = req.body;
 
       const fileArray = files && Array.isArray(files) ? files.map(file => {
         if (!file.url || !file.key) {
@@ -193,9 +191,9 @@ export class ForumController {
         };
       }) : [];
 
-      const reply = await this._forumService.createReply(postId, userId, userName, content, fileArray);
+      const reply = await this._forumService.createReply(postId, userId, userName, content, fileArray, parentReplyId);
       
-      // Live update for others when somecreates a reply
+      // Live update for others when someone creates a reply
       const io = req.app.get('io');
       io.to(`post:${postId}`).emit('newReply', reply);
       
@@ -205,6 +203,8 @@ export class ForumController {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.FORUM.CREATE_REPLY_ERROR, (error as Error).message));
     }
   }
+
+ 
 
   async updateReply(req: Request, res: Response): Promise<void> {
     try {

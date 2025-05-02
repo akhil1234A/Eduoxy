@@ -1,33 +1,42 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ReplySchema } from "@/lib/schema";
-import { useCreateReplyMutation } from "@/state/api/forumApi";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileUpload } from "@/components/FileUpload";
-import { toast } from "sonner";
-import { IFile } from "@/types/file";
-import Cookies from "js-cookie";
+'use client';
+
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ReplySchema } from '@/lib/schema';
+import { useCreateReplyMutation } from '@/state/api/forumApi';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { FileUpload } from '@/components/FileUpload';
+import { toast } from 'sonner';
+import { IFile } from '@/types/file';
+import Cookies from 'js-cookie';
+import { Loader2 } from 'lucide-react';
 
 interface CreateReplyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   postId: string;
+  parentReplyId?: string | null;
+  level?: number;
 }
 
 interface ReplyFormData {
   content: string;
 }
 
+const MAX_REPLY_DEPTH = 1;
+
 export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
   postId,
+  parentReplyId,
+  level = 0,
 }) => {
   const [createReply, { isLoading }] = useCreateReplyMutation();
   const [files, setFiles] = useState<IFile[]>([]);
@@ -40,13 +49,22 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
     resolver: zodResolver(ReplySchema),
   });
 
+  console.log(parentReplyId, 'Parent Reply ID from props');
+  console.log(level, 'Level from props');
+
   const onSubmit = async (data: ReplyFormData) => {
     try {
-      const userId = Cookies.get("userId");
-      const userName = Cookies.get("userName");
+      const userId = Cookies.get('userId');
+      const userName = Cookies.get('userName');
 
       if (!userId || !userName) {
-        toast.error("Please sign in to create a reply");
+        toast.error('Please sign in to create a reply');
+        return;
+      }
+
+      if (level >= MAX_REPLY_DEPTH) {
+        toast.error('Maximum reply depth reached');
+        onClose();
         return;
       }
 
@@ -61,54 +79,78 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
           type: file.type,
           size: file.size,
           name: file.name,
-          publicUrl: file.publicUrl
+          publicUrl: file.publicUrl,
         })),
+        parentReplyId: parentReplyId || null,
       }).unwrap();
+
       reset();
       setFiles([]);
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error("Failed to create reply");
-      console.error("Failed to create reply:", error);
+      toast.error('Failed to create reply');
+      console.error('Failed to create reply:', error);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-customgreys-primarybg text-white">
+      <DialogContent className="bg-[#2a2b34] text-white border-[#3a3b44] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Reply</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-white">
+            {parentReplyId ? 'Add Nested Reply' : 'Add Reply'}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
-            <Label htmlFor="content">Content</Label>
-            <Textarea 
-              id="content" 
-              {...register("content")} 
-              placeholder="Enter your reply"
+            <Label htmlFor="content" className="text-sm font-medium text-[#9ca3af]">
+              Content
+            </Label>
+            <Textarea
+              id="content"
+              {...register('content')}
+              placeholder="Write your reply..."
+              className="mt-1 min-h-[120px] bg-[#1e1f26] text-white border-[#3a3b44] focus:ring-indigo-600 focus:border-indigo-600"
               required
             />
             {errors.content && (
-              <p className="text-red-500 text-sm">{errors.content.message}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.content.message}</p>
             )}
           </div>
           <div>
-            <Label>Files (Optional)</Label>
-            <FileUpload
-              files={files}
-              setFiles={setFiles}
-              maxFiles={5}
-            />
+            <Label className="text-sm font-medium text-[#9ca3af]">
+              Files (Optional, max 5)
+            </Label>
+            <div className="mt-1">
+              <FileUpload
+                files={files}
+                setFiles={setFiles}
+                maxFiles={5}
+              />
+            </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+              className="bg-[#1e1f26] text-white hover:bg-[#32333c] border-[#3a3b44]"
+              aria-label="Cancel reply"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Reply"}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              aria-label="Submit reply"
+            >
+              {isLoading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : null}
+              {isLoading ? 'Submitting...' : 'Submit Reply'}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

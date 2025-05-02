@@ -13,7 +13,7 @@ export interface IForumService {
   updatePost(postId: string, userId: string, content: string, topic: string, files?: IFile[]): Promise<IPost>;
   deletePost(postId: string, userId: string): Promise<void>;
   getReplies(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>>;
-  createReply(postId: string, userId: string, userName: string, content: string, files?: IFile[]): Promise<IReply>;
+  createReply(postId: string, userId: string, userName: string, content: string, files?: IFile[], parentReplyId?: string): Promise<IReply>;
   updateReply(replyId: string, userId: string, content: string, files?: IFile[]): Promise<IReply>;
   deleteReply(replyId: string, userId: string): Promise<void>;
 }

@@ -22,6 +22,7 @@ export interface IPost {
 export interface IReply {
   _id: string;
   postId: string;
+  parentReplyId: string | null;
   userId: string;
   userName: string;
   content: string;
@@ -30,6 +31,10 @@ export interface IReply {
   updatedAt: Date;
 }
 
+export interface IReplyTreeNode extends IReply {
+  depth: number; 
+  children: IReplyTreeNode[];
+}
 export interface IForum {
   _id: string;
   title: string;

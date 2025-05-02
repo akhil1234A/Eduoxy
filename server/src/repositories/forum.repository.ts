@@ -1,9 +1,11 @@
 import { injectable } from "inversify";
+import mongoose from "mongoose";
 import { Forum, Post, Reply } from "../models/forum.model";
-import { IForum, IPost, IReply, IPaginated, IFile } from "../interfaces/forum.model";
+import { IForum, IPost, IReply, IReplyTreeNode, IPaginated, IFile } from "../interfaces/forum.model";
 import { s3Service } from "../services/s3.service";
 import { BaseRepository } from "./base.repository";
 import { IForumRepository } from "../interfaces/forum.repository";
+import { apiLogger } from "../utils/logger";
 
 @injectable()
 export class ForumRepository extends BaseRepository<IForum> implements IForumRepository {
@@ -96,9 +98,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     try {
       const forum = await Forum.findById(post.forumId).exec();
       if (!forum) throw new Error("Forum not found");
-      // if (!forum.topics.includes(post.topic)) throw new Error("Invalid topic");
 
-      // Validate files
       if (post.files && !post.files.every((file: IFile) => file.url && file.type && file.key)) {
         throw new Error("Invalid file metadata: url, type, and key are required");
       }
@@ -117,7 +117,6 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       if (!post) throw new Error("Post not found");
       if (post.userId !== userId) throw new Error("Unauthorized to edit post");
 
-      // Delete old files from S3
       for (const file of post.files) {
         if (file.key) {
           await s3Service.deleteObject(file.key);
@@ -141,7 +140,6 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       if (!post) throw new Error("Post not found");
       if (post.userId !== userId) throw new Error("Unauthorized to delete post");
 
-      // Delete files from S3
       for (const file of post.files) {
         const key = file.key || s3Service.extractKeyFromUrl(file.url);
         if (key) await s3Service.deleteObject(key);
@@ -154,16 +152,93 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
-  async getReplies(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>> {
+  async getReplies(postId: string, page: number, pageSize: number, parentReplyId?: string): Promise<IPaginated<IReply>> {
     try {
       const skip = (page - 1) * pageSize;
+      const filter = parentReplyId ? { postId, parentReplyId: new mongoose.Types.ObjectId(parentReplyId) } : { postId, parentReplyId: null };
       const [items, total] = await Promise.all([
-        Reply.find({ postId }).sort({ createdAt: 1 }).skip(skip).limit(pageSize).lean(),
-        Reply.countDocuments({ postId }),
+        Reply.find(filter).sort({ createdAt: 1 }).skip(skip).limit(pageSize).lean(),
+        Reply.countDocuments(filter),
       ]);
       return { items: items.map(this.mapReply), total, page, pageSize };
     } catch (error) {
       throw new Error(`Failed to fetch replies: ${(error as Error).message}`);
+    }
+  }
+
+  async getReplyTree(postId: string, page: number, pageSize: number, maxDepth?: number): Promise<IPaginated<IReplyTreeNode>> {
+    try {
+      const skip = (page - 1) * pageSize;
+      const pipeline: mongoose.PipelineStage[] = [
+        {
+          $match: { postId: new mongoose.Types.ObjectId(postId), parentReplyId: null },
+        },
+        {
+          $sort: { createdAt: 1 },
+        },
+        {
+          $skip: skip,
+        },
+        {
+          $limit: pageSize,
+        },
+        {
+          $graphLookup: {
+            from: "replies",
+            startWith: "$_id",
+            connectFromField: "_id",
+            connectToField: "parentReplyId",
+            as: "children",
+            maxDepth: maxDepth || 10,
+            depthField: "depth",
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            postId: 1,
+            parentReplyId: 1,
+            userId: 1,
+            userName: 1,
+            content: 1,
+            files: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            children: {
+              $map: {
+                input: "$children",
+                as: "child",
+                in: {
+                  _id: "$$child._id",
+                  postId: "$$child.postId",
+                  parentReplyId: "$$child.parentReplyId",
+                  userId: "$$child.userId",
+                  userName: "$$child.userName",
+                  content: "$$child.content",
+                  files: "$$child.files",
+                  createdAt: "$$child.createdAt",
+                  updatedAt: "$$child.updatedAt",
+                  depth: "$$child.depth",
+                },
+              },
+            },
+          },
+        },
+        {
+          $sort: { "children.createdAt": 1 },
+        },
+      ];
+
+      const [result, total] = await Promise.all([
+        Reply.aggregate(pipeline).exec(),
+        Reply.countDocuments({ postId, parentReplyId: null }),
+      ]);
+
+      const tree = this.buildReplyTree(result);
+      return { items: tree.map(item => this.mapReplyTreeNode(item)), total, page, pageSize };
+    } catch (error) {
+      apiLogger.error(`Failed to fetch reply tree: ${(error as Error).message}`);
+      throw new Error(`Failed to fetch reply tree: ${(error as Error).message}`);
     }
   }
 
@@ -172,15 +247,27 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       const post = await Post.findById(reply.postId).exec();
       if (!post) throw new Error("Post not found");
 
-      // Validate files
+      if (reply.parentReplyId) {
+        const parentReply = await Reply.findById(reply.parentReplyId).exec();
+        if (!parentReply) throw new Error("Parent reply not found");
+        apiLogger.info(`Parent reply found: ${parentReply._id}`);
+        apiLogger.info(`Parent reply postId: ${parentReply.postId}`);
+        apiLogger.info(`Reply postId: ${reply.postId}`);
+        if (parentReply.postId.toString() !== reply.postId.toString()) throw new Error("Parent reply does not belong to the post");
+      }
+
       if (reply.files && !reply.files.every((file: IFile) => file.url && file.type && file.key)) {
         throw new Error("Invalid file metadata: url, type, and key are required");
       }
 
-      const newReply = new Reply(reply);
+      const newReply = new Reply({
+        ...reply,
+        parentReplyId: reply.parentReplyId ? new mongoose.Types.ObjectId(reply.parentReplyId) : null,
+      });
       await newReply.save();
       return this.mapReply(newReply.toObject());
     } catch (error) {
+      apiLogger.error(`Failed to create reply: ${(error as Error).message}`);
       throw new Error(`Failed to create reply: ${(error as Error).message}`);
     }
   }
@@ -189,9 +276,8 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     try {
       const reply = await Reply.findById(replyId).exec();
       if (!reply) throw new Error("Reply not found");
-      // if (reply.userId !== userId) throw new Error("Unauthorized to edit reply");
+      if (reply.userId !== userId) throw new Error("Unauthorized to edit reply");
 
-      // Delete old files from S3
       for (const file of reply.files) {
         if (file.key) {
           await s3Service.deleteObject(file.key);
@@ -214,13 +300,13 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       if (!reply) throw new Error("Reply not found");
       if (reply.userId !== userId) throw new Error("Unauthorized to delete reply");
 
-      // Delete files from S3
       for (const file of reply.files) {
         const key = file.key || s3Service.extractKeyFromUrl(file.url);
         if (key) await s3Service.deleteObject(key);
       }
 
       await Reply.deleteOne({ _id: replyId });
+      await Reply.deleteMany({ parentReplyId: replyId });
     } catch (error) {
       throw new Error(`Failed to delete reply: ${(error as Error).message}`);
     }
@@ -245,6 +331,12 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
   async deleteForum(forumId: string): Promise<void> {
     const result = await Forum.findByIdAndDelete(forumId);
     if (!result) throw new Error("Forum not found");
+  }
+
+  async getReply(replyId: string): Promise<IReply> {
+    const reply = await Reply.findById(replyId);
+    if (!reply) throw new Error("Reply not found");
+    return reply;
   }
 
   private mapForum(forum: any): IForum {
@@ -283,6 +375,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     return {
       _id: reply._id.toString(),
       postId: reply.postId.toString(),
+      parentReplyId: reply.parentReplyId ? reply.parentReplyId.toString() : null,
       userId: reply.userId,
       userName: reply.userName,
       content: reply.content,
@@ -297,5 +390,53 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       createdAt: reply.createdAt,
       updatedAt: reply.updatedAt,
     };
+  }
+
+  private mapReplyTreeNode(reply: any): IReplyTreeNode {
+    if (!reply) {
+      throw new Error("Invalid reply data");
+    }
+    return {
+      ...this.mapReply(reply),
+      depth: reply.depth || 0,
+      children: Array.isArray(reply.children) 
+        ? reply.children.map((child: any) => this.mapReplyTreeNode(child))
+        : [],
+    };
+  }
+
+  private buildReplyTree(replies: any[]): any[] {
+    const replyMap = new Map<string, any>();
+    const tree: any[] = [];
+
+    // Initialize all replies with empty children arrays
+    replies.forEach(reply => {
+      replyMap.set(reply._id.toString(), {
+        ...reply,
+        children: reply.children || [],
+        depth: reply.depth || 0
+      });
+    });
+
+    // Build tree by linking children to parents
+    replyMap.forEach(reply => {
+      if (reply.parentReplyId) {
+        const parent = replyMap.get(reply.parentReplyId.toString());
+        if (parent) {
+          parent.children.push(reply);
+        }
+      } else {
+        tree.push(reply);
+      }
+    });
+
+    // Sort children by createdAt
+    replyMap.forEach(reply => {
+      if (reply.children.length > 0) {
+        reply.children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+    });
+
+    return tree;
   }
 }

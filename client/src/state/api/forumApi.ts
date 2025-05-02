@@ -2,7 +2,6 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { customBaseQuery } from "./baseQuery";
 import { IFile } from "@/types/file";
 
-
 export interface CreateForumRequest {
   userId: string;
   title: string;
@@ -51,6 +50,16 @@ export interface CreateReplyRequest {
   userName: string;
   content: string;
   files?: IFile[];
+  parentReplyId?: string | null;
+}
+
+export interface CreateNestedReplyRequest {
+  postId: string;
+  parentReplyId: string;
+  userId: string;
+  userName: string;
+  content: string;
+  files?: IFile[];
 }
 
 export interface UpdateReplyRequest {
@@ -65,10 +74,16 @@ export interface DeleteReplyRequest {
   userId: string;
 }
 
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
 export const forumApi = createApi({
   reducerPath: "forumApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Forum", "Post", "Reply"],
+  tagTypes: ["Forum", "Post", "Reply", "ReplyTree"],
   endpoints: (builder) => ({
     getForums: builder.query<ApiResponse<IPaginated<IForum>>, { page: number; pageSize: number; query?: string }>({
       query: ({ page, pageSize, query }) => ({
@@ -121,22 +136,38 @@ export const forumApi = createApi({
         method: "DELETE",
         body: { userId },
       }),
-      invalidatesTags: ["Post"],
+      invalidatesTags: ["Post", "Reply", "ReplyTree"],
     }),
-    getReplies: builder.query<ApiResponse<IPaginated<IReply>>, { postId: string; page: number; pageSize: number }>({
+    getReplies: builder.query<ApiResponse<IPaginated<IReplyTreeNode>>, { postId: string; page: number; pageSize: number }>({
       query: ({ postId, page, pageSize }) => ({
         url: `/forums/posts/${postId}/replies?page=${page}&pageSize=${pageSize}`,
         method: "GET",
       }),
-      providesTags: ["Reply"],
+      providesTags: (result, error, { postId }) => [{ type: "Reply", id: postId }, { type: "ReplyTree", id: postId }],
     }),
     createReply: builder.mutation<ApiResponse<IReply>, CreateReplyRequest>({
-      query: ({ postId, userId, userName, content, files }) => ({
+      query: ({ postId, userId, userName, content, files, parentReplyId }) => ({
         url: `/forums/posts/${postId}/replies`,
+        method: "POST",
+        body: { userId, userName, content, files, parentReplyId },
+      }),
+      invalidatesTags: (result, error, { postId, parentReplyId }) => [
+        { type: "Reply" as const, id: postId },
+        { type: "ReplyTree" as const, id: postId },
+        ...(parentReplyId ? [{ type: "Reply" as const, id: `${postId}-${parentReplyId}` }] : []),
+      ],
+    }),
+    createNestedReply: builder.mutation<ApiResponse<IReply>, CreateNestedReplyRequest>({
+      query: ({ postId, parentReplyId, userId, userName, content, files }) => ({
+        url: `/forums/replies/${postId}/${parentReplyId}/replies`,
         method: "POST",
         body: { userId, userName, content, files },
       }),
-      invalidatesTags: ["Reply"],
+      invalidatesTags: (result, error, { postId, parentReplyId }) => [
+        { type: "Reply", id: postId },
+        { type: "ReplyTree", id: postId },
+        { type: "Reply", id: `${postId}-${parentReplyId}` },
+      ],
     }),
     updateReply: builder.mutation<ApiResponse<IReply>, UpdateReplyRequest>({
       query: ({ replyId, userId, content, files }) => ({
@@ -144,7 +175,10 @@ export const forumApi = createApi({
         method: "PUT",
         body: { userId, content, files },
       }),
-      invalidatesTags: ["Reply"],
+      invalidatesTags: (result, error, { replyId }) => [
+        { type: "Reply", id: replyId },
+        { type: "ReplyTree" },
+      ],
     }),
     deleteReply: builder.mutation<ApiResponse<null>, DeleteReplyRequest>({
       query: ({ replyId, userId }) => ({
@@ -152,7 +186,10 @@ export const forumApi = createApi({
         method: "DELETE",
         body: { userId },
       }),
-      invalidatesTags: ["Reply"],
+      invalidatesTags: (result, error, { replyId }) => [
+        { type: "Reply", id: replyId },
+        { type: "ReplyTree" },
+      ],
     }),
     getForum: builder.query<ApiResponse<IForum>, string>({
       query: (forumId) => ({
@@ -193,6 +230,7 @@ export const {
   useDeletePostMutation,
   useGetRepliesQuery,
   useCreateReplyMutation,
+  useCreateNestedReplyMutation,
   useUpdateReplyMutation,
   useDeleteReplyMutation,
 } = forumApi;

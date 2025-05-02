@@ -376,9 +376,15 @@ declare global {
     userName: string;
     content: string;
     files: IFile[];
+    parentReplyId: string | null;
     createdAt: string;
     updatedAt: string;
   }
+
+  
+export interface IReplyTreeNode extends IReply {
+  children: IReplyTreeNode[];
+}
   
   export interface IForum {
     _id: string;

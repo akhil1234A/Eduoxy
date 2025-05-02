@@ -12,8 +12,9 @@ export interface IForumRepository {
   createPost(data: Partial<IPost>): Promise<IPost>;
   updatePost(postId: string, userId: string, content: string, topic: string, files: IFile[]): Promise<IPost>;
   deletePost(postId: string, userId: string): Promise<void>;
-  getReplies(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>>;
+  getReplyTree(postId: string, page: number, pageSize: number): Promise<IPaginated<IReply>>;
   createReply(data: Partial<IReply>): Promise<IReply>;
   updateReply(replyId: string, userId: string, content: string, files: IFile[]): Promise<IReply>;
   deleteReply(replyId: string, userId: string): Promise<void>;
+  getReply(replyId: string): Promise<IReply>;
 }
