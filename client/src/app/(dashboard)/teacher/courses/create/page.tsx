@@ -1,39 +1,36 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { CustomFormField } from '@/components/CustomFormField';
-import Header from '@/components/Header';
-import { Button } from '@/components/ui/button';
-import { Form } from '@/components/ui/form';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useAppDispatch, useAppSelector } from '@/state/redux';
 import { courseSchema, CourseFormData } from '@/lib/schema';
 import { createCourseFormData, uploadAllVideos, updateS3Resource } from '@/lib/utils';
+import { useCreateCourseMutation } from '@/state/api/coursesApi';
 import { openSectionModal, setSections, setCourseId } from '@/state';
-import { useGetCourseQuery, useUpdateCourseMutation } from '@/state/api/coursesApi';
-import { useAppDispatch, useAppSelector } from '@/state/redux';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Plus, Upload } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+import { Form } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { CustomFormField } from '@/components/CustomFormField';
+import Header from '@/components/Header';
 import DroppableComponent from '@/components/Droppable';
-import ChapterModal from '@/components/ChapterModal';
 import SectionModal from '@/components/SectionModal';
+import ChapterModal from '@/components/ChapterModal';
 import Image from 'next/image';
+import { Upload, ArrowLeft, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 
-const CourseEditor = () => {
+const CourseCreator = () => {
   const router = useRouter();
-  const params = useParams();
-  const id = params.id as string;
-  const { data, isLoading } = useGetCourseQuery(id);
-  const [updateCourse] = useUpdateCourseMutation();
+  const dispatch = useAppDispatch();
+  const [createCourse] = useCreateCourseMutation();
   const [imagePreview, setImagePreview] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
-
-  const course = useMemo(() => data?.data as Course || ({} as Course), [data?.data]);
-
-  const dispatch = useAppDispatch();
   const sections = useAppSelector((state) => state.global.courseEditor.sections) || [];
+  const userId = Cookies.get('userId');
+  const userName = Cookies.get('userName');
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
@@ -47,22 +44,6 @@ const CourseEditor = () => {
     },
   });
 
-  useEffect(() => {
-    if (course && course.title) {
-      methods.reset({
-        courseTitle: course.title || '',
-        courseDescription: course.description || '',
-        courseCategory: course.category || '',
-        coursePrice: course.price?.toString() || '0',
-        courseStatus: course.status === 'Published' ? 'Published' : 'Draft',
-        courseImage: course.image || '',
-      });
-      setImagePreview(course.image || '');
-      dispatch(setSections(course.sections || []));
-      dispatch(setCourseId(id));
-    }
-  }, [course, methods, dispatch, id]);
-
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -73,7 +54,7 @@ const CourseEditor = () => {
 
     setIsUploading(true);
     try {
-      const { publicUrl, key } = await updateS3Resource(course.image, file, 'image');
+      const { publicUrl, key } = await updateS3Resource('', file, 'image');
       methods.setValue('courseImage', publicUrl);
       setImagePreview(publicUrl);
       setUploadedKeys((prev) => [...prev, key]);
@@ -81,8 +62,8 @@ const CourseEditor = () => {
     } catch (error) {
       console.error('Image upload error:', error);
       toast.error('Failed to upload image');
-      methods.setValue('courseImage', course.image || '');
-      setImagePreview(course.image || '');
+      methods.setValue('courseImage', '');
+      setImagePreview('');
     } finally {
       setIsUploading(false);
     }
@@ -114,13 +95,18 @@ const CourseEditor = () => {
   };
 
   const onSubmit = async (data: CourseFormData) => {
-    try {
-      if (isUploading) {
-        toast.error('Please wait for the image to finish uploading');
-        return;
-      }
+    if (!userId || !userName) {
+      toast.error('Please sign in to create a course');
+      return;
+    }
 
-      toast.loading('Uploading videos and updating course...');
+    if (isUploading) {
+      toast.error('Please wait for the image to finish uploading');
+      return;
+    }
+
+    try {
+      toast.loading('Uploading videos and creating course...');
       const updatedSections = await uploadAllVideos(sections);
       const formData = await createCourseFormData(
         {
@@ -130,22 +116,24 @@ const CourseEditor = () => {
         },
         updatedSections
       );
-      
+      formData.append('teacherId', userId);
+      formData.append('teacherName', userName);
 
-      await updateCourse({ courseId: id, formData }).unwrap();
-
+     
+      await createCourse(formData).unwrap();
       toast.dismiss();
-      toast.success('Course updated successfully!');
+      toast.success('Course created successfully!');
       setUploadedKeys([]);
-      router.push('/teacher/courses', { scroll: false });
+      dispatch(setSections([]));
+      dispatch(setCourseId(''));
+      router.push(`/teacher/courses`, { scroll: false });
     } catch (error) {
-      console.error('Failed to update course:', error);
-      toast.error('Failed to update course');
+      console.error('Failed to create course:', error);
+      toast.dismiss();
+      toast.error('Failed to create course');
       await cleanupUploadedFiles();
     }
   };
-
-  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div>
@@ -162,39 +150,26 @@ const CourseEditor = () => {
       <Form {...methods}>
         <form onSubmit={methods.handleSubmit(onSubmit)}>
           <Header
-            title="Course Setup"
-            subtitle={
-              course?.status === 'Unlisted'
-                ? 'This course is unlisted by an admin and cannot be edited until re-published.'
-                : 'Complete all fields and save your course'
-            }
+            title="Create New Course"
+            subtitle="Complete all fields to create your course"
             rightElement={
               <div className="flex items-center space-x-4">
-                {course?.status === 'Unlisted' ? (
-                  <span className="text-sm text-gray-500">
-                    Unlisted (Admin Controlled)
-                  </span>
-                ) : (
-                  <>
-                    <CustomFormField
-                      name="courseStatus"
-                      label={methods.watch('courseStatus') === 'Published' ? 'Published' : 'Draft'}
-                      type="switch"
-                      className="flex items-center space-x-2"
-                      labelClassName={`text-sm font-medium ${
-                        methods.watch('courseStatus') === 'Published' ? 'text-green-500' : 'text-yellow-500'
-                      }`}
-                      inputClassName="data-[state=checked]:bg-green-500"
-                      disabled={course?.status !== 'Published' && course?.status !== 'Draft'}
-                    />
-                    <Button
-                      type="submit"
-                      className="bg-primary-700 hover:bg-primary-600"
-                    >
-                      {methods.watch('courseStatus') === 'Published' ? 'Update Published Course' : 'Save Draft'}
-                    </Button>
-                  </>
-                )}
+                <CustomFormField
+                  name="courseStatus"
+                  label={methods.watch('courseStatus') === 'Published' ? 'Published' : 'Draft'}
+                  type="switch"
+                  className="flex items-center space-x-2"
+                  labelClassName={`text-sm font-medium ${
+                    methods.watch('courseStatus') === 'Published' ? 'text-green-500' : 'text-yellow-500'
+                  }`}
+                  inputClassName="data-[state=checked]:bg-green-500"
+                />
+                <Button
+                  type="submit"
+                  className="bg-primary-700 hover:bg-primary-600"
+                >
+                  {methods.watch('courseStatus') === 'Published' ? 'Publish Course' : 'Save Draft'}
+                </Button>
               </div>
             }
           />
@@ -213,7 +188,6 @@ const CourseEditor = () => {
                       onChange={handleImageChange}
                       className="hidden"
                       id="course-image"
-                      disabled={course?.status === 'Unlisted'}
                     />
                     <label
                       htmlFor="course-image"
@@ -248,14 +222,12 @@ const CourseEditor = () => {
                   type="text"
                   placeholder="Write course title here"
                   className="border-none"
-                  disabled={course?.status === 'Unlisted'}
                 />
                 <CustomFormField
                   name="courseDescription"
                   label="Course Description"
                   type="textarea"
                   placeholder="Write course description here"
-                  disabled={course?.status === 'Unlisted'}
                 />
                 <CustomFormField
                   name="courseCategory"
@@ -268,14 +240,12 @@ const CourseEditor = () => {
                     { value: 'Machine Learning', label: 'Machine Learning' },
                     { value: 'CyberSecurity', label: 'CyberSecurity' },
                   ]}
-                  disabled={course?.status === 'Unlisted'}
                 />
                 <CustomFormField
                   name="coursePrice"
                   label="Course Price"
                   type="number"
                   placeholder="0"
-                  disabled={course?.status === 'Unlisted'}
                 />
               </div>
             </div>
@@ -291,7 +261,6 @@ const CourseEditor = () => {
                   size="sm"
                   onClick={() => dispatch(openSectionModal({ sectionIndex: null }))}
                   className="border-none text-primary-700 group"
-                  disabled={course?.status === 'Unlisted'}
                 >
                   <Plus className="mr-1 h-4 w-4 text-primary-700 group-hover:white-100" />
                   <span className="text-primary-700 group-hover:white-100">
@@ -300,9 +269,7 @@ const CourseEditor = () => {
                 </Button>
               </div>
 
-              {isLoading ? (
-                <p>Loading course content...</p>
-              ) : sections.length > 0 ? (
+              {sections.length > 0 ? (
                 <DroppableComponent />
               ) : (
                 <p>No sections available</p>
@@ -318,4 +285,4 @@ const CourseEditor = () => {
   );
 };
 
-export default CourseEditor;
+export default CourseCreator;

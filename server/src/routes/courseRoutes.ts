@@ -19,7 +19,7 @@ router.put("/:courseId/publish", authenticateUser, authorizeRoles("admin"), cour
 
 //Teacher
 router.get("/teacher", authenticateUser, authorizeRoles("teacher"), courseController.listTeacherCourses.bind(courseController));
-router.post("/", authenticateUser, authorizeRoles("teacher"), courseController.createCourse.bind(courseController));
+router.post("/", authenticateUser, authorizeRoles("teacher"), upload.single("image"),courseController.createCourse.bind(courseController));
 router.get("/:courseId", courseController.getCourse.bind(courseController));
 router.put(
   "/:courseId",

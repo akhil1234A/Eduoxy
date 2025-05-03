@@ -2,7 +2,7 @@ import { ICourseDocument } from "../models/course.model";
 import { CourseCreationInput, IInitialCoursesResponse } from "../types/types";
 
 export interface ICourseService {
-  createCourse(teacherId: string, teacherName: string): Promise<ICourseDocument>;
+  createCourse(courseData: Partial<ICourseDocument>): Promise<ICourseDocument>;
   getCourse(courseId: string): Promise<ICourseDocument | null>;
   listPublicCourses(category?: string, page?: number, limit?: number): Promise<IInitialCoursesResponse>;
   listAdminCourses(category?: string, page?: number, limit?: number): Promise<IInitialCoursesResponse>;

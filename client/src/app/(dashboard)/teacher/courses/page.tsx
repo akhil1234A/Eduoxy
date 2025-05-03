@@ -1,21 +1,16 @@
-"use client";
+'use client';
 
-import Header from "@/components/Header";
-import Loading from "@/components/Loading";
-import TeacherCourseCard from "@/components/TeacherCourseCard";
-import Toolbar from "@/components/Toolbar";
-import { Button } from "@/components/ui/button";
-import {
-  useCreateCourseMutation,
-  useDeleteCourseMutation,
-  useGetTeacherCoursesQuery,
-} from "@/state/api/coursesApi";
-import { useRouter, useSearchParams } from "next/navigation";
-import React, { useMemo, useState, Suspense } from "react";
-import { toast } from "sonner";
-import Cookies from "js-cookie";
+import Header from '@/components/Header';
+import Loading from '@/components/Loading';
+import TeacherCourseCard from '@/components/TeacherCourseCard';
+import Toolbar from '@/components/Toolbar';
+import { Button } from '@/components/ui/button';
+import { useGetTeacherCoursesQuery, useDeleteCourseMutation } from '@/state/api/coursesApi';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useMemo, useState, Suspense } from 'react';
+import { toast } from 'sonner';
+import Cookies from 'js-cookie';
 
-// Add export for dynamic rendering
 export const dynamic = 'force-dynamic';
 
 const Courses = () => {
@@ -29,22 +24,21 @@ const Courses = () => {
 const CoursesContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "10", 10);
-  const userId = Cookies.get("userId");
-  const userName = Cookies.get("userName");
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '10', 10);
+  const userId = Cookies.get('userId');
 
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
 
-  const {
-    data,
-    isLoading,
-    isError,
-  } = useGetTeacherCoursesQuery({ category: selectedCategory, page, limit });
+  const { data, isLoading, isError } = useGetTeacherCoursesQuery({
+    category: selectedCategory,
+    page,
+    limit,
+  });
 
-  const [createCourse] = useCreateCourseMutation();
   const [deleteCourse] = useDeleteCourseMutation();
+
 
   const coursesData = useMemo(
     () => data?.data || { courses: [], total: 0, page: 1, limit: 10, totalPages: 0 },
@@ -56,7 +50,7 @@ const CoursesContent = () => {
   const filteredCourses = useMemo(() => {
     return courses.filter((course) => {
       const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === "all" || course.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
   }, [courses, searchTerm, selectedCategory]);
@@ -66,30 +60,23 @@ const CoursesContent = () => {
   };
 
   const handleDelete = async (course: Course) => {
-    if (window.confirm("Are you sure you want to delete this course?")) {
+    if (window.confirm('Are you sure you want to delete this course?')) {
       try {
         await deleteCourse(course.courseId).unwrap();
-        toast.success("Course deleted successfully!");
+        toast.success('Course deleted successfully!');
       } catch (error) {
         const errorMessage = error as Error;
-        toast.error(errorMessage.message || "Failed to delete course");
+        toast.error(errorMessage.message || 'Failed to delete course');
       }
     }
   };
 
-  const handleCreateCourse = async () => {
-    if (!userId) return;
-
-    try {
-      await createCourse({
-        teacherId: userId,
-        teacherName: userName || "Unknown Teacher",
-      }).unwrap();
-      toast.success("Course created successfully!");
-    } catch (error) {
-      const errorMessage = error as Error;
-      toast.error(errorMessage.message || "Failed to create course");
+  const handleCreateCourse = () => {
+    if (!userId) {
+      toast.error('Please sign in to create a course');
+      return;
     }
+    router.push('/teacher/courses/create', { scroll: false });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -107,7 +94,7 @@ const CoursesContent = () => {
   const handleSearchChange = (newSearchTerm: string) => {
     setSearchTerm(newSearchTerm);
     const query = new URLSearchParams({
-      page: "1",
+      page: '1',
       limit: limit.toString(),
       q: newSearchTerm,
       category: selectedCategory,
@@ -118,7 +105,7 @@ const CoursesContent = () => {
   const handleCategoryChange = (newCategory: string) => {
     setSelectedCategory(newCategory);
     const query = new URLSearchParams({
-      page: "1",
+      page: '1',
       limit: limit.toString(),
       q: searchTerm,
       category: newCategory,
@@ -139,7 +126,7 @@ const CoursesContent = () => {
       />
       {isLoading ? (
         <Loading />
-      ) : isError || (!filteredCourses.length && !searchTerm && selectedCategory === "all") ? (
+      ) : isError || (!filteredCourses.length && !searchTerm && selectedCategory === 'all') ? (
         <div className="text-center py-10 text-gray-500">No courses found.</div>
       ) : (
         <>

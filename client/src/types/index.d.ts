@@ -23,13 +23,16 @@ declare global {
     image?: string;
     price?: number; 
     level: "Beginner" | "Intermediate" | "Advanced";
-    status: "Draft" | "Published" | "Unlisted";
+    status: CourseStatus;
     sections: Section[];
     enrollments?: Array<{
       userId: string;
       studentName: string
     }>;
   }
+
+  type CourseStatus = 'Draft' | 'Published' | 'Unlisted';
+
 
   interface Enrollment {
     userId: string;
