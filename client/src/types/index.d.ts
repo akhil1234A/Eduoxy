@@ -254,12 +254,14 @@ declare global {
     user?: IUser;
   }
 
-  export interface AdminDasboard {
+  export interface AdminDashboardData {
     totalRevenue: number
     activeCourses: number
     totalEnrollments: number
     totalUsers: number
     recentTransactions: RecentTransactionAdmin[]
+    revenueGraph: { labels: string[]; data: number[] };
+    topCourses: { name: string; revenue: number; enrollments: number }[];
     pagination: {
       total: number;
       page: number;
@@ -276,12 +278,14 @@ declare global {
     amount: number
   }
   
-  export interface TeacherDasboard {
+  export interface TeacherDashboardData {
     totalEarnings: number
     totalStudents: number
     totalCourses: number
     pendingCourses: number
     recentEnrollments: RecentEnrollmentTeacher[]
+    revenueGraph: { labels: string[]; data: number[] };
+    topCourses: { name: string; revenue: number; enrollments: number }[];
     pagination: {
       total: number;
       page: number;
@@ -291,6 +295,7 @@ declare global {
   }
   
   export interface RecentEnrollmentTeacher extends Record<string, unknown> {
+    transactionId: string
     studentName: string
     courseName: string
     date: string
