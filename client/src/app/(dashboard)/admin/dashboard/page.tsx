@@ -1,166 +1,79 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, Suspense } from "react";
-import Header from "@/components/Header";
-import DynamicTable from "@/components/DynamicTable";
-import { useGetAdminDashboardQuery } from "@/state/redux"
-import { toast } from "sonner";
-import { useRouter, useSearchParams } from "next/navigation";
-import { format } from "date-fns";
-import { DateRangePicker } from "@/components/DateRangePicker";
+import React, { Suspense } from 'react';
+import Header from '@/components/Header';
+import DynamicTable from '@/components/DynamicTable';
+import DashboardGraphs from '@/components/DashboardGraphs';
+import { useGetAdminDashboardQuery } from '@/state/redux';
+import { toast } from 'sonner';
+import { DateRangePicker } from '@/components/DateRangePicker';
+import { useDashboard } from '@/hooks/useDashboard';
 
 
 
 const AdminDashboardContent = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "10", 10);
-  const searchTerm = searchParams.get("q") || "";
-  const dateFilterType = (searchParams.get("dateFilterType") || "") as "week" | "month" | "custom" | "";
-  const startDate = searchParams.get("startDate") || "";
-  const endDate = searchParams.get("endDate") || "";
-  
-  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
-  const [selectedDateRange, setSelectedDateRange] = useState<{
-    startDate: Date | null;
-    endDate: Date | null;
-  }>({
-    startDate: startDate ? new Date(startDate) : null,
-    endDate: endDate ? new Date(endDate) : null,
-  });
-  
+  const {
+    page,
+    limit,
+    dateFilterType,
+    startDate,
+    endDate,
+    tableDateFilterType,
+    tableStartDate,
+    tableEndDate,
+    localSearchTerm,
+    debouncedSearchTerm,
+    selectedDateRange,
+    tableSelectedDateRange,
+    handleSearchChange,
+    handlePageChange,
+    handleDateFilterChange,
+    handleTableDateFilterChange,
+    handleCustomDateRangeChange,
+    handleTableCustomDateRangeChange,
+  } = useDashboard('/admin/dashboard');
+
   const { data, isLoading, isError } = useGetAdminDashboardQuery({
     page,
     limit,
     dateFilterType: dateFilterType || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
+    tableDateFilterType: tableDateFilterType || undefined,
+    tableStartDate: tableStartDate || undefined,
+    tableEndDate: tableEndDate || undefined,
   });
 
-  const dashboardData = data?.data as AdminDasboard | undefined;
+  const dashboardData = data?.data as AdminDashboardData | undefined;
   const {
     totalRevenue = 0,
     activeCourses = 0,
     totalEnrollments = 0,
     totalUsers = 0,
     recentTransactions = [],
+    revenueGraph = { labels: [], data: [] },
+    topCourses = [],
     pagination = { total: 0, page: 1, limit: 10, totalPages: 0 },
   } = dashboardData || {};
 
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(localSearchTerm);
-      // Only update URL when debounced search term changes
-      if (localSearchTerm !== searchTerm) {
-        updateUrlParams({ q: localSearchTerm, page: "1" });
-      }
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localSearchTerm, searchTerm]);
-
   if (isError) {
-    toast.error("Failed to fetch admin dashboard data");
+    toast.error('Failed to fetch admin dashboard data');
   }
 
   const columns = [
-    { key: "transactionId", label: "Transaction ID" },
-    { key: "date", label: "Date" },
-    { key: "courseName", label: "Course" },
-    { key: "studentName", label: "Student" },
+    { key: 'transactionId', label: 'Transaction ID' },
+    { key: 'date', label: 'Date' },
+    { key: 'courseName', label: 'Course' },
+    { key: 'studentName', label: 'Student' },
     {
-      key: "amount",
-      label: "Amount",
+      key: 'amount',
+      label: 'Amount',
       render: (value: unknown) => `₹${(value as number).toFixed(2)}`,
     },
   ];
 
-  const handleSearchChange = (value: string) => {
-    // Update local state immediately for responsive UI
-    setLocalSearchTerm(value);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1) {
-      updateUrlParams({ page: newPage.toString() });
-    }
-  };
-
-  const handleDateFilterChange = (type: 'week' | 'month' | 'custom' | '') => {
-    if (type === '') {
-      // Clear date filter
-      updateUrlParams({ 
-        dateFilterType: '', 
-        startDate: '', 
-        endDate: '',
-        page: '1'
-      });
-      setSelectedDateRange({ startDate: null, endDate: null });
-      return;
-    }
-
-    const now = new Date();
-    let startDate = '';
-    let endDate = '';
-
-    if (type === 'week') {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(now.getDate() - 7);
-      startDate = format(weekAgo, 'yyyy-MM-dd');
-      endDate = format(now, 'yyyy-MM-dd');
-      setSelectedDateRange({ startDate: weekAgo, endDate: now });
-    } else if (type === 'month') {
-      const monthAgo = new Date(now);
-      monthAgo.setMonth(now.getMonth() - 1);
-      startDate = format(monthAgo, 'yyyy-MM-dd');
-      endDate = format(now, 'yyyy-MM-dd');
-      setSelectedDateRange({ startDate: monthAgo, endDate: now });
-    }
-
-    updateUrlParams({ 
-      dateFilterType: type, 
-      startDate, 
-      endDate,
-      page: '1'
-    });
-  };
-
-  const handleCustomDateRangeChange = (startDate: Date | null, endDate: Date | null) => {
-    setSelectedDateRange({ startDate, endDate });
-    
-    if (startDate && endDate) {
-      updateUrlParams({ 
-        dateFilterType: 'custom', 
-        startDate: format(startDate, 'yyyy-MM-dd'), 
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        page: '1'
-      });
-    }
-  };
-
-  const updateUrlParams = (params: Record<string, string>) => {
-    const currentParams = new URLSearchParams(searchParams.toString());
-    
-    // Update or add new parameters
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        currentParams.set(key, value);
-      } else {
-        currentParams.delete(key);
-      }
-    });
-    
-    router.push(`/admin/dashboard?${currentParams.toString()}`, { scroll: false });
-  };
-
-  // Filter transactions based on search term
   const filteredTransactions = recentTransactions.filter((item: RecentTransactionAdmin) => {
     if (!debouncedSearchTerm) return true;
-    
     const searchLower = debouncedSearchTerm.toLowerCase();
     return (
       item.transactionId.toLowerCase().includes(searchLower) ||
@@ -172,91 +85,202 @@ const AdminDashboardContent = () => {
   return (
     <div className="admin-dashboard w-full h-full bg-[#1B1C22] text-white min-h-screen py-8 px-4 md:px-6">
       <Header title="Admin Dashboard" subtitle="Platform Overview" />
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
-          <h3 className="text-lg font-semibold">Total Revenue</h3>
-          <p className="text-2xl mt-2">₹{totalRevenue.toFixed(2)}</p>
-        </div>
-        <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
-          <h3 className="text-lg font-semibold">Active Courses</h3>
-          <p className="text-2xl mt-2">{activeCourses}</p>
-        </div>
-        <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
-          <h3 className="text-lg font-semibold">Enrollments</h3>
-          <p className="text-2xl mt-2">{totalEnrollments}</p>
-        </div>
-        <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
-          <h3 className="text-lg font-semibold">Users</h3>
-          <p className="text-2xl mt-2">{totalUsers}</p>
-        </div>
-      </div>
-      <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h3 className="text-xl font-semibold mb-4 md:mb-0">Recent Transactions</h3>
-          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-            <div className="flex gap-2">
-              <button 
-                onClick={() => handleDateFilterChange('')}
-                className={`px-3 py-1 rounded ${!dateFilterType ? 'bg-blue-600' : 'bg-gray-700'}`}
-              >
-                All
-              </button>
-              <button 
-                onClick={() => handleDateFilterChange('week')}
-                className={`px-3 py-1 rounded ${dateFilterType === 'week' ? 'bg-blue-600' : 'bg-gray-700'}`}
-              >
-                Week
-              </button>
-              <button 
-                onClick={() => handleDateFilterChange('month')}
-                className={`px-3 py-1 rounded ${dateFilterType === 'month' ? 'bg-blue-600' : 'bg-gray-700'}`}
-              >
-                Month
-              </button>
-              <button 
-                onClick={() => handleDateFilterChange('custom')}
-                className={`px-3 py-1 rounded ${dateFilterType === 'custom' ? 'bg-blue-600' : 'bg-gray-700'}`}
-              >
-                Custom
-              </button>
-            </div>
-            {dateFilterType === 'custom' && (
-              <DateRangePicker
-                startDate={selectedDateRange.startDate}
-                endDate={selectedDateRange.endDate}
-                onChange={handleCustomDateRangeChange}
-              />
-            )}
+      {isLoading ? (
+        <div className="animate-pulse">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
+                <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 mb-8">
+            <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+            <div className="h-64 bg-gray-700 rounded"></div>
+          </div>
+          <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
+            <div className="h-6 bg-gray-700 rounded w-1/4 mb-4"></div>
+            <div className="h-96 bg-gray-700 rounded"></div>
           </div>
         </div>
-        <DynamicTable<RecentTransactionAdmin>
-          items={filteredTransactions}
-          columns={columns}
-          searchTerm={localSearchTerm}
-          onSearchChange={handleSearchChange}
-          isLoading={isLoading}
-          rowKeyExtractor={(item) => item.transactionId as string}
-          filterFn={(item, term) =>
-            [item.transactionId, item.courseName, item.studentName].some((field) =>
-              String(field).toLowerCase().includes(term.toLowerCase())
-            )
-          }
-          searchPlaceholder="Search transactions..."
-          noResultsComponent={<div className="p-3 text-center text-gray-400">No recent transactions</div>}
-          total={pagination.total}
-          page={pagination.page}
-          limit={pagination.limit}
-          totalPages={pagination.totalPages}
-          onPageChange={handlePageChange}
-        />
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 hover:bg-[#35363F] transition-colors">
+              <h3 className="text-lg font-semibold text-gray-300">Total Revenue</h3>
+              <p className="text-2xl mt-2 text-blue-400">₹{totalRevenue.toFixed(2)}</p>
+            </div>
+            <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 hover:bg-[#35363F] transition-colors">
+              <h3 className="text-lg font-semibold text-gray-300">Active Courses</h3>
+              <p className="text-2xl mt-2 text-blue-400">{activeCourses}</p>
+            </div>
+            <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 hover:bg-[#35363F] transition-colors">
+              <h3 className="text-lg font-semibold text-gray-300">Enrollments</h3>
+              <p className="text-2xl mt-2 text-blue-400">{totalEnrollments}</p>
+            </div>
+            <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 hover:bg-[#35363F] transition-colors">
+              <h3 className="text-lg font-semibold text-gray-300">Users</h3>
+              <p className="text-2xl mt-2 text-blue-400">{totalUsers}</p>
+            </div>
+          </div>
+          <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700 mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-200 mb-4 sm:mb-0">Analytics</h3>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDateFilterChange('')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      !dateFilterType ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Show all data"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => handleDateFilterChange('day')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      dateFilterType === 'day' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter by last 30 days"
+                  >
+                    Day
+                  </button>
+                  <button
+                    onClick={() => handleDateFilterChange('week')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      dateFilterType === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter by last week"
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => handleDateFilterChange('month')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      dateFilterType === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter by last month"
+                  >
+                    Month
+                  </button>
+                  <button
+                    onClick={() => handleDateFilterChange('custom')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      dateFilterType === 'custom' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Select custom date range"
+                  >
+                    Custom
+                  </button>
+                </div>
+                {dateFilterType === 'custom' && (
+                  <DateRangePicker
+                    startDate={selectedDateRange.startDate}
+                    endDate={selectedDateRange.endDate}
+                    onChange={handleCustomDateRangeChange}
+                  />
+                )}
+              </div>
+            </div>
+            <DashboardGraphs
+              revenueGraph={revenueGraph}
+              topCourses={topCourses}
+              isTeacher={false}
+              dateFilterType={dateFilterType}
+            />
+          </div>
+          <div className="bg-[#2D2E36] p-6 rounded-lg shadow-md border border-gray-700">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-200 mb-4 sm:mb-0">Recent Transactions</h3>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleTableDateFilterChange('')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      !tableDateFilterType ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Show all transactions"
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => handleTableDateFilterChange('day')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tableDateFilterType === 'day' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter transactions by last 30 days"
+                  >
+                    Day
+                  </button>
+                  <button
+                    onClick={() => handleTableDateFilterChange('week')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tableDateFilterType === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter transactions by last week"
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => handleTableDateFilterChange('month')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tableDateFilterType === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Filter transactions by last month"
+                  >
+                    Month
+                  </button>
+                  <button
+                    onClick={() => handleTableDateFilterChange('custom')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      tableDateFilterType === 'custom' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                    aria-label="Select custom date range for transactions"
+                  >
+                    Custom
+                  </button>
+                </div>
+                {tableDateFilterType === 'custom' && (
+                  <DateRangePicker
+                    startDate={tableSelectedDateRange.startDate}
+                    endDate={tableSelectedDateRange.endDate}
+                    onChange={handleTableCustomDateRangeChange}
+                  />
+                )}
+              </div>
+            </div>
+            <DynamicTable<RecentTransactionAdmin>
+              items={filteredTransactions}
+              columns={columns}
+              searchTerm={localSearchTerm}
+              onSearchChange={handleSearchChange}
+              isLoading={isLoading}
+              rowKeyExtractor={(item) => item.transactionId as string}
+              filterFn={(item, term) =>
+                [item.transactionId, item.courseName, item.studentName].some((field) =>
+                  String(field).toLowerCase().includes(term.toLowerCase())
+                )
+              }
+              searchPlaceholder="Search transactions..."
+              noResultsComponent={<div className="p-3 text-center text-gray-400">No recent transactions</div>}
+              total={pagination.total}
+              page={pagination.page}
+              limit={pagination.limit}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
 const AdminDashboard = () => {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="text-white text-center py-8">Loading...</div>}>
       <AdminDashboardContent />
     </Suspense>
   );

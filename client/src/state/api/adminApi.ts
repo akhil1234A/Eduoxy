@@ -7,26 +7,25 @@ export const adminApi = createApi({
   tagTypes: ["Dashboard", "Students", "Teachers"],
   endpoints: (builder) => ({
     getStudents: builder.query<
-  ApiResponse<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>,
-  { page?: number; limit?: number; searchTerm?: string }
->({
-  query: ({ page = 1, limit = 10, searchTerm = "" } = {}) => ({
-    url: "/admin/students",
-    params: { page, limit, q: searchTerm },
-  }),
-  providesTags: ["Students"],
-}),
-
-getTeachers: builder.query<
-  ApiResponse<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>,
-  { page?: number; limit?: number; searchTerm?: string }
->({
-  query: ({ page = 1, limit = 10, searchTerm = "" } = {}) => ({
-    url: "/admin/teachers",
-    params: { page, limit, q: searchTerm },
-  }),
-  providesTags: ["Teachers"],
-}),
+      ApiResponse<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>,
+      { page?: number; limit?: number; searchTerm?: string }
+    >({
+      query: ({ page = 1, limit = 10, searchTerm = "" } = {}) => ({
+        url: "/admin/students",
+        params: { page, limit, q: searchTerm },
+      }),
+      providesTags: ["Students"],
+    }),
+    getTeachers: builder.query<
+      ApiResponse<{ users: IUser[]; total: number; page: number; limit: number; totalPages: number }>,
+      { page?: number; limit?: number; searchTerm?: string }
+    >({
+      query: ({ page = 1, limit = 10, searchTerm = "" } = {}) => ({
+        url: "/admin/teachers",
+        params: { page, limit, q: searchTerm },
+      }),
+      providesTags: ["Teachers"],
+    }),
     blockUser: builder.mutation<void, string>({
       query: (userId) => ({
         url: `/admin/users/${userId}/block`,
@@ -40,49 +39,79 @@ getTeachers: builder.query<
       }),
     }),
     getAdminDashboard: builder.query<
-      ApiResponse<AdminDasboard>, 
-      { 
-        page?: number; 
-        limit?: number; 
-        dateFilterType?: 'week' | 'month' | 'custom'; 
-        startDate?: string; 
+      ApiResponse<AdminDasboard>,
+      {
+        page?: number;
+        limit?: number;
+        dateFilterType?: 'day' | 'week' | 'month' | 'custom';
+        startDate?: string;
         endDate?: string;
+        tableDateFilterType?: 'day' | 'week' | 'month' | 'custom';
+        tableStartDate?: string;
+        tableEndDate?: string;
       }
     >({
-      query: ({ page = 1, limit = 10, dateFilterType, startDate, endDate } = {}) => ({
+      query: ({
+        page = 1,
+        limit = 10,
+        dateFilterType,
+        startDate,
+        endDate,
+        tableDateFilterType,
+        tableStartDate,
+        tableEndDate,
+      } = {}) => ({
         url: "/dashboard/admin",
         method: "GET",
-        params: { 
-          page, 
-          limit, 
-          dateFilterType, 
-          startDate, 
-          endDate 
+        params: {
+          page,
+          limit,
+          dateFilterType,
+          startDate,
+          endDate,
+          tableDateFilterType,
+          tableStartDate,
+          tableEndDate,
         },
       }),
       providesTags: ["Dashboard"],
     }),
-
     getTeacherDashboard: builder.query<
-      ApiResponse<TeacherDasboard>, 
-      { 
-        teacherId: string; 
-        page?: number; 
-        limit?: number; 
-        dateFilterType?: 'week' | 'month' | 'custom'; 
-        startDate?: string; 
+      ApiResponse<TeacherDasboard>,
+      {
+        teacherId: string;
+        page?: number;
+        limit?: number;
+        dateFilterType?: 'day' | 'week' | 'month' | 'custom';
+        startDate?: string;
         endDate?: string;
+        tableDateFilterType?: 'day' | 'week' | 'month' | 'custom';
+        tableStartDate?: string;
+        tableEndDate?: string;
       }
     >({
-      query: ({ teacherId, page = 1, limit = 10, dateFilterType, startDate, endDate }) => ({
+      query: ({
+        teacherId,
+        page = 1,
+        limit = 10,
+        dateFilterType,
+        startDate,
+        endDate,
+        tableDateFilterType,
+        tableStartDate,
+        tableEndDate,
+      }) => ({
         url: `/dashboard/teacher/${teacherId}`,
         method: "GET",
-        params: { 
-          page, 
-          limit, 
-          dateFilterType, 
-          startDate, 
-          endDate 
+        params: {
+          page,
+          limit,
+          dateFilterType,
+          startDate,
+          endDate,
+          tableDateFilterType,
+          tableStartDate,
+          tableEndDate,
         },
       }),
       providesTags: ["Dashboard"],
