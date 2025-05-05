@@ -39,7 +39,7 @@ export const adminApi = createApi({
       }),
     }),
     getAdminDashboard: builder.query<
-      ApiResponse<AdminDasboard>,
+      ApiResponse<AdminDashboardData>,
       {
         page?: number;
         limit?: number;
@@ -77,7 +77,7 @@ export const adminApi = createApi({
       providesTags: ["Dashboard"],
     }),
     getTeacherDashboard: builder.query<
-      ApiResponse<TeacherDasboard>,
+      ApiResponse<TeacherDashboardData>,
       {
         teacherId: string;
         page?: number;
