@@ -8,7 +8,7 @@ import redisClient from "../config/redis";
 import { CourseService } from "../services/course.service";
 import { CourseController } from "../controllers/course.controller";
 import { CourseRepository } from "../repositories/course.repository";
-import { MailService } from "../utils/mail";
+import { MailService } from "../services/mail.service";
 import { JwtService } from "../utils/jwt";
 import Course, { ICourseDocument } from "../models/course.model";
 import TYPES from "./types";
@@ -19,7 +19,7 @@ import { IAuthService } from "../interfaces/auth.service";
 import { IAdminService } from "../interfaces/admin.service";
 import { ICourseService } from "../interfaces/course.service";
 import { ICourseRepository } from "../interfaces/course.repository";
-import { IMailService } from "../utils/mail";
+import { IMailService } from "../services/mail.service";
 import { IJwtService } from "../utils/jwt";
 import { IRedisClient } from "../config/redis";
 import User from "../models/user.model";
@@ -77,6 +77,7 @@ import { ReviewService } from "../services/review.service";
 import { IReviewService } from "../interfaces/review.service";
 import { IReviewRepository } from "../interfaces/review.repository";
 import { ForumController } from "../controllers/forum.controller";
+import { EmailTemplateService } from "../utils/templates";
 
 const container = new Container();
 
@@ -127,7 +128,7 @@ container.bind<IForumService>(TYPES.IForumService).toDynamicValue(() => {
   );
 }).inSingletonScope();
 container.bind<IRoadmapService>(TYPES.IRoadmapService).to(RoadmapService).inSingletonScope();
-
+container.bind<EmailTemplateService>(TYPES.IEmailTemplateService).to(EmailTemplateService).inSingletonScope();
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
 container.bind<AdminController>(TYPES.IAdminController).to(AdminController).inSingletonScope();

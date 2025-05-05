@@ -5,184 +5,127 @@ import path from "path";
 
 const logDir = path.join(__dirname, "../logs");
 if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir);
+  fs.mkdirSync(logDir, { recursive: true });
 }
 
-// List of sensitive fields to redact
+// Sensitive fields to redact
 const SENSITIVE_FIELDS = [
-  'password',
-  'idToken',
-  'accessToken',
-  'refreshToken',
-  'token',
-  'authorization',
-  'cookie',
-  'set-cookie',
-  'authorization',
-  'x-auth-token',
-  'x-access-token',
-  'x-refresh-token',
-  'x-api-key',
-  'api-key',
-  'secret',
-  'privateKey',
-  'creditCard',
-  'cvv',
-  'ssn',
-  'socialSecurityNumber',
-  'bankAccount',
-  'routingNumber',
+  "password",
+  "idToken",
+  "accessToken",
+  "refreshToken",
+  "token",
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "x-auth-token",
+  "x-access-token",
+  "x-refresh-token",
+  "x-api-key",
+  "api-key",
+  "secret",
+  "privateKey",
+  "creditCard",
+  "cvv",
+  "ssn",
+  "socialSecurityNumber",
+  "bankAccount",
+  "routingNumber",
 ];
 
-// Helper function to sanitize sensitive data
+// Sanitize sensitive data
 const sanitizeData = (data: any, seen = new WeakMap()): any => {
-  if (!data || typeof data !== 'object') return data;
+  if (!data || typeof data !== "object") return data;
 
-  // Handle circular references
-  if (seen.has(data)) {
-    return '[Circular Reference]';
-  }
-
-  // Handle Mongoose documents
-  if (data._doc) {
-    seen.set(data, true);
-    return sanitizeData(data._doc, seen);
-  }
-
-  if (Array.isArray(data)) {
-    seen.set(data, true);
-    return data.map(item => sanitizeData(item, seen));
-  }
-
+  if (seen.has(data)) return "[Circular]";
   seen.set(data, true);
+
+  if (data._doc) return sanitizeData(data._doc, seen);
+  if (Array.isArray(data)) return data.map((item) => sanitizeData(item, seen));
+
   const sanitized: any = {};
   for (const [key, value] of Object.entries(data)) {
-    // Skip Mongoose internal properties
-    if (key.startsWith('$') || key === '__v' || key === '_id') {
-      continue;
-    }
-    
-    if (SENSITIVE_FIELDS.includes(key.toLowerCase())) {
-      sanitized[key] = '[REDACTED]';
-    } else if (typeof value === 'object' && value !== null) {
-      sanitized[key] = sanitizeData(value, seen);
-    } else {
-      sanitized[key] = value;
-    }
+    if (key.startsWith("$") || key === "__v" || key === "_id") continue;
+    sanitized[key] = SENSITIVE_FIELDS.includes(key.toLowerCase())
+      ? "[REDACTED]"
+      : typeof value === "object" && value !== null
+      ? sanitizeData(value, seen)
+      : value;
   }
   return sanitized;
 };
 
-// Custom format for console output
+// Console format: concise and readable
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.colorize(),
-  winston.format.printf(({ timestamp, level, message, ...metadata }) => {
-    // Handle cases where message might be an object
-    const messageStr = typeof message === 'object' ? JSON.stringify(sanitizeData(message)) : message;
-    let msg = `[${timestamp}] ${level}: ${messageStr}`;
-    
-    // Only add metadata if it's not empty and not already part of the message
-    if (Object.keys(metadata).length > 0 && typeof message !== 'object') {
-      const metaString = JSON.stringify(sanitizeData(metadata), null, 2);
-      msg += `\n${metaString}`;
-    }
-    return msg;
+  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    const msg = `[${timestamp}] ${level}: ${message}`;
+    return Object.keys(meta).length ? `${msg} ${JSON.stringify(sanitizeData(meta))}` : msg;
   })
 );
 
-// Custom format for file output
+// File format: structured JSON for parsing
 const fileFormat = winston.format.combine(
-  winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-  winston.format.json()
+  winston.format.timestamp(),
+  winston.format.json({ replacer: (key, value) => sanitizeData(value) })
 );
 
+// Logger instance
 export const apiLogger = winston.createLogger({
+  level: "info",
   format: fileFormat,
   transports: [
-    new winston.transports.Console({
-      level: "debug",
-      format: consoleFormat,
-    }),
+    new winston.transports.Console({ format: consoleFormat }),
     new DailyRotateFile({
-      filename: path.join(logDir, "api-info-%DATE%.log"),
+      filename: path.join(logDir, "api-%DATE%.log"),
       datePattern: "YYYY-MM-DD",
       maxSize: "10m",
-      maxFiles: "7d",
+      maxFiles: "14d",
       zippedArchive: true,
-      level: "info",
-      format: fileFormat,
     }),
     new DailyRotateFile({
-      filename: path.join(logDir, "api-error-%DATE%.log"),
+      filename: path.join(logDir, "error-%DATE%.log"),
       datePattern: "YYYY-MM-DD",
       maxSize: "10m",
-      maxFiles: "7d",
+      maxFiles: "14d",
       zippedArchive: true,
       level: "error",
-      format: fileFormat,
     }),
   ],
 });
 
-// Helper methods for structured logging
+// Structured logging helpers
 export const logRequest = (req: any) => {
-  // Sanitize headers
-  const sanitizedHeaders = { ...req.headers };
-  SENSITIVE_FIELDS.forEach(field => {
-    if (sanitizedHeaders[field]) {
-      sanitizedHeaders[field] = '[REDACTED]';
-    }
-  });
-
-  apiLogger.info("Incoming Request", {
+  apiLogger.info("HTTP Request", {
     method: req.method,
     url: req.url,
     ip: req.ip,
-    userAgent: req.headers["user-agent"],
     userId: req.user?.userId || "anonymous",
-    userName: req.user?.userName || "anonymous",
-    userType: req.user?.userType || "anonymous",
-    body: sanitizeData(req.body),
     query: sanitizeData(req.query),
-    headers: sanitizedHeaders,
   });
 };
 
 export const logResponse = (req: any, res: any, duration: number) => {
-  // Sanitize response headers
-  const sanitizedHeaders = { ...res.getHeaders() };
-  SENSITIVE_FIELDS.forEach(field => {
-    if (sanitizedHeaders[field]) {
-      sanitizedHeaders[field] = '[REDACTED]';
-    }
-  });
-
-  apiLogger.info("Request Completed", {
+  apiLogger.info("HTTP Response", {
     method: req.method,
     url: req.url,
-    statusCode: res.statusCode,
-    duration: `${duration}ms`,
+    status: res.statusCode,
+    duration_ms: duration,
     userId: req.user?.userId || "anonymous",
-    userName: req.user?.userName || "anonymous",
-    userType: req.user?.userType || "anonymous",
-    responseHeaders: sanitizedHeaders,
   });
 };
 
 export const logError = (error: any, req?: any) => {
-  apiLogger.error("Error Occurred", {
-    error: {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    },
-    request: req ? {
-      method: req.method,
-      url: req.url,
-      userId: req.user?.userId || "anonymous",
-      userName: req.user?.userName || "anonymous",
-      userType: req.user?.userType || "anonymous",
-    } : undefined,
+  apiLogger.error("Error", {
+    message: error.message,
+    stack: error.stack,
+    request: req
+      ? {
+          method: req.method,
+          url: req.url,
+          userId: req.user?.userId || "anonymous",
+        }
+      : undefined,
   });
 };

@@ -24,6 +24,8 @@ const TYPES = {
   IForumService: Symbol.for("IForumService"),
   IRoadmapService: Symbol.for("IRoadmapService"),
   IReviewService: Symbol.for("IReviewService"),
+  IEmailTemplateService: Symbol.for("IEmailTemplateService"),
+
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
   IAdminController: Symbol.for("IAdminController"),

@@ -1,15 +1,15 @@
 import bcrypt from "bcryptjs";
 import { IAuthService } from "../interfaces/auth.service";
 import { IUserRepository } from "../interfaces/user.repository";
-import { IRedisClient } from "../config/redis"; 
-import { IMailService } from "../utils/mail"; 
-import { IJwtService } from "../utils/jwt"; 
+import { IRedisClient } from "../config/redis";
+import { IMailService } from "./mail.service"; 
+import { IJwtService } from "../utils/jwt";
 import { UserResponse, AuthTokens, LoginResponse, UserRole } from "../types/types";
 import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 import { injectable, inject } from "inversify";
-import TYPES from "../di/types"
-import { User } from "@clerk/express";
+import TYPES from "../di/types";
+
 @injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -30,10 +30,11 @@ export class AuthService implements IAuthService {
       password: hashedPassword,
       userType: userType as UserRole,
       isVerified: false,
-      isBlocked:false,
+      isBlocked: false,
     });
 
     await this.sendOtp(email);
+    await this._mailService.sendWelcomeEmail(email, name);
 
     return {
       id: user.id,
@@ -99,7 +100,7 @@ export class AuthService implements IAuthService {
     const accessToken = this._jwtService.generateAccessToken(user.id, user.userType);
     const refreshToken = this._jwtService.generateRefreshToken(user.id, user.userType);
     await this._redisClient.set(`refresh_token:${user.id}`, refreshToken, { EX: 7 * 24 * 60 * 60 });
-    await this._redisClient.del(`otp:${email}`); 
+    await this._redisClient.del(`otp:${email}`);
     const userResponse: UserResponse = {
       id: user.id,
       name: user.name,
@@ -107,7 +108,7 @@ export class AuthService implements IAuthService {
       userType: user.userType as UserRole,
       isVerified: user.isVerified,
     };
-    return { accessToken, refreshToken, user:userResponse };
+    return { accessToken, refreshToken, user: userResponse };
   }
 
   async logout(userId: string, accessToken: string): Promise<void> {
@@ -137,6 +138,7 @@ export class AuthService implements IAuthService {
           isVerified: true,
           isBlocked: false,
         });
+        await this._mailService.sendWelcomeEmail(email, name);
       }
     }
 
@@ -145,7 +147,6 @@ export class AuthService implements IAuthService {
 
     const accessToken = this._jwtService.generateAccessToken(user.id, user.userType);
     const refreshToken = this._jwtService.generateRefreshToken(user.id, user.userType);
-
 
     await this._redisClient.set(`refresh_token:${user.id}`, refreshToken, { EX: 7 * 24 * 60 * 60 });
 
@@ -170,12 +171,7 @@ export class AuthService implements IAuthService {
     await this._redisClient.set(resetTokenKey, resetToken, { EX: 15 * 60 });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
-    const emailBody = `
-      To reset your password, click the link below:\n
-      ${resetUrl}\n
-      This link expires in 15 minutes. If you didn’t request this, ignore this email.
-    `;
-    await this._mailService.sendOtpEmail(email, emailBody, "Password Reset Request");
+    await this._mailService.sendPasswordResetEmail(email, resetUrl);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
