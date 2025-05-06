@@ -2,13 +2,15 @@ FROM node:23-slim
 
 WORKDIR /app
 
+COPY dist/ dist/
 COPY package.json package-lock.json ./
+COPY node_modules/ node_modules/
 
-RUN npm install
+# RUN npm install
 
-COPY . .
+# COPY . .
 
-RUN npm run build
+# RUN npm run build
 
 EXPOSE 8000
 
