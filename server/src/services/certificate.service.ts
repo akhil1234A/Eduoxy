@@ -1,0 +1,81 @@
+import { injectable, inject } from "inversify";
+import TYPES from "../di/types";
+import { ICertificateRepository } from "../interfaces/certificate.repository";
+import { ICertificate } from "../models/certificate.model";
+import { s3Service } from "./s3.service";
+import PDFDocument from "pdfkit";
+import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+import { ICertificateService } from "../interfaces/certificate.service";
+
+
+
+@injectable()
+export class CertificateService implements ICertificateService {
+  constructor(
+    @inject(TYPES.ICertificateRepository) private _certificateRepository: ICertificateRepository,
+   
+  ) {}
+
+  async generateCertificate(userId: string, courseId: string, courseName: string): Promise<ICertificate> {
+    const certificateId = `EDUOXY-${format(new Date(), "yyyyMMdd")}-${uuidv4().slice(0, 6).toUpperCase()}`;
+    const fileName = `${certificateId}.pdf`;
+    
+    // Generate PDF
+    const doc = new PDFDocument({
+      size: "A4",
+      layout: "landscape",
+      info: { Title: `Certificate of Completion - ${courseName}` },
+    });
+    const buffers: Buffer[] = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => {});
+
+    // Design certificate
+    doc.fontSize(36).text("Certificate of Completion", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(24).text(`This certifies that`, { align: "center" });
+    doc.moveDown();
+    doc.fontSize(30).text(`[User Name]`, { align: "center" }); 
+    doc.moveDown();
+    doc.fontSize(20).text(`has successfully completed the course`, { align: "center" });
+    doc.moveDown();
+    doc.fontSize(28).text(courseName, { align: "center" });
+    doc.moveDown(2);
+    doc.fontSize(16).text(`Issued on ${format(new Date(), "MMMM d, yyyy")}`, { align: "center" });
+    doc.moveDown();
+    doc.fontSize(14).text(`Certificate ID: ${certificateId}`, { align: "center" });
+    doc.end();
+
+    const pdfBuffer = Buffer.concat(await new Promise<Buffer[]>((resolve) => doc.on("end", () => resolve(buffers))));
+
+    // Upload to S3
+    
+    const { publicUrl } = await s3Service.uploadFile(
+        pdfBuffer,
+        fileName,
+        "application/pdf",
+        "certificates",
+    )
+
+
+    const certificate: Partial<ICertificate> = {
+      userId,
+      courseId,
+      courseName,
+      certificateUrl: publicUrl,
+      issuedAt: new Date(),
+      certificateId,
+    };
+
+    return await this._certificateRepository.create(certificate);
+  }
+
+  async getUserCertificates(userId: string, page: number, limit: number): Promise<{ certificates: ICertificate[]; total: number }> {
+    return await this._certificateRepository.findByUserId(userId, page, limit);
+  }
+
+  async getCertificateById(certificateId: string): Promise<ICertificate | null> {
+    return await this._certificateRepository.findByCertificateId(certificateId);
+  }
+}
