@@ -9,7 +9,6 @@ import { IDashboardService } from "../interfaces/dashboard.service";
 import {
   format,
   subDays,
-  subMonths,
   startOfDay,
   endOfDay,
   eachDayOfInterval,
@@ -24,6 +23,9 @@ import {
 } from "date-fns";
 import { UserRole, CourseStatus } from "../types/types";
 import { CacheUtil } from "../utils/cache";
+import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
+import { ICertificateRepository } from "../interfaces/certificate.repository";
+import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
 
 @injectable()
 export class DashboardService implements IDashboardService {
@@ -34,7 +36,10 @@ export class DashboardService implements IDashboardService {
     @inject(TYPES.ITransactionRepository) private _transactionRepository: ITransactionRepository,
     @inject(TYPES.ICourseRepository) private _courseRepository: ICourseRepository,
     @inject(TYPES.IUserRepository) private _userRepository: IUserRepository,
-    @inject(TYPES.IAuthService) private _authService: IAuthService
+    @inject(TYPES.IAuthService) private _authService: IAuthService,
+    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository,
+    @inject(TYPES.ICertificateRepository) private _certificateRepository: ICertificateRepository,
+    @inject(TYPES.TimeTrackingRepository) private _timeTrackingRepository: TimeTrackingRepository
   ) {}
 
   private getDateRange(dateFilter?: {
@@ -138,7 +143,6 @@ export class DashboardService implements IDashboardService {
     let data: number[] = [];
 
     if (dateFilter?.type === "week") {
-      // Weekly revenue
       const weeks = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
       labels = weeks.map((week) => format(week, "MMM dd, yyyy"));
       data = weeks.map((week) => {
@@ -156,7 +160,6 @@ export class DashboardService implements IDashboardService {
           );
       });
     } else if (dateFilter?.type === "month") {
-      // Monthly revenue
       const months = eachMonthOfInterval({ start, end });
       labels = months.map((month) => format(month, "MMM yyyy"));
       data = months.map((month) => {
@@ -174,7 +177,6 @@ export class DashboardService implements IDashboardService {
           );
       });
     } else {
-      // Daily revenue (for "day" or "custom")
       const days = eachDayOfInterval({ start, end });
       labels = days.map((day) => format(day, "MMM dd, yyyy"));
       data = days.map((day) => {
@@ -347,6 +349,80 @@ export class DashboardService implements IDashboardService {
     };
 
     await CacheUtil.set(cacheKey, result, this._CACHE_TTL);
+    return result;
+  }
+
+  async getUserDashboard(userId: string): Promise<any> {
+  
+
+    const [coursesWithProgress, certificates, totalTimeSpent] = await Promise.all([
+      this._userCourseProgressRepository.getEnrolledCoursesWithProgress(userId, 0, 100),
+      this._certificateRepository.findByUserId(userId, 1, 100),
+      this._timeTrackingRepository.getTotalTimeSpent(userId),
+    ]);
+
+    const enrolledCourses = await Promise.all(
+      coursesWithProgress.map(async ({ course, progress }) => {
+        const courseTimeSpent = await this._timeTrackingRepository.getTotalTimeSpent(userId, course.courseId);
+        return {
+          courseId: course.courseId,
+          title: course.title || "Unknown",
+          progress: Number((progress?.overallProgress || 0).toFixed(2)),
+          completed: progress?.overallProgress === 100,
+          lastAccessed: progress?.lastAccessedTimestamp || new Date().toISOString(),
+          enrollmentDate: progress?.enrollmentDate || new Date().toISOString(),
+          timeSpent: {
+            hours: Math.floor(courseTimeSpent / 3600),
+            minutes: Math.floor((courseTimeSpent % 3600) / 60),
+          },
+        };
+      })
+    );
+
+    const timeSpent = {
+      hours: Math.floor(totalTimeSpent / 3600),
+      minutes: Math.floor((totalTimeSpent % 3600) / 60),
+    };
+
+    const completedChapters = coursesWithProgress.reduce((total: number, { progress }: any) => {
+      if (!progress) return total;
+      return (
+        total +
+        progress.sections.reduce((sectionTotal: number, section: any) => {
+          return sectionTotal + section.chapters.filter((chapter: any) => chapter.completed).length;
+        }, 0)
+      );
+    }, 0);
+
+    const certificatesEarned = certificates.certificates.map((cert: any) => ({
+      certificateId: cert.certificateId,
+      courseId: cert.courseId,
+      courseName: cert.courseName,
+      certificateUrl: cert.certificateUrl,
+      issuedAt: cert.issuedAt,
+    }));
+
+    const result = {
+      timeSpent,
+      completedChapters,
+      certificatesEarned: certificatesEarned.length,
+      certificates: certificatesEarned,
+      enrolledCourses: {
+        startLearning: enrolledCourses
+          .filter((course: any) => course.progress === 0 && !course.completed)
+          .sort((a: any, b: any) => new Date(b.enrollmentDate).getTime() - new Date(a.enrollmentDate).getTime())
+          .slice(0, 3),
+        continueLearning: enrolledCourses
+          .filter((course: any) => course.progress > 0 && !course.completed)
+          .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
+          .slice(0, 3),
+        completedCourses: enrolledCourses
+          .filter((course: any) => course.completed)
+          .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()),
+      },
+    };
+
+   
     return result;
   }
 }

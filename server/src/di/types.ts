@@ -1,3 +1,6 @@
+import { Certificate } from "../models/certificate.model";
+import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
+
 const TYPES = {
   //Repositories
   IUserRepository: Symbol.for("IUserRepository"),
@@ -9,6 +12,8 @@ const TYPES = {
   IForumRepository: Symbol.for("IForumRepository"),
   IRoadmapRepository: Symbol.for("IRoadmapRepository"),
   IReviewRepository: Symbol.for("IReviewRepository"),
+  ICertificateRepository: Symbol.for("ICertificateRepository"),
+  TimeTrackingRepository: Symbol.for("TimeTrackingRepository"),
 
 
   //Services
@@ -25,6 +30,8 @@ const TYPES = {
   IRoadmapService: Symbol.for("IRoadmapService"),
   IReviewService: Symbol.for("IReviewService"),
   IEmailTemplateService: Symbol.for("IEmailTemplateService"),
+  ICertificateService: Symbol.for("ICertificateService"),
+  ITimeTrackingService: Symbol.for("ITimeTrackingService"),
 
   //Controllers
   IAuthController: Symbol.for("IAuthController"),
@@ -39,6 +46,8 @@ const TYPES = {
   IRoadmapController: Symbol.for("IRoadmapController"),
   ReviewController: Symbol.for("ReviewController"),
   IForumController: Symbol.for("IForumController"),
+  ICertificateController: Symbol.for("ICertificateController"),
+  ITimeTrackingController: Symbol.for("ITimeTrackingController"),
 
   //Utils
   IMailService: Symbol.for("IMailService"),
@@ -54,8 +63,9 @@ const TYPES = {
   LiveClassModel: Symbol.for("LiveClassModel"),
   RoadmapModel: Symbol.for("RoadmapModel"),
   ReviewModel: Symbol.for("ReviewModel"),
-
+  CertificateModel: Symbol.for("CertificateModel"),
   ReviewService: Symbol.for("ReviewService"),
+  UserTimeTrackingModel: Symbol.for("UserTimeTrackingModel"),
 };
 
 export default TYPES;

@@ -254,6 +254,32 @@ declare global {
     user?: IUser;
   }
 
+interface TimeSpent {
+  hours: number;
+  minutes: number;
+}
+
+interface DashboardCourseCard {
+  courseId: string;
+  title: string;
+  progress: number;
+  completed: boolean;
+  lastAccessed: string;
+  enrollmentDate: string;
+  timeSpent: TimeSpent;
+}
+  interface UserDashboardData {
+  timeSpent: TimeSpent;
+  completedChapters: number;
+  certificatesEarned: number;
+  certificates: Certificate[];
+  enrolledCourses: {
+    startLearning: { courseId: string; title: string; progress: number; completed: boolean; lastAccessed: string; enrollmentDate: string, timeSpent: TimeSpent }[];
+    continueLearning: { courseId: string; title: string; progress: number; completed: boolean; lastAccessed: string; enrollmentDate: string, timeSpent: TimeSpent }[];
+    completedCourses: { courseId: string; title: string; progress: number; completed: boolean; lastAccessed: string; enrollmentDate: string, timeSpent: TimeSpent}[];
+  };
+  }
+
   export interface AdminDashboardData {
     totalRevenue: number
     activeCourses: number
@@ -409,6 +435,37 @@ export interface IReplyTreeNode extends IReply {
     page: number;
     pageSize: number;
   }
+
+  interface UserCertificatesResponse { 
+    certificates: Certificate[]; 
+    total: number; 
+    page: number; 
+    limit: number; 
+    totalPages: number }
+  
+
+  export interface Certificate {
+    certificateId: string;
+    userId: string;
+    courseId: string;
+    courseName: string;
+    certificateUrl: string;
+    issuedAt: string;
+  }
+  
+  export interface GenerateCertificateRequest {
+    userId: string;
+    courseId: string;
+    courseName: string;
+  }
+  
+  export interface TimeTrackingRequest {
+    userId: string;
+    courseId: string;
+    chapterId: string;
+    timeSpentSeconds: number;
+  }
+  
   
 }
 

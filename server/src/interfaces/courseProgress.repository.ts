@@ -6,4 +6,6 @@ export interface IUserCourseProgressRepository {
   countUserEnrolledCourses(userId: string): Promise<number>;
   getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null>;
   saveUserCourseProgress(progress: IUserCourseProgress): Promise<IUserCourseProgress>;
+  getEnrolledCoursesWithProgress(userId: string, skip: number, limit: number): Promise<{ course: ICourseDocument; progress: IUserCourseProgress | null }[]>;
+  isCourseCompleted(userId: string, courseId: string): Promise<boolean>;
 }

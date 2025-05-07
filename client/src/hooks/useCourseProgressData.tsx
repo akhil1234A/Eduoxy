@@ -1,19 +1,26 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Cookies from "js-cookie";
 import {
   useGetCourseQuery,
   useGetUserCourseProgressQuery,
   useUpdateUserCourseProgressMutation,
+  useGetUserCertificatesQuery,
+  useLogTimeSpentMutation,
+  useGetTotalTimeSpentQuery,
 } from "@/state/redux";
 
 export const useCourseProgressData = (propCourseId?: string) => {
   const { courseId: paramCourseId, chapterId } = useParams();
-  const courseId = propCourseId || (paramCourseId as string) || ""; 
+  const courseId = propCourseId || (paramCourseId as string) || "";
   const [hasMarkedComplete, setHasMarkedComplete] = useState(false);
+  const [lastTimeUpdate, setLastTimeUpdate] = useState<number>(0);
+  const [totalTimeSpent, setTotalTimeSpent] = useState<number>(0);
+  const timeAccumulated = useRef<number>(0);
   const [updateProgress] = useUpdateUserCourseProgressMutation();
+  const [logTimeSpent] = useLogTimeSpentMutation();
 
   const userId = Cookies.get("userId") || null;
 
@@ -34,9 +41,29 @@ export const useCourseProgressData = (propCourseId?: string) => {
   );
   const userProgress = useMemo(() => userProgressResponse?.data || null, [userProgressResponse]);
 
+  const {
+    data: certificatesResponse,
+    isLoading: certificatesLoading,
+  } = useGetUserCertificatesQuery(
+    { userId: userId ?? "", page: 1, limit: 10 },
+    { skip: !userId }
+  );
+  const certificate = useMemo(
+    () => certificatesResponse?.data?.certificates.find((cert: Certificate) => cert.courseId === courseId) || null,
+    [certificatesResponse, courseId]
+  );
+
+  const {
+    data: timeSpentResponse,
+    isLoading: timeLoading,
+  } = useGetTotalTimeSpentQuery(
+    { userId: userId ?? "", courseId },
+    { skip: !userId || !courseId }
+  );
+
   const isLoading = useMemo(
-    () => courseLoading || progressLoading || courseFetching || progressFetching,
-    [courseLoading, progressLoading, courseFetching, progressFetching]
+    () => courseLoading || progressLoading || courseFetching || progressFetching || certificatesLoading || timeLoading,
+    [courseLoading, progressLoading, courseFetching, progressFetching, certificatesLoading, timeLoading]
   );
 
   useEffect(() => {
@@ -63,6 +90,12 @@ export const useCourseProgressData = (propCourseId?: string) => {
     }
   }, [isLoading, course, userId, userProgress, updateProgress, courseId]);
 
+  useEffect(() => {
+    if (timeSpentResponse?.data?.totalSeconds) {
+      setTotalTimeSpent(timeSpentResponse.data.totalSeconds);
+    }
+  }, [timeSpentResponse]);
+
   const currentSection = useMemo(
     () => course?.sections?.find((s: Section) => s.chapters.some((c: Chapter) => c.chapterId === chapterId)) || null,
     [course, chapterId]
@@ -79,6 +112,13 @@ export const useCourseProgressData = (propCourseId?: string) => {
     const section = userProgress.sections.find((s: SectionProgress) => s.sectionId === currentSection.sectionId);
     return section?.chapters.some((c: ChapterProgress) => c.chapterId === currentChapter.chapterId && c.completed) ?? false;
   };
+
+  const isCourseCompleted = useMemo(() => {
+    if (!userProgress?.sections) return false;
+    return userProgress.sections.every((section: SectionProgress) =>
+      section.chapters.every((chapter: ChapterProgress) => chapter.completed)
+    ) && userProgress.overallProgress === 100;
+  }, [userProgress]);
 
   const updateChapterProgress = (sectionId: string, chapterId: string, completed: boolean) => {
     if (!userId) return;
@@ -102,6 +142,39 @@ export const useCourseProgressData = (propCourseId?: string) => {
     });
   };
 
+  const handleLogTimeSpent = useCallback(async (timeSpentSeconds: number) => {
+    if (!userId || !courseId || !currentChapter?.chapterId || currentChapter.type !== "Video") return;
+    try {
+      await logTimeSpent({
+        userId,
+        courseId,
+        chapterId: currentChapter.chapterId,
+        timeSpentSeconds,
+      }).unwrap();
+      setTotalTimeSpent((prev) => prev + timeSpentSeconds);
+    } catch (err) {
+      console.error("Failed to log time:", err);
+    }
+  }, [userId, courseId, currentChapter, logTimeSpent]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (timeAccumulated.current >= 5) {
+        handleLogTimeSpent(timeAccumulated.current);
+        timeAccumulated.current = 0;
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [handleLogTimeSpent]);
+
+  const handleVideoProgress = ({ playedSeconds }: { playedSeconds: number }) => {
+    const timeDiff = playedSeconds - lastTimeUpdate;
+    if (timeDiff >= 1) {
+      timeAccumulated.current += timeDiff;
+      setLastTimeUpdate(playedSeconds);
+    }
+  };
+
   return {
     userId,
     courseId,
@@ -112,8 +185,12 @@ export const useCourseProgressData = (propCourseId?: string) => {
     currentChapter,
     isLoading,
     isChapterCompleted,
+    isCourseCompleted,
     updateChapterProgress,
     hasMarkedComplete,
     setHasMarkedComplete,
+    certificate,
+    totalTimeSpent,
+    handleVideoProgress,
   };
 };

@@ -13,4 +13,6 @@ export interface IDashboardService {
     dateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string },
     tableDateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string }
   ): Promise<any>;
+
+  getUserDashboard(userId:string): Promise<any>;
 }

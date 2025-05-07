@@ -96,6 +96,9 @@ export const RESPONSE_MESSAGES = {
     TEACHER_ERROR: "Error retrieving teacher dashboard",
 
     TEACHER_ID_REQUIRED: "Teacher ID is required",
+    USER_SUCCESS: "Successfully retrieved user dashboard data",
+    USER_ERROR: "Failed to retrieve user dashboard data",
+    USER_ID_REQUIRED: "User ID is required",
   },
   LIVE_CLASS: {
     CREATE_SUCCESS: "Live class created successfully",
@@ -195,5 +198,12 @@ export const RESPONSE_MESSAGES = {
     UPDATE_REPLY_ERROR: "Error updating reply",
     DELETE_REPLY_SUCCESS: "Reply deleted successfully",
     DELETE_REPLY_ERROR: "Error deleting reply",
+  },
+  CERTIFICATE: {
+    GENERATED_SUCCESS: "Certificate generated successfully",
+    GENERATED_ERROR: "Failed to generate certificate",
+    RETRIEVE_SUCCESS: "Successfully retrieved certificate(s)",
+    RETRIEVE_ERROR: "Failed to retrieve certificate(s)",
+    NOT_FOUND: "Certificate not found",
   },
 };

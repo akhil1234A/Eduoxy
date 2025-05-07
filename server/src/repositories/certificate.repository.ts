@@ -22,4 +22,9 @@ export class CertificateRepository implements ICertificateRepository {
   async findByCertificateId(certificateId: string): Promise<ICertificate | null> {
     return await Certificate.findOne({ certificateId }).lean();
   }
+
+  async findByUserIdAndCourseId(userId: string, courseId: string): Promise<ICertificate | null> {
+    return await Certificate.findOne({ userId, courseId }).lean();
+  }
+
 }

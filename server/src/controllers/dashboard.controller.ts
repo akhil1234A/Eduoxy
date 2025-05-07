@@ -114,4 +114,26 @@ export class DashboardController {
         )
     );
   }
+
+  async getUserDashboard(req: Request, res: Response): Promise<void> {
+    const { userId } = req.params;
+    if (!userId) {
+      res
+        .status(HttpStatus.BAD_REQUEST)
+        .json(
+          errorResponse(
+            RESPONSE_MESSAGES.DASHBOARD.USER_ID_REQUIRED,
+            "User ID is required"
+          )
+        );
+      return;
+    }
+
+    await this.handleDashboardResponse(
+      res,
+      RESPONSE_MESSAGES.DASHBOARD.USER_SUCCESS,
+      RESPONSE_MESSAGES.DASHBOARD.USER_ERROR,
+      () => this._dashboardService.getUserDashboard(userId)
+    );
+  }
 }

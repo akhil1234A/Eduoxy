@@ -7,19 +7,38 @@ import PDFDocument from "pdfkit";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
 import { ICertificateService } from "../interfaces/certificate.service";
-
+import { IUserService } from "../interfaces/user.service";
+import { UserCourseProgressRepository } from "../repositories/courseProgress.repository";
 
 
 @injectable()
 export class CertificateService implements ICertificateService {
   constructor(
     @inject(TYPES.ICertificateRepository) private _certificateRepository: ICertificateRepository,
-   
+    @inject(TYPES.IUserService) private _userService: IUserService,
+    @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: UserCourseProgressRepository,
   ) {}
 
   async generateCertificate(userId: string, courseId: string, courseName: string): Promise<ICertificate> {
+    
+    const isCompleted = await this._userCourseProgressRepository.isCourseCompleted(userId, courseId);
+
+    if (!isCompleted) {
+      throw new Error("Course not completed");
+    }
+
+    const existingCertificate = await this._certificateRepository.findByUserIdAndCourseId(userId, courseId);
+    if (existingCertificate) {
+      
+    }
+    
     const certificateId = `EDUOXY-${format(new Date(), "yyyyMMdd")}-${uuidv4().slice(0, 6).toUpperCase()}`;
     const fileName = `${certificateId}.pdf`;
+    const getUserInfo = await this._userService.getProfile(userId);
+    
+    if (!getUserInfo) {
+      throw new Error("User not found");
+    }
     
     // Generate PDF
     const doc = new PDFDocument({
@@ -36,7 +55,7 @@ export class CertificateService implements ICertificateService {
     doc.moveDown();
     doc.fontSize(24).text(`This certifies that`, { align: "center" });
     doc.moveDown();
-    doc.fontSize(30).text(`[User Name]`, { align: "center" }); 
+    doc.fontSize(30).text(`${getUserInfo.name}`, { align: "center" }); 
     doc.moveDown();
     doc.fontSize(20).text(`has successfully completed the course`, { align: "center" });
     doc.moveDown();

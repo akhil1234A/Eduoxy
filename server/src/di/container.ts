@@ -78,6 +78,18 @@ import { IReviewService } from "../interfaces/review.service";
 import { IReviewRepository } from "../interfaces/review.repository";
 import { ForumController } from "../controllers/forum.controller";
 import { EmailTemplateService } from "../utils/templates";
+import { CertificateRepository } from "../repositories/certificate.repository";
+import { ICertificateRepository } from "../interfaces/certificate.repository";
+import { ICertificateService } from "../interfaces/certificate.service";
+import { CertificateService } from "../services/certificate.service";
+import { ICertificate, Certificate } from "../models/certificate.model";
+import { CertificateController } from "../controllers/certificate.controller";
+import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
+import { IUserTimeTracking } from "../models/userTimeTracking.model";
+import { UserTimeTracking } from "../models/userTimeTracking.model";
+import { TimeTrackingService } from "../services/timeTracking.service";
+import { TimeTrackingController } from "../controllers/timeTracking.controller";
+
 
 const container = new Container();
 
@@ -91,6 +103,8 @@ container.bind<ILiveClassRepository>(TYPES.ILiveClassRepository).to(LiveClassRep
 container.bind<IForumRepository>(TYPES.IForumRepository).to(ForumRepository).inSingletonScope();
 container.bind<IRoadmapRepository>(TYPES.IRoadmapRepository).to(RoadmapRepository).inSingletonScope();
 container.bind<IReviewRepository>(TYPES.IReviewRepository).to(ReviewRepository).inSingletonScope();
+container.bind<ICertificateRepository>(TYPES.ICertificateRepository).to(CertificateRepository).inSingletonScope(); // Update with the correct repository
+container.bind<TimeTrackingRepository>(TYPES.TimeTrackingRepository).to(TimeTrackingRepository).inSingletonScope(); // Update with the correct repository
 
 // Model
 container.bind<typeof User>(TYPES.UserModel).toConstantValue(User)
@@ -101,6 +115,8 @@ container.bind<Model<IMessage>>(TYPES.MessageModel).toConstantValue(Message);
 container.bind<Model<ILiveClass>>(TYPES.LiveClassModel).toConstantValue(LiveClass);
 container.bind<Model<IRoadmapDocument>>(TYPES.RoadmapModel).toConstantValue(Roadmap);
 container.bind<Model<IReviewDocument>>(TYPES.ReviewModel).toConstantValue(Review);
+container.bind<Model<ICertificate>>(TYPES.CertificateModel).toConstantValue(Certificate);
+container.bind<Model<IUserTimeTracking>>(TYPES.UserTimeTrackingModel).toConstantValue(UserTimeTracking);
 
 // Utilities
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
@@ -129,6 +145,10 @@ container.bind<IForumService>(TYPES.IForumService).toDynamicValue(() => {
 }).inSingletonScope();
 container.bind<IRoadmapService>(TYPES.IRoadmapService).to(RoadmapService).inSingletonScope();
 container.bind<EmailTemplateService>(TYPES.IEmailTemplateService).to(EmailTemplateService).inSingletonScope();
+container.bind<ICertificateService>(TYPES.ICertificateService).to(CertificateService).inSingletonScope();
+container.bind<TimeTrackingService>(TYPES.ITimeTrackingService).to(TimeTrackingService).inSingletonScope(); // Update with the correct service
+
+
 // Controllers
 container.bind<AuthController>(TYPES.IAuthController).to(AuthController).inSingletonScope();
 container.bind<AdminController>(TYPES.IAdminController).to(AdminController).inSingletonScope();
@@ -142,7 +162,8 @@ container.bind<LiveClassController>(TYPES.ILiveClassController).to(LiveClassCont
 container.bind<RoadmapController>(TYPES.IRoadmapController).to(RoadmapController).inSingletonScope();
 container.bind<ReviewController>(TYPES.ReviewController).to(ReviewController);
 container.bind<ForumController>(TYPES.IForumController).to(ForumController).inSingletonScope();
-
+container.bind<CertificateController>(TYPES.ICertificateController).to(CertificateController).inSingletonScope();
+container.bind<TimeTrackingController>(TYPES.ITimeTrackingController).to(TimeTrackingController).inSingletonScope(); // Update with the correct controller
 
 
 export const authController = container.get<AuthController>(TYPES.IAuthController);
@@ -157,5 +178,7 @@ export const liveClassController = container.get<LiveClassController>(TYPES.ILiv
 export const roadmapController = container.get<RoadmapController>(TYPES.IRoadmapController);
 export const reviewController = container.get<ReviewController>(TYPES.ReviewController);
 export const forumController = container.get<ForumController>(TYPES.IForumController);
+export const certificateController = container.get<CertificateController>(TYPES.ICertificateController);
+export const timeTrackingController = container.get<TimeTrackingController>(TYPES.ITimeTrackingController); // Update with the correct controller
 
 export default container;

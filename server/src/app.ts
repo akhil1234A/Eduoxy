@@ -22,6 +22,8 @@ import liveClassRoutes from "./routes/liveClass.routes";
 import roadmapRoutes from "./routes/roadmap.route";
 import reviewRoutes from "./routes/review.routes";
 import forumRoutes from "./routes/forum.routes";
+import certificateRoutes from "./routes/certificate.routes";
+import timeTrackingRoutes from "./routes/timeTracking.routes";
 
 const app = express();
 const server = http.createServer(app);
@@ -59,6 +61,8 @@ app.use("/api/live-classes", liveClassRoutes);
 app.use("/api/roadmap", roadmapRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/forums", forumRoutes);
+app.use("/api/certificates", certificateRoutes);
+app.use("/api/time-tracking", timeTrackingRoutes);
 
 // Error Handling Middleware
 app.use(logErrors);

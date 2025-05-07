@@ -47,6 +47,7 @@ const AppSidebar = () => {
 
   const navLinks = {
     student: [
+      { icon: BarChart, label: "Dashboard", href: "/user/dashboard" },
       { icon: BookOpen, label: "Courses", href: "/user/courses" },
       { icon: Briefcase, label: "Purchases", href: "/user/purchases" },
       { icon: User, label: "Profile", href: "/user/profile" },
