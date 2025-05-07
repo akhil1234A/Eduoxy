@@ -4,7 +4,7 @@ import { customBaseQuery } from "./baseQuery";
 export const transactionApi = createApi({
   reducerPath: "transactionApi",
   baseQuery: customBaseQuery,
-  tagTypes: ["Transactions", "Courses"],
+  tagTypes: ["Transactions", "Courses", "UserCourseProgress"],
   endpoints: (builder) => ({
     createPaymentIntent: builder.mutation<
       ApiResponse<{ clientSecret: string }>,
@@ -15,7 +15,7 @@ export const transactionApi = createApi({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Courses", "Transactions"],
+      invalidatesTags: ["Courses", "Transactions", "UserCourseProgress"],
     }),
 
     createTransaction: builder.mutation<
@@ -33,7 +33,7 @@ export const transactionApi = createApi({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Courses", "Transactions"],
+      invalidatesTags: ["Courses", "Transactions", "UserCourseProgress"],
     }),
 
     getAdminEarnings: builder.query<

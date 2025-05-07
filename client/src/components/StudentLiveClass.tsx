@@ -28,7 +28,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
   const socket = useRef<Socket | null>(null)
   const peer = useRef<RTCPeerConnection | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("Initializing...")
-  const [error, setError] = useState<string | null>(null)
   const [isSocketConnected, setIsSocketConnected] = useState(false)
   const [offerReceived, setOfferReceived] = useState(false)
   const [lastOffer, setLastOffer] = useState<RTCSessionDescriptionInit | null>(null)
@@ -72,7 +71,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
       setConnectionStatus(`Connection state: ${peer.current?.connectionState}`)
 
       if (peer.current?.connectionState === "failed" || peer.current?.connectionState === "disconnected") {
-        setError("Connection failed. Requesting new offer...")
         if (socket.current && isSocketConnected) {
           requestOfferFromTeacher()
         }
@@ -125,7 +123,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
         }
       } catch (err) {
         console.error("Error handling offer:", err)
-        setError(`Offer error: ${err instanceof Error ? err.message : String(err)}`)
         setOfferReceived(false)
       }
     },
@@ -153,7 +150,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
   }, [roomId, isSocketConnected, offerReceived])
 
   const handleRetryConnection = () => {
-    setError(null)
     setOfferReceived(false)
 
     if (socket.current) {
@@ -199,7 +195,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
         router.push(`/search/${courseId}`);
       } catch (error) {
         console.error("Error leaving class:", error);
-        setError("Failed to leave class properly");
       }
     }
   }
@@ -240,7 +235,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
 
       socket.current.on("connect_error", (err) => {
         console.error("Socket connection error:", err)
-        setError(`Connection error: ${err.message}`)
         setConnectionStatus("Connection failed")
         setIsSocketConnected(false)
       })
@@ -273,7 +267,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
       socket.current.on("stream-ended", async ({ roomId: endedRoomId }) => {
         if (endedRoomId === roomId) {
           try {
-            setError("Teacher has ended the stream");
             setConnectionStatus("Stream ended by teacher");
             
             // Close peer connection first
@@ -295,7 +288,6 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
             router.push(`/search/${courseId}`);
           } catch (error) {
             console.error("Error handling stream end:", error);
-            setError("Failed to handle stream end properly");
           }
         }
       });
@@ -331,33 +323,21 @@ export default function StudentLiveClass({ liveClassId, userId, courseId }: Stud
   return (
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-100px)] p-6">
       <div className="flex-1 flex flex-col">
-      <h2 className="text-2xl font-semibold mb-4">Student Viewer</h2>
-      {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-          <p className="font-bold">Error:</p>
-          <p>{error}</p>
-          <button
-            onClick={handleRetryConnection}
-            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-          >
-            Retry Connection
-          </button>
-        </div>
-      )}
+        <h2 className="text-2xl font-semibold mb-4">Student Viewer</h2>
         <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
-        <p className="font-bold">Status:</p>
-        <p>{connectionStatus}</p>
-      </div>
+          <p className="font-bold">Status:</p>
+          <p>{connectionStatus}</p>
+        </div>
         <div className="flex-1 flex flex-col">
           <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover rounded-xl shadow-lg" />
         </div>
         <div className="mt-4 flex gap-4">
-      <button
-        onClick={handleRetryConnection}
+          <button
+            onClick={handleRetryConnection}
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-      >
-        Reconnect
-      </button>
+          >
+            Reconnect
+          </button>
           <button
             onClick={() => setShowChat(!showChat)}
             className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600"

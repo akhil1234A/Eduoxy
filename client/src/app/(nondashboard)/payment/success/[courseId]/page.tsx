@@ -1,13 +1,33 @@
-"use client";
+"use client"
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { CheckCircle } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { coursesApi } from "@/state/redux"; // Import coursesApi
+import Cookies from "js-cookie";
 
 export default function SuccessPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const userId = Cookies.get("userId");
 
+  // Trigger refetch of enrolled courses on mount
+  useEffect(() => {
+    if (userId) {
+      dispatch(
+        coursesApi.util.invalidateTags([
+          { type: "Courses" },
+          { type: "UserCourseProgress" },
+        ])
+      );
+    }
+  }, [dispatch, userId]);
 
+  const handleStartLearning = () => {
+    router.push(`/user/courses`);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
@@ -16,7 +36,7 @@ export default function SuccessPage() {
         <h1 className="text-2xl font-bold mb-4">Payment Successful!</h1>
         <p className="mb-8">Thank you for your purchase. Your course is now available.</p>
         <Button
-          onClick={() => router.push(`/user/courses`)}
+          onClick={handleStartLearning}
           className="bg-primary-700"
         >
           Start Learning
@@ -24,4 +44,4 @@ export default function SuccessPage() {
       </div>
     </div>
   );
-} 
+}

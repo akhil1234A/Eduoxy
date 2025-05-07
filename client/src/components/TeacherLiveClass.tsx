@@ -29,7 +29,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
   const peer = useRef<RTCPeerConnection | null>(null)
   const localStream = useRef<MediaStream | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>("Initializing...")
-  const [error, setError] = useState<string | null>(null)
   const [isSocketConnected, setIsSocketConnected] = useState(false)
   const [studentReady, setStudentReady] = useState(false)
   const [offerSent, setOfferSent] = useState(false)
@@ -54,7 +53,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
       setConnectionStatus("Offer sent, waiting for answer...")
     } catch (err) {
       console.error("Error creating offer:", err)
-      setError(`Offer error: ${err instanceof Error ? err.message : String(err)}`)
     }
   }, [roomId, isSocketConnected])
 
@@ -95,7 +93,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
       setConnectionStatus(`Connection state: ${peer.current?.connectionState}`)
 
       if (peer.current?.connectionState === "failed" || peer.current?.connectionState === "disconnected") {
-        setError("Connection failed. Preparing to reconnect...")
         setTimeout(() => {
           if (studentReady) {
             initializePeerConnection()
@@ -130,7 +127,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
       return true
     } catch (err) {
       console.error("Error accessing camera:", err)
-      setError(`Camera error: ${err instanceof Error ? err.message : String(err)}`)
       return false
     }
   }, [])
@@ -169,7 +165,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
       return true
     } catch (err) {
       console.error("Error starting screen share:", err)
-      setError(`Screen share error: ${err instanceof Error ? err.message : String(err)}`)
       return false
     }
   }, [setupCameraStream])
@@ -239,7 +234,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
 
       socket.current.on("connect_error", (err) => {
         console.error("Socket connection error:", err)
-        setError(`Connection error: ${err.message}`)
         setConnectionStatus("Connection failed")
         setIsSocketConnected(false)
       })
@@ -284,7 +278,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
           }
         } catch (err) {
           console.error("Error setting remote description:", err)
-          setError(`Answer error: ${err instanceof Error ? err.message : String(err)}`)
         }
       })
 
@@ -342,7 +335,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
   }, [studentReady, isSocketConnected, offerSent, createAndSendOffer])
 
   const handleRetryConnection = () => {
-    setError(null)
     setOfferSent(false)
 
     if (socket.current) {
@@ -390,7 +382,6 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
         router.push(`/search/${courseId}`);
       } catch (error) {
         console.error("Error ending stream:", error);
-        setError("Failed to end stream properly");
       }
     }
   }
@@ -398,48 +389,36 @@ export default function TeacherLiveClass({ liveClassId, userId, courseId }: Teac
   return (
     <div className="flex flex-col md:flex-row gap-4 h-[calc(100vh-100px)] p-6">
       <div className="flex-1 flex flex-col">
-      <h2 className="text-2xl font-semibold mb-4">Teacher Live Stream</h2>
-      {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 w-full">
-          <p className="font-bold">Error:</p>
-          <p>{error}</p>
+        <h2 className="text-2xl font-semibold mb-4">Teacher Live Stream</h2>
+        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
+          <p className="font-bold">Status:</p>
+          <p>{connectionStatus}</p>
+          <p className="mt-1">
+            <strong>Student:</strong> {studentReady ? "Ready to receive" : "Not connected"}
+          </p>
+          <p className="mt-1">
+            <strong>Stream:</strong> {isScreenSharing ? "Screen sharing" : "Camera"}
+          </p>
+        </div>
+        <div className="flex-1 flex flex-col">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover rounded-xl shadow-lg"
+          />
+        </div>
+        <div className="mt-4 flex gap-4">
+          <button onClick={toggleScreenShare} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
+            {isScreenSharing ? "Stop Screen Sharing" : "Share Screen"}
+          </button>
           <button
             onClick={handleRetryConnection}
-            className="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
           >
-            Retry Connection
+            Reconnect
           </button>
-        </div>
-      )}
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4 w-full">
-        <p className="font-bold">Status:</p>
-        <p>{connectionStatus}</p>
-        <p className="mt-1">
-          <strong>Student:</strong> {studentReady ? "Ready to receive" : "Not connected"}
-        </p>
-        <p className="mt-1">
-          <strong>Stream:</strong> {isScreenSharing ? "Screen sharing" : "Camera"}
-        </p>
-      </div>
-        <div className="flex-1 flex flex-col">
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-            className="w-full h-full object-cover rounded-xl shadow-lg"
-      />
-        </div>
-      <div className="mt-4 flex gap-4">
-          <button onClick={toggleScreenShare} className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
-          {isScreenSharing ? "Stop Screen Sharing" : "Share Screen"}
-        </button>
-        <button
-          onClick={handleRetryConnection}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Reconnect
-        </button>
           <button
             onClick={() => setShowChat(!showChat)}
             className="bg-purple-500 text-white px-6 py-2 rounded hover:bg-purple-600"
