@@ -9,6 +9,7 @@ import admin from "../config/firebaseAdmin";
 import { v4 as uuidv4 } from "uuid";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 /**
  * This is a service responsible for managing authentication functionalities
@@ -32,7 +33,7 @@ export class AuthService implements IAuthService {
    */
   async signUp(name: string, email: string, password: string, userType: "student" | "admin" | "teacher"): Promise<UserResponse> {
     const existingUser = await this._userRepository.findByEmail(email);
-    if (existingUser) throw new Error("User already exists");
+    if (existingUser) throw new Error(SERVICE_MESSAGES.USER_ALREADY_EXISTS);
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await this._userRepository.create({
@@ -64,10 +65,10 @@ export class AuthService implements IAuthService {
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     const user = await this._userRepository.findByEmail(email);
-    if (!user) throw new Error("No User Found");
-    if (user.isBlocked) throw new Error("User is blocked");
-    if (user.googleId && !user.password) throw new Error("Use Google authentication for this account");
-    if (!user.password || !(await bcrypt.compare(password, user.password))) throw new Error("Invalid credentials");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
+    if (user.isBlocked) throw new Error(SERVICE_MESSAGES.USER_BLOCKED);
+    if (user.googleId && !user.password) throw new Error(SERVICE_MESSAGES.USE_GOOGLE_AUTH);
+    if (!user.password || !(await bcrypt.compare(password, user.password))) throw new Error(SERVICE_MESSAGES.INVALID_CREDENTIALS);
     if (!user.isVerified) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       await this._redisClient.set(`otp:${user.email}`, otp, { EX: 120 });
@@ -101,7 +102,7 @@ export class AuthService implements IAuthService {
    */
   async sendOtp(email: string): Promise<void> {
     const user = await this._userRepository.findByEmail(email);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await this._redisClient.set(`otp:${email}`, otp, { EX: 120 });
@@ -117,10 +118,10 @@ export class AuthService implements IAuthService {
    */
   async verifyOtp(email: string, otp: string): Promise<LoginResponse> {
     const storedOtp = await this._redisClient.get(`otp:${email}`);
-    if (!storedOtp || storedOtp !== otp) throw new Error("Invalid or expired OTP");
+    if (!storedOtp || storedOtp !== otp) throw new Error(SERVICE_MESSAGES.EXPIRED_OTP);
 
     const user = await this._userRepository.findByEmail(email);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     if (!user.isVerified) {
       await this._userRepository.update(user.id, { isVerified: true });
@@ -160,7 +161,7 @@ export class AuthService implements IAuthService {
     const email = decodedToken.email;
     const name = decodedToken.name || "Google User";
 
-    if (!email) throw new Error("Email not provided by Google authentication");
+    if (!email) throw new Error(SERVICE_MESSAGES.GOOGLE_AUTH_INVALID_MAIL);
 
     let user = await this._userRepository.findByGoogleId(googleId);
     if (!user) {
@@ -180,8 +181,8 @@ export class AuthService implements IAuthService {
       }
     }
 
-    if (!user) throw new Error("User not found");
-    if (user.isBlocked) throw new Error("User is blocked");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
+    if (user.isBlocked) throw new Error(SERVICE_MESSAGES.USER_BLOCKED);
 
     const accessToken = this._jwtService.generateAccessToken(user.id, user.userType);
     const refreshToken = this._jwtService.generateRefreshToken(user.id, user.userType);
@@ -207,8 +208,8 @@ export class AuthService implements IAuthService {
    */
   async requestPasswordReset(email: string): Promise<void> {
     const user = await this._userRepository.findByEmail(email);
-    if (!user) throw new Error("User not found");
-    if (user.googleId && !user.password) throw new Error("Use Google authentication to log in; no password to reset");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
+    if (user.googleId && !user.password) throw new Error(SERVICE_MESSAGES.USE_GOOGLE_AUTH);
 
     const resetToken = uuidv4();
     const resetTokenKey = `reset_token:${user.id}`;
@@ -236,10 +237,10 @@ export class AuthService implements IAuthService {
       }
     }
 
-    if (!userId) throw new Error("Invalid or expired reset token");
+    if (!userId) throw new Error(SERVICE_MESSAGES.INVALID_TOKENN);
 
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this._userRepository.update(userId, { password: hashedPassword });
@@ -257,7 +258,7 @@ export class AuthService implements IAuthService {
     if (refreshToken !== storedToken) throw new Error("Invalid refresh token");
 
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const accessToken = this._jwtService.generateAccessToken(user.id, user.userType);
     const newRefreshToken = this._jwtService.generateRefreshToken(user.id, user.userType);
@@ -280,7 +281,7 @@ export class AuthService implements IAuthService {
    */
   async findUserById(userId: string): Promise<UserResponse> {
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return {
       id: user.id,
       name: user.name,

@@ -30,7 +30,6 @@ interface Instructor {
   title?: string
 }
 
-
 interface LiveClass {
   _id: string
   courseId: string
@@ -50,8 +49,8 @@ const CourseView = () => {
   const params = useParams()
   const router = useRouter()
   const courseId = params.courseId as string
-  const userId = Cookies.get("userId");
-  const userName = Cookies.get("userName");
+  const userId = Cookies.get("userId")
+  const userName = Cookies.get("userName")
 
   const { data: courseData, isLoading: isCourseLoading, isError: isCourseError } = useGetCourseQuery(courseId)
   const course = courseData?.data as Course
@@ -78,76 +77,96 @@ const CourseView = () => {
 
   useEffect(() => {
     if (courseId) {
+      if (!userId) {
+        // Non-logged-in user: set empty live classes and avoid API call
+        setLiveClasses([])
+        return
+      }
       fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/live-classes/${courseId}`, { credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
           console.log("Live classes response:", data)
-          setLiveClasses(data ? data.data : [])
+          if (data.success === false) {
+            // Handle authentication failure
+            setLiveClasses([])
+          } else {
+            setLiveClasses(data?.data || [])
+          }
         })
         .catch((err) => {
           console.error("Failed to fetch live classes:", err)
           setLiveClasses([])
         })
     }
-  }, [courseId])
+  }, [courseId, userId])
 
   const handleCourseAction = () => {
-    if (isEnrolled) {
-      if (course?.sections && course.sections.length > 0 && course.sections[0].chapters.length > 0) {
-        const firstChapter = course.sections[0].chapters[0]
-        router.push(`/user/courses/${course.courseId}/chapters/${firstChapter.chapterId}`, { scroll: false })
-      } else {
-        router.push(`/user/courses/${course.courseId}`, { scroll: false })
-      }
+    if (!userId) {
+      toast.error("Please log in to access this course")
+      router.push("/signin")
+      return
+    }
+    if (isEnrolled && course?.sections?.length > 0 && course.sections[0]?.chapters?.length > 0) {
+      const firstChapter = course.sections[0].chapters[0]
+      router.push(`/user/courses/${course.courseId}/chapters/${firstChapter.chapterId}`, { scroll: false })
     } else {
-      router.push(`/payment/${course.courseId}`, { scroll: false })
+      router.push(isEnrolled ? `/user/courses/${course.courseId}` : `/payment/${course.courseId}`, { scroll: false })
     }
   }
 
-
   const handleJoinClass = (liveClassId: string) => {
+    if (!userId) {
+      toast.error("Please log in to join the live class")
+      router.push("/signin")
+      return
+    }
     const route = isTeacher
       ? `/teacher/liveclass/${liveClassId}`
-      : `/user/liveclass/${liveClassId}`;
-    router.push(`${route}?userId=${userId}&courseId=${courseId}&teacherId=${course?.teacherId}`);
-  };
-  
+      : `/user/liveclass/${liveClassId}`
+    router.push(`${route}?userId=${userId}&courseId=${courseId}&teacherId=${course?.teacherId}`)
+  }
+
   const handleStartClass = async (liveClassId: string) => {
+    if (!userId) {
+      toast.error("Please log in to start the live class")
+      router.push("/signin")
+      return
+    }
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/live-classes/${liveClassId}/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teacherId: userId }),
         credentials: "include",
-      });
-  
+      })
+
       if (response.ok) {
-        setLiveClasses((prev) => prev.map((cls) => (cls._id === liveClassId ? { ...cls, isActive: true } : cls)));
-        toast.success("Class started successfully!");
-        handleJoinClass(liveClassId);
+        setLiveClasses((prev) => prev.map((cls) => (cls._id === liveClassId ? { ...cls, isActive: true } : cls)))
+        toast.success("Class started successfully!")
+        handleJoinClass(liveClassId)
       } else {
-        const error = await response.json();
-        toast.error(error.message || "Failed to start class.");
+        const error = await response.json()
+        toast.error(error.message || "Failed to start class")
       }
     } catch (err) {
-      console.error("Error starting class:", err);
-      toast.error("An error occurred while starting the class.");
+      console.error("Error starting class:", err)
+      toast.error("An error occurred while starting the class")
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!userId || !userName) {
+      toast.error("Please log in to submit a review")
+      router.push("/signin")
+      return
+    }
     if (formData.rating === 0) {
       toast.error("Please select a rating")
       return
     }
     if (!formData.review.trim()) {
       toast.error("Please write a review")
-      return
-    }
-
-    if (!userId || !userName) {
-      toast.error("User information not available")
       return
     }
 
@@ -170,10 +189,10 @@ const CourseView = () => {
 
   const handleDelete = async (reviewId: string) => {
     if (!userId) {
-      toast.error("User information not available")
+      toast.error("Please log in to delete a review")
+      router.push("signin")
       return
     }
-
     if (confirm("Are you sure you want to delete this review?")) {
       try {
         await deleteReview({ reviewId, userId }).unwrap()
@@ -218,7 +237,7 @@ const CourseView = () => {
             <h1 className="text-3xl md:text-5xl font-bold mb-2 text-white drop-shadow-md">{course.title}</h1>
             <p className="text-lg md:text-xl text-gray-200 drop-shadow-md">
               By {course.teacherName} |{" "}
-              <span className="text-gray-300">{course?.enrollments?.length} students enrolled</span>
+              <span className="text-gray-300">{course?.enrollments?.length || 0} students enrolled</span>
             </p>
             <p className="text-sm md:text-base mt-2 text-gray-300 drop-shadow-md">
               {course.level} • {course.category}
@@ -240,14 +259,18 @@ const CourseView = () => {
           {/* Course Content */}
           <section className="mb-10 ml-4 md:ml-6">
             <h2 className="text-2xl font-semibold mb-4 text-white">Course Content</h2>
-            <AccordionSections sections={course.sections} />
+            {course?.sections?.length > 0 ? (
+              <AccordionSections sections={course.sections} />
+            ) : (
+              <p className="text-gray-400">No course content available.</p>
+            )}
           </section>
 
           {/* Live Classes */}
           <section className="mb-10 ml-4 md:ml-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold text-white">Upcoming Live Classes</h2>
-              {isTeacher && (
+              {isTeacher && userId && (
                 <Button
                   onClick={() => router.push(`/teacher/schedule/${courseId}`)}
                   className="bg-[#6366F1] hover:bg-[#4f46e5]"
@@ -256,7 +279,19 @@ const CourseView = () => {
                 </Button>
               )}
             </div>
-            {liveClasses.length === 0 ? (
+            {!userId ? (
+              <div className="bg-[#2D2E36] rounded-lg p-6 text-center">
+                <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+                <p className="text-gray-400">Please log in to view upcoming live classes.</p>
+                <Button
+                  onClick={() => router.push("/signin")}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  Log In
+                </Button>
+              </div>
+            ) : liveClasses.length === 0 ? (
               <div className="bg-[#2D2E36] rounded-lg p-6 text-center">
                 <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-500" />
                 <p className="text-gray-400">No upcoming live classes scheduled.</p>
@@ -377,7 +412,7 @@ const CourseView = () => {
                   )}
                 </div>
               </div>
-              {isEnrolled && (
+              {isEnrolled && userId && (
                 <Button
                   variant="outline"
                   className="bg-[#6366F1] hover:bg-[#4f46e5] text-white border-none"
@@ -389,7 +424,7 @@ const CourseView = () => {
             </div>
 
             <AnimatePresence>
-              {showReviewForm && (
+              {showReviewForm && userId && (
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -535,9 +570,9 @@ const CourseView = () => {
                   </div>
                   <h3 className="text-lg font-medium text-white mb-2">No Reviews Yet</h3>
                   <p className="text-gray-400 max-w-md mx-auto mb-6">
-                    This course doesn&apos;t have any reviews yet. Be the first to share your experience!
+                    This course doesn&appost have any reviews yet. Be the first to share your experience!
                   </p>
-                  {isEnrolled && (
+                  {isEnrolled && userId && (
                     <Button onClick={() => setShowReviewForm(true)} className="bg-[#6366F1] hover:bg-[#4f46e5]">
                       Write a Review
                     </Button>
@@ -572,7 +607,7 @@ const CourseView = () => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                   </svg>
-                  {course.sections?.reduce((acc: number, section: Section) => acc + section.chapters.length, 0) || 0} lessons
+                  {course.sections?.reduce((acc: number, section: Section) => acc + (section.chapters?.length || 0), 0) || 0} lessons
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -642,4 +677,3 @@ const CourseView = () => {
 }
 
 export default CourseView
-

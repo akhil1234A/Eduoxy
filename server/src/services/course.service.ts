@@ -8,6 +8,7 @@ import { injectable, inject } from 'inversify';
 import TYPES from '../di/types';
 import { s3Service } from './s3.service';
 import { IRedisClient } from '../config/redis';
+import { SERVICE_MESSAGES } from '../utils/serviceMessages';
 
 /**
  * This is a service responsible for managing courses
@@ -26,13 +27,13 @@ export class CourseService implements ICourseService {
    */
   async createCourse(courseData: Partial<ICourseDocument>): Promise<ICourseDocument> {
     if (!courseData.teacherId || !courseData.teacherName) {
-      throw new Error('Teacher ID and name are required');
+      throw new Error(SERVICE_MESSAGES.TEACHERID_TEACHERNAME_REQUIRED);
     }
 
     if (courseData.price) {
       const price = parseInt(courseData.price as any, 10);
       if (isNaN(price)) {
-        throw new Error('Invalid price format: Price must be a valid number');
+        throw new Error(SERVICE_MESSAGES.INVALID_PRICE_FORMAT);
       }
       courseData.price = price;
     }
@@ -188,7 +189,7 @@ export class CourseService implements ICourseService {
     const course = await this._courseRepository.findByCourseId(courseId);
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_FOUND);
     }
 
     if (course.teacherId !== teacherId) {
@@ -198,7 +199,7 @@ export class CourseService implements ICourseService {
     if (updateData.price) {
       const price = parseInt(updateData.price as any, 10);
       if (isNaN(price)) {
-        throw new Error('Invalid price format: Price must be a valid number');
+        throw new Error(SERVICE_MESSAGES.INVALID_PRICE_FORMAT);
       }
       updateData.price = price;
     }
@@ -208,12 +209,12 @@ export class CourseService implements ICourseService {
         try {
           updateData.sections = JSON.parse(updateData.sections);
         } catch (err) {
-          throw new Error('Invalid sections format: Must be an array');
+          throw new Error(SERVICE_MESSAGES.INVALID_FORMAT);
         }
       }
 
       if (!Array.isArray(updateData.sections)) {
-        throw new Error('Invalid sections format: Must be an array');
+        throw new Error(SERVICE_MESSAGES.INVALID_FORMAT);
       }
 
       updateData.sections = updateData.sections.map((section: any) => ({
@@ -247,7 +248,7 @@ export class CourseService implements ICourseService {
     const course = await this._courseRepository.findByCourseId(courseId);
 
     if (!course) {
-      throw new Error('Course not found');
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_FOUND);
     }
 
     const s3KeysToDelete: string[] = [];

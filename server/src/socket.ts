@@ -7,6 +7,7 @@ import TYPES from "./di/types";
 import container from "./di/container";
 import type { IForumService } from "./interfaces/forum.service";
 import redisClient from "./config/redis";
+import { INotification } from "./models/notification.model";
 
 const chatService = container.get<IChatService>(TYPES.IChatService);
 const liveClassService = container.get<ILiveClassService>(TYPES.ILiveClassService);
@@ -331,12 +332,12 @@ export function initializeSocket(httpServer: HttpServer) {
   return io;
 }
 
-export function sendNotification(io: Server, userId: string, notification: any) {
+export function sendNotification(io: Server, userId: string, notification: INotification) {
   io.to(userId).emit("notification", notification);
   console.log(`Notification sent to user ${userId}:`, notification);
 }
 
-export function broadcastToCourseChat(io: Server, courseId: string, event: string, data: any) {
+export function broadcastToCourseChat(io: Server, courseId: string, event: string, data: INotification) {
   io.to(`chat:${courseId}`).emit(event, data);
   console.log(`Broadcasted ${event} to course ${courseId}:`, data);
 }

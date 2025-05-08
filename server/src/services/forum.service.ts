@@ -5,6 +5,7 @@ import TYPES from "../di/types";
 import { IForumService } from "../interfaces/forum.service";
 import { IForumRepository } from "../interfaces/forum.repository";
 import { apiLogger } from "../utils/logger";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 
 /**
@@ -45,7 +46,7 @@ export class ForumService implements IForumService {
     topics: string[] = []
   ): Promise<IForum> {
     const user = await this.userService.getProfile(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     return this.repository.createForum({ title, description, topics });
   }
@@ -99,7 +100,7 @@ export class ForumService implements IForumService {
    */
   async createPost(forumId: string, userId: string, userName: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
     if (files && !files.every(file => file.url && file.key)) {
-      throw new Error("Invalid file metadata: url and key are required");
+      throw new Error(SERVICE_MESSAGES.INVALID_FILE_META_DATA);
     }
 
     return this.repository.createPost({
@@ -123,7 +124,7 @@ export class ForumService implements IForumService {
    */
   async updatePost(postId: string, userId: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
     if (files && !files.every(file => file.url && file.key)) {
-      throw new Error("Invalid file metadata: url and key are required");
+      throw new Error(SERVICE_MESSAGES.INVALID_FILE_META_DATA);
     }
 
     return this.repository.updatePost(postId, userId, content, topic, files);
@@ -137,7 +138,7 @@ export class ForumService implements IForumService {
    */
   async deletePost(postId: string, userId: string): Promise<void> {
     const user = await this.userService.getProfile(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return this.repository.deletePost(postId, userId);
   }
 
@@ -164,7 +165,7 @@ export class ForumService implements IForumService {
    */
   async createReply(postId: string | null, userId: string, userName: string, content: string, files: IFile[] = [], parentReplyId?: string): Promise<IReply> {
     if (files && !files.every(file => file.url && file.key)) {
-      throw new Error("Invalid file metadata: url and key are required");
+      throw new Error(SERVICE_MESSAGES.INVALID_FILE_META_DATA);
     }
 
     let finalPostId = postId;
@@ -196,7 +197,7 @@ export class ForumService implements IForumService {
    */
   async updateReply(replyId: string, userId: string, content: string, files: IFile[] = []): Promise<IReply> {
     if (files && !files.every(file => file.url && file.key)) {
-      throw new Error("Invalid file metadata: url and key are required");
+      throw new Error(SERVICE_MESSAGES.INVALID_FILE_META_DATA);
     }
 
     return this.repository.updateReply(replyId, userId, content, files);
@@ -211,7 +212,7 @@ export class ForumService implements IForumService {
    */
   async deleteReply(replyId: string, userId: string): Promise<void> {
     const user = await this.userService.getProfile(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return this.repository.deleteReply(replyId, userId);
   }
 
@@ -235,10 +236,10 @@ export class ForumService implements IForumService {
    */
   async updateForum(forumId: string, userId: string, title: string, description: string, topics: string[] = []): Promise<IForum> {
     const user = await this.userService.getProfile(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const forum = await this.repository.getForum(forumId);
-    if (!forum) throw new Error("Forum not found");
+    if (!forum) throw new Error(SERVICE_MESSAGES.FORUM_NOT_FOUND);
 
     return this.repository.updateForum(forumId, { title, description, topics });
   }
@@ -251,10 +252,10 @@ export class ForumService implements IForumService {
    */
   async deleteForum(forumId: string, userId: string): Promise<void> {
     const user = await this.userService.getProfile(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const forum = await this.repository.getForum(forumId);
-    if (!forum) throw new Error("Forum not found");
+    if (!forum) throw new Error(SERVICE_MESSAGES.FORUM_NOT_FOUND);
 
     return this.repository.deleteForum(forumId);
   }

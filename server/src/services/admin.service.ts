@@ -6,6 +6,7 @@ import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { CacheUtil } from "../utils/cache";
 import { IRedisClient } from "../config/redis";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 /**
  * This is a service responsible for managing admin functionalities
@@ -71,11 +72,11 @@ export class AdminService implements IAdminService {
    */
   async blockUser(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
-    if (user.userType === "admin") throw new Error("Cannot block an admin");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
+    if (user.userType === "admin") throw new Error(SERVICE_MESSAGES.USER_CANNOT_BE_BLOCKED);
 
     const success = await this._userRepository.blockUser(userId);
-    if (!success) throw new Error("Failed to block user");
+    if (!success) throw new Error(SERVICE_MESSAGES.USER_BLOCK_FAILED);
 
     // Invalidate all paginated caches for both students and teachers lists
     const studentKeysPattern = "list:students*";
@@ -92,7 +93,7 @@ export class AdminService implements IAdminService {
     }
 
     const updatedUser = await this._userRepository.findById(userId);
-    if (!updatedUser) throw new Error("User not found after update");
+    if (!updatedUser) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return updatedUser;
   }
 
@@ -104,10 +105,10 @@ export class AdminService implements IAdminService {
    */
   async unblockUser(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const success = await this._userRepository.unblockUser(userId);
-    if (!success) throw new Error("Failed to unblock user");
+    if (!success) throw new Error(SERVICE_MESSAGES.USER_UNBLOCK_FAILED);
 
     // Invalidate all paginated caches for both students and teachers lists
     const studentKeysPattern = "list:students*";
@@ -124,7 +125,7 @@ export class AdminService implements IAdminService {
     }
 
     const updatedUser = await this._userRepository.findById(userId);
-    if (!updatedUser) throw new Error("User not found after update");
+    if (!updatedUser) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return updatedUser;
   }
 }

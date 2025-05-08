@@ -7,6 +7,7 @@ import cloudinary from "cloudinary";
 import { IUser } from "../models/user.model";
 import fs from "fs";
 import { S3Service } from "./s3.service";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 /**
  * This is a service class for handling user-related operations.
@@ -31,7 +32,7 @@ export class UserService implements IUserService {
    */
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     if (!user.password) throw new Error("User does not have a password");
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
@@ -55,7 +56,7 @@ export class UserService implements IUserService {
    */
   async updateInstructorProfile(userId: string, name?: string, title?: string, bio?: string, profileImage?: Express.Multer.File): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
-    if (!user) throw new Error("User not found");
+    if (!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
 
     const updates: Partial<IUser> = {};
 
@@ -113,7 +114,7 @@ export class UserService implements IUserService {
    */
   async getProfile(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId, "-password");
-    if(!user) throw new Error("User not found");
+    if(!user) throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     return user as IUser; 
   }
 

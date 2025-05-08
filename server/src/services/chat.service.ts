@@ -6,6 +6,7 @@ import { ITransactionRepository } from "../interfaces/transaction.repository";
 import { ICourseRepository } from "../interfaces/course.repository";
 import { IRedisClient } from "../config/redis";
 import { IChatRepository } from "../interfaces/chat.repository";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 /**
  * This is a service responsible for managing chat functionalities
@@ -30,7 +31,7 @@ export class ChatService implements IChatService {
   async getChatHistory(courseId: string, senderId: string, receiverId: string): Promise<IMessage[]> {
     const course = await this._courseRepository.findByCourseId(courseId);
     if (!course) {
-      throw new Error("Course not found.");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_FOUND);
     }
   
     const isInstructor = course.teacherId === senderId || course.teacherId === receiverId;
@@ -42,14 +43,13 @@ export class ChatService implements IChatService {
     }
   
     if (!isInstructor && !isStudent) {
-      throw new Error("You must purchase the course or be the instructor to access this chat.");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_PURCHASED);
     }
   
 
     if (!isInstructor) {
-      throw new Error("You must purchase the course to chat with the instructor.");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_PURCHASED);
     }
-  
     const cacheKey = `chat:${courseId}:${senderId}:${receiverId}`;
     const cachedMessages = await this._redisClient.get(cacheKey);
     if (cachedMessages) {
@@ -76,12 +76,11 @@ export class ChatService implements IChatService {
    */
   async sendMessage(courseId: string, senderId: string, receiverId: string, message: string, isFile: boolean, fileName?: string): Promise<IMessage> {
 
-    console.log(courseId, senderId, receiverId, message);
 
     const course = await this._courseRepository.findByCourseId(courseId);
-    console.log(course);
+
     if (!course) {
-      throw new Error("Course not found.");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_FOUND);
     }
 
     const transactions = await this._transactionRepository.findByUserId(senderId);
@@ -89,11 +88,11 @@ export class ChatService implements IChatService {
     const isInstructor = course.teacherId === senderId;
 
     if (!isStudent && !isInstructor) {
-      throw new Error("You must purchase the course or be the instructor to send messages.");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_PURCHASED);
     }
 
     if (isStudent && receiverId !== course.teacherId) {
-      throw new Error("Students can only message the instructor.");
+      throw new Error(SERVICE_MESSAGES.ONLY_MESSAGE_INSTRUCTOR);
     }
 
     const chatMessage: IMessageInput = {

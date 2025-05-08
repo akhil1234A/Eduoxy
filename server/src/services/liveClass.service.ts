@@ -3,6 +3,7 @@ import TYPES from "../di/types";
 import { ILiveClassService } from "../interfaces/liveClass.service";
 import { ILiveClassRepository } from "../interfaces/liveClass.repository";
 import { ILiveClass } from "../models/liveClass.model";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 /**
  * This is a service responsible for managing live class functionalities
@@ -52,7 +53,7 @@ export class LiveClassService implements ILiveClassService {
    */
   async joinLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
-    if (!liveClass) throw new Error("Live class not found");
+    if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     if (!liveClass.isActive) throw new Error("Live class is not active yet");
     if (liveClass.participants.length >= 5) throw new Error("Class is full (max 5 participants)");
 
@@ -74,7 +75,7 @@ export class LiveClassService implements ILiveClassService {
    */
   async leaveLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
-    if (!liveClass) throw new Error("Live class not found");
+    if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     const updatedClass = await this.liveClassRepository.removeParticipant(liveClassId, userId);
     if (!updatedClass) throw new Error("Failed to leave live class");
     return updatedClass;
@@ -88,7 +89,7 @@ export class LiveClassService implements ILiveClassService {
    */
   async startLiveClass(liveClassId: string, teacherId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
-    if (!liveClass) throw new Error("Live class not found");
+    if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     if (liveClass.teacherId !== teacherId) throw new Error("Only the teacher can start the class");
     if (liveClass.isActive) throw new Error("Class is already active");
 

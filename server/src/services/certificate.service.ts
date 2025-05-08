@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ICertificateService } from "../interfaces/certificate.service";
 import { IUserService } from "../interfaces/user.service";
 import { UserCourseProgressRepository } from "../repositories/courseProgress.repository";
+import { SERVICE_MESSAGES } from "../utils/serviceMessages";
 
 
 /**
@@ -35,12 +36,12 @@ export class CertificateService implements ICertificateService {
     const isCompleted = await this._userCourseProgressRepository.isCourseCompleted(userId, courseId);
 
     if (!isCompleted) {
-      throw new Error("Course not completed");
+      throw new Error(SERVICE_MESSAGES.COURSE_NOT_COMPLETED);
     }
 
     const existingCertificate = await this._certificateRepository.findByUserIdAndCourseId(userId, courseId);
     if (existingCertificate) {
-      throw new Error("Certificate already exists for this course");
+      throw new Error(SERVICE_MESSAGES.CERTIFICATE_ALREADY_EXISTS);
     }
     
     const certificateId = `EDUOXY-${format(new Date(), "yyyyMMdd")}-${uuidv4().slice(0, 6).toUpperCase()}`;
@@ -48,7 +49,7 @@ export class CertificateService implements ICertificateService {
     const getUserInfo = await this._userService.getProfile(userId);
     
     if (!getUserInfo) {
-      throw new Error("User not found");
+      throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     }
     
     // Generate PDF
