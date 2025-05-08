@@ -1,6 +1,10 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+/**
+ * This is a service class for handling S3 operations.
+ * It provides methods to generate presigned URLs for uploading files, delete objects from S3,
+ */
 export class S3Service {
   private s3Client: S3Client;
 
@@ -14,6 +18,12 @@ export class S3Service {
     });
   }
 
+  /**
+   * This method generates a presigned URL for uploading a file to S3.
+   * @param type - The type of the file (video, pdf, subtitle, image).
+   * @param fileName 
+   * @returns 
+   */
   async generatePresignedUrl(
     type: string,
     fileName: string
@@ -48,6 +58,10 @@ export class S3Service {
     };
   }
 
+  /**
+   * This method deletes an object from S3.
+   * @param key 
+   */
   async deleteObject(key: string): Promise<void> {
     if (!key) {
       throw new Error("Key is required");
@@ -61,6 +75,14 @@ export class S3Service {
     await this.s3Client.send(command);
   }
 
+  /**
+   * This method uploads a file to S3.
+   * @param fileBuffer 
+   * @param fileName 
+   * @param contentType 
+   * @param folder 
+   * @returns 
+   */
   async uploadFile(
     fileBuffer: Buffer,
     fileName: string,
@@ -88,6 +110,12 @@ export class S3Service {
     };
   }
 
+  /**
+   * This method extracts the key from a given S3 URL.
+   * Used to get the key from a URL when the file is already uploaded.
+   * @param url 
+   * @returns 
+   */
   extractKeyFromUrl(url: string | undefined | null): string | null {
     if (!url) return null;
     const bucketUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/`;

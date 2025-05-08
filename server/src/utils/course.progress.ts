@@ -1,3 +1,11 @@
+/**
+ * This file contains utility functions for managing course progress and merging sections and chapters.
+ * It includes functions to merge chapters and sections, and to calculate overall progress.
+ * @param existingChapters 
+ * @param newChapters 
+ * @returns 
+ */
+
 export const mergeChapters = (
   existingChapters: any[],
   newChapters: any[]
@@ -17,6 +25,12 @@ export const mergeChapters = (
   return Array.from(existingChaptersMap.values());
 };
 
+/**
+ * This function merges two arrays of sections, updating existing sections and adding new ones.
+ * @param existingSections 
+ * @param newSections 
+ * @returns 
+ */
 export const mergeSections = (
   existingSections: any[],
   newSections: any[]
@@ -41,6 +55,11 @@ export const mergeSections = (
   return Array.from(existingSectionsMap.values());
 };
 
+/**
+ * This function calculates the overall progress of a course based on the completion status of chapters within sections.
+ * @param sections 
+ * @returns 
+ */
 export const calculateOverallProgress = (sections: any[]): number => {
   const totalChapters = sections.reduce(
     (acc: number, section: any) => acc + section.chapters.length,

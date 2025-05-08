@@ -2,7 +2,23 @@ import { Notification } from "../models/notification.model";
 import { io } from "../app";
 import { apiLogger } from "../utils/logger";
 
+/**
+ * This is a service responsible for managing notifications
+ * It handles creating, retrieving, and marking notifications as read
+ * It uses Socket.IO to send real-time notifications to users
+ */
 export class NotificationService {
+
+  /**
+   * This method creates a new notification and sends it to the user in real-time
+   * @param data - data object containing userId, title, message, type, and optional link
+   * @param userId - ID of the user to whom the notification is sent
+   * @param title - title of the notification
+   * @param message - message of the notification
+   * @param type - type of the notification (info, success, warning, error)
+   * @param link - optional link to be included in the notification
+   * @returns 
+   */
   async createNotification(data: {
     userId: string;
     title: string;
@@ -38,6 +54,11 @@ export class NotificationService {
     }
   }
 
+  /**
+   * This method retrieves notifications for a specific user
+   * @param userId - ID of the user whose notifications are to be fetched
+   * @returns list of notifications for the user
+   */
   async getUserNotifications(userId: string) {
     apiLogger.debug("Fetching user notifications", { userId });
     
@@ -62,6 +83,11 @@ export class NotificationService {
     }
   }
 
+  /**
+   * This method marks notification as read
+   * @param notificationId 
+   * @returns 
+   */
   async markAsRead(notificationId: string) {
     apiLogger.debug("Marking notification as read", { notificationId });
     
@@ -88,6 +114,11 @@ export class NotificationService {
     }
   }
 
+  /**
+   * This method marks all notifications as read for a specific user
+   * @param userId - ID of the user whose notifications are to be marked as read
+   * @returns result of the update operation
+   */
   async markAllAsRead(userId: string) {
     apiLogger.debug("Marking all notifications as read", { userId });
     

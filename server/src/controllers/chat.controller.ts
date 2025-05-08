@@ -6,12 +6,22 @@ import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
+/**
+ * Controller for handling chat functionality
+ * *    1. Get chat history between user and teacher
+ */
 @injectable()
 export class ChatController {
   constructor(
     @inject(TYPES.IChatService) private _chatService: IChatService
   ) {}
 
+  /**
+   * This methods handles chat history of user with teacher 
+   * @param req request object
+   * @param res response object
+   * @returns 
+   */
   async getChatHistory(req: Request, res: Response): Promise<void> {
     const { courseId, senderId, receiverId } = req.query;
 

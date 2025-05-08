@@ -1,5 +1,9 @@
 import redisClientWrapper from "../config/redis";
 
+/**
+ * This is a util function to handle cache key
+ */
+
 // 1 HR TTL
 const CACHE_TTL = 3600;
 

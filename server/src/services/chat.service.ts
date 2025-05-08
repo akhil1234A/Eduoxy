@@ -7,6 +7,10 @@ import { ICourseRepository } from "../interfaces/course.repository";
 import { IRedisClient } from "../config/redis";
 import { IChatRepository } from "../interfaces/chat.repository";
 
+/**
+ * This is a service responsible for managing chat functionalities
+ * It handles sending and retrieving messages between students and instructors
+ */
 @injectable()
 export class ChatService implements IChatService {
   constructor(
@@ -16,6 +20,13 @@ export class ChatService implements IChatService {
     @inject(TYPES.IChatRepository) private _chatRepository: IChatRepository
   ) {}
 
+  /**
+   * This method retrieves chat history between two users for a specific course
+   * @param courseId 
+   * @param senderId 
+   * @param receiverId 
+   * @returns 
+   */
   async getChatHistory(courseId: string, senderId: string, receiverId: string): Promise<IMessage[]> {
     const course = await this._courseRepository.findByCourseId(courseId);
     if (!course) {
@@ -53,6 +64,16 @@ export class ChatService implements IChatService {
   }
   
 
+  /**
+   * This method sends a message from one user to another in a specific course
+   * @param courseId 
+   * @param senderId 
+   * @param receiverId 
+   * @param message 
+   * @param isFile 
+   * @param fileName 
+   * @returns 
+   */
   async sendMessage(courseId: string, senderId: string, receiverId: string, message: string, isFile: boolean, fileName?: string): Promise<IMessage> {
 
     console.log(courseId, senderId, receiverId, message);

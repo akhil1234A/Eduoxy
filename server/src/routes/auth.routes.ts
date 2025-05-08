@@ -3,6 +3,10 @@ import { authController } from "../di/container";
 
 const router = express.Router();
 
+/**
+ * Auth Routes
+ * These routes are accessible to all users
+ */
 router.post("/signup", authController.signUp.bind(authController));
 router.post("/login", authController.login.bind(authController));
 router.post("/verify-otp", authController.verifyOtp.bind(authController));

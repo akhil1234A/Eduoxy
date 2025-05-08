@@ -11,6 +11,10 @@ import { IUserService } from "../interfaces/user.service";
 import { UserCourseProgressRepository } from "../repositories/courseProgress.repository";
 
 
+/**
+ * This is a service responsible for managing certificates
+ * 
+ */
 @injectable()
 export class CertificateService implements ICertificateService {
   constructor(
@@ -19,6 +23,13 @@ export class CertificateService implements ICertificateService {
     @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: UserCourseProgressRepository,
   ) {}
 
+  /**
+   * This method generates a certificate for a user who has completed a course
+   * @param userId 
+   * @param courseId 
+   * @param courseName 
+   * @returns 
+   */
   async generateCertificate(userId: string, courseId: string, courseName: string): Promise<ICertificate> {
     
     const isCompleted = await this._userCourseProgressRepository.isCourseCompleted(userId, courseId);
@@ -29,7 +40,7 @@ export class CertificateService implements ICertificateService {
 
     const existingCertificate = await this._certificateRepository.findByUserIdAndCourseId(userId, courseId);
     if (existingCertificate) {
-      
+      throw new Error("Certificate already exists for this course");
     }
     
     const certificateId = `EDUOXY-${format(new Date(), "yyyyMMdd")}-${uuidv4().slice(0, 6).toUpperCase()}`;
@@ -90,10 +101,22 @@ export class CertificateService implements ICertificateService {
     return await this._certificateRepository.create(certificate);
   }
 
+  /**
+   * This method retrieves a list of certificates for a user
+   * @param userId 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async getUserCertificates(userId: string, page: number, limit: number): Promise<{ certificates: ICertificate[]; total: number }> {
     return await this._certificateRepository.findByUserId(userId, page, limit);
   }
 
+  /**
+   * This method retrieves a certificate by its ID
+   * @param certificateId 
+   * @returns 
+   */
   async getCertificateById(certificateId: string): Promise<ICertificate | null> {
     return await this._certificateRepository.findByCertificateId(certificateId);
   }

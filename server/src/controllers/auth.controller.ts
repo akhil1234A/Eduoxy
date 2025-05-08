@@ -10,10 +10,30 @@ import TYPES from "../di/types";
 import IAuthController from "../interfaces/auth.controller";
 import { apiLogger } from "../utils/logger";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+
+
+/**
+ * Controller for handling authentication
+ * *    1. Sign up
+ * *    2. Login
+ * *    3. Verify OTP
+ * *    4. Refresh token
+ * *    5. Logout
+ * *    6. Google authentication
+ * *    7. Password reset request
+ * *    8. Password reset using token
+ */
 @injectable()
 export class AuthController implements IAuthController {
   constructor(@inject(TYPES.IAuthService) private _authService: IAuthService, @inject(TYPES.IJwtService) private _jwtService: IJwtService, @inject(TYPES.IRedisClient) private _redisClient: IRedisClient) {}
 
+  /**
+   * This method handles user sign-up for all users (Admin, Teacher, Student)
+   * @param req request object
+   * @param res response object
+   * @return user details with access and refresh token
+   */
+  
   async signUp(req: Request, res: Response): Promise<void> {
     try {
       const { name, email, password, userType } = req.body;
@@ -25,6 +45,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles user loginfor all users (Admin, Teacher, Student)
+   * @param req request object
+   * @param res response object
+   * @returns user details with access and refresh token
+   */
   async login(req: Request, res: Response): Promise<void> {
     try {
       const { email, password } = req.body;
@@ -47,6 +73,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles OTP verification for new sign ups  
+   * @param req request object
+   * @param res response object
+   * @returns user details with access and refresh token
+   */
   async verifyOtp(req: Request, res: Response): Promise<void> {
     try {
       const { email, otp } = req.body;
@@ -61,6 +93,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles token refresh 
+   * @param req request object
+   * @param res response object
+   * @returns new refresh token and access token
+   */
   async refresh(req: Request, res: Response): Promise<void> {
     try {
       const refreshToken = req.cookies.refreshToken;
@@ -84,6 +122,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles user logout
+   * @param req request object
+   * @param res response object
+   * @return success message
+   */
   async logout(req: Request, res: Response): Promise<void> {
     try {
       const refreshToken = req.cookies.refreshToken;
@@ -103,6 +147,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles Google authentication
+   * @param req request object
+   * @param res response object
+   * @returns user details with access and refresh token
+   */
   async googleAuth(req: Request, res: Response): Promise<void> {
     try {
       const { idToken } = req.body;
@@ -120,6 +170,12 @@ export class AuthController implements IAuthController {
     }
   }
 
+  /**
+   * This method handles password reset request
+   * @param req request object
+   * @param res response object
+   * @returns send a mail with reset link
+   */
   async requestPasswordReset(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;
@@ -132,6 +188,13 @@ export class AuthController implements IAuthController {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_FAILED, err.message));
     }
   }
+
+  /**
+   * This method handles password reset using token
+   * @param req request object
+   * @param res response object
+   * @returns success message
+   */
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     try {
@@ -152,7 +215,12 @@ export class AuthController implements IAuthController {
     }
   }
   
-
+/**
+ * This method handles sending OTP for email verification
+ * @param req request object
+ * @param res response object
+ * @return success message
+ */
   async sendOtp(req: Request, res: Response): Promise<void> {
     try {
       const { email } = req.body;

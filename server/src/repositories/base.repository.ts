@@ -2,6 +2,10 @@ import { Model } from "mongoose";
 import { IBaseRepository } from "../interfaces/base.repository";
 import { injectable } from "inversify";
 
+/**
+ * Base repository class that provides basic CRUD operations
+ * @template T - The type of the model
+ */
 @injectable()
 export class BaseRepository<T> implements IBaseRepository<T> {
   protected model: Model<T>;

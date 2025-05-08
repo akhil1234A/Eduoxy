@@ -8,6 +8,10 @@ import { ICourseDocument } from "../models/course.model";
 import { CacheUtil } from "../utils/cache";
 import { IRedisClient } from "../config/redis";
 
+/**
+ * This is a service class for handling user course progress operations.
+ * It provides methods to get user enrolled courses, get user course progress, and update user course progress.
+ */
 @injectable()
 export class UserCourseProgressService implements IUserCourseProgressService {
   constructor(
@@ -15,6 +19,13 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
   ) {}
 
+  /**
+   * This method retrieves the list of courses a user is enrolled in.
+   * @param userId 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async getUserEnrolledCourses(
     userId: string,
     page: number = 1,
@@ -35,10 +46,22 @@ export class UserCourseProgressService implements IUserCourseProgressService {
     return result;
   }
 
+  /** 
+   * This method retrieves the progress of a specific course for a user.
+   * @param userId
+   * @param courseId
+   */
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
     return this._userCourseProgressRepository.getUserCourseProgress(userId, courseId);
   }
 
+  /**
+   * This method updates the progress of a specific course for a user.
+   * @param userId 
+   * @param courseId 
+   * @param progressData 
+   * @returns 
+   */
   async updateUserCourseProgress(
     userId: string,
     courseId: string,

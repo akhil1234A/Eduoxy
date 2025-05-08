@@ -11,10 +11,17 @@ import { IRedisClient } from "../config/redis";
 import { CacheUtil } from "../utils/cache";
 import { format } from "date-fns";
 import { apiLogger } from "../utils/logger";
+import { getPaginationParams } from "../utils/paginationUtil";
+
+/**
+ * Service for handling transactions related to course enrollments.
+ * This service manages the creation of transactions, retrieval of earnings for admin and teachers,
+ * and the purchases made by students.
+ */
 @injectable()
 export class TransactionService implements ITransactionService {
-  private readonly _ADMIN_PERCENTAGE = 0.2; 
-  private readonly _CACHE_TTL = 3600; 
+  private readonly _ADMIN_PERCENTAGE = 0.2;
+  private readonly _CACHE_TTL = 3600;
 
   constructor(
     @inject(TYPES.ITransactionRepository) private _transactionRepository: ITransactionRepository,
@@ -25,6 +32,15 @@ export class TransactionService implements ITransactionService {
     private _notificationService: NotificationService
   ) {}
 
+  /**
+   * This method creates a transaction for a course enrollment.
+   * @param userId
+   * @param courseId
+   * @param transactionId
+   * @param amount
+   * @param paymentProvider
+   * @returns
+   */
   async createTransaction(
     userId: string,
     courseId: string,
@@ -86,19 +102,19 @@ export class TransactionService implements ITransactionService {
       const studentPurchasesPattern = `student:purchases:${userId}*`;
       const enrolledCoursesPattern = `enrolled:${userId}*`;
       const coursePattern = `course:${courseId}*`;
-      
+
       const keysToDelete = await Promise.all([
         this._redisClient.keys(adminEarningsPattern),
         this._redisClient.keys(teacherEarningsPattern),
         this._redisClient.keys(studentPurchasesPattern),
         this._redisClient.keys(enrolledCoursesPattern),
-        this._redisClient.keys(coursePattern)
+        this._redisClient.keys(coursePattern),
       ]);
 
       // Flatten the array of arrays and delete all matching keys
       const allKeys = keysToDelete.flat();
       if (allKeys.length > 0) {
-        await Promise.all(allKeys.map(key => this._redisClient.del(key)));
+        await Promise.all(allKeys.map((key) => this._redisClient.del(key)));
       }
 
       await CacheUtil.invalidateCourseListCaches();
@@ -117,7 +133,18 @@ export class TransactionService implements ITransactionService {
     }
   }
 
-  async getAdminEarnings(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  /**
+   * This method retrieves the earnings for the admin.
+   * @param page
+   * @param limit
+   * @param searchTerm
+   * @returns
+   */
+  async getAdminEarnings(
+    page: number = 1,
+    limit: number = 10,
+    searchTerm: string = ""
+  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
     const cacheKey = `admin:earnings:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -125,50 +152,108 @@ export class TransactionService implements ITransactionService {
       return JSON.parse(cachedData);
     }
 
-    const skip = (page - 1) * limit;
-    const transactions = await this._transactionRepository.findAll(skip, limit);
-    const total = await this._transactionRepository.countAll();
-    const totalPages = Math.ceil(total / limit);
-    
-    const enrichedData = await Promise.all(
-      transactions.map(async (txn) => {
-        const course = await this._courseRepository.findById(txn.courseId);
-        const student = await this._authService.findUserById(txn.userId);
-        return {
-          transactionId: txn.transactionId,
-          date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
-          courseName: course?.title || "Unknown",
-          studentName: student?.name || "Unknown",
-          totalAmount: txn.amount,
-          earning: txn.amount * this._ADMIN_PERCENTAGE,
-          paymentProvider: txn.paymentProvider,
-        };
-      })
-    );
+    try {
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
+      
+      // Fetch paginated transactions for the response
+      const transactions = await this._transactionRepository.findAll(params.skip, params.limit);
+      
+      // Fetch all transactions to compute total after searchTerm filtering
+      const allTransactions = await this._transactionRepository.findAll(0, 0);
 
-    // Filter by search term if provided
-    let filteredData = enrichedData;
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filteredData = enrichedData.filter(item => 
-        item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
-        item.courseName.toLowerCase().includes(lowerSearchTerm) ||
-        item.studentName.toLowerCase().includes(lowerSearchTerm) ||
-        item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+      apiLogger.info("page-limit", { page: params.page, limit: params.limit });
+      apiLogger.info("Search term", { searchTerm: params.searchTerm });
+
+      // Enrich all transactions for total count
+      const allEnrichedData = await Promise.all(
+        allTransactions.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          const student = await this._authService.findUserById(txn.userId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            studentName: student?.name || "Unknown",
+            totalAmount: txn.amount,
+            earning: txn.amount * this._ADMIN_PERCENTAGE,
+            paymentProvider: txn.paymentProvider,
+          };
+        })
       );
+
+      // Filter all enriched data to compute total
+      let filteredTotalData = allEnrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredTotalData = allEnrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.studentName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+      const total = filteredTotalData.length;
+
+      // Enrich paginated transactions for response
+      const enrichedData = await Promise.all(
+        transactions.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          const student = await this._authService.findUserById(txn.userId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            studentName: student?.name || "Unknown",
+            totalAmount: txn.amount,
+            earning: txn.amount * this._ADMIN_PERCENTAGE,
+            paymentProvider: txn.paymentProvider,
+          };
+        })
+      );
+
+      apiLogger.info("Enriched data", { enrichedData });
+
+      // Filter paginated data by search term
+      let filteredData = enrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredData = enrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.studentName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+
+      const result = {
+        transactions: filteredData,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      };
+
+      apiLogger.info("Admin earnings fetched successfully", { result });
+      await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
+      return result;
+    } catch (error) {
+      apiLogger.error("Error fetching admin earnings", { error: (error as Error).message });
+      await this._redisClient.del(cacheKey);
+      throw error;
     }
-
-    const result = {
-      transactions: filteredData,
-      total: filteredData.length,
-      totalPages: Math.ceil(filteredData.length / limit)
-    };
-
-    await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
-    return result;
   }
 
-  async getTeacherEarnings(teacherId: string, page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  /**
+   * This method retrieves the earnings for a specific teacher.
+   * @param teacherId
+   * @param page
+   * @param limit
+   * @param searchTerm
+   */
+  async getTeacherEarnings(
+    teacherId: string,
+    page: number = 1,
+    limit: number = 10,
+    searchTerm: string = ""
+  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
     const cacheKey = `teacher:earnings:${teacherId}:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -176,50 +261,107 @@ export class TransactionService implements ITransactionService {
       return JSON.parse(cachedData);
     }
 
-    const skip = (page - 1) * limit;
-    const teacherCourses = await this._courseRepository.findTeacherCourses(teacherId);
-    const courseIds = teacherCourses.map((c) => c.courseId);
-    const transactions = await this._transactionRepository.findAll(skip, limit);
-    const teacherTxns = transactions.filter((txn) => courseIds.includes(txn.courseId));
-    
-    const enrichedData = await Promise.all(
-      teacherTxns.map(async (txn) => {
-        const course = await this._courseRepository.findById(txn.courseId);
-        const student = await this._authService.findUserById(txn.userId);
-        return {
-          transactionId: txn.transactionId,
-          date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
-          courseName: course?.title || "Unknown",
-          studentName: student?.name || "Unknown",
-          earning: txn.amount * (1 - this._ADMIN_PERCENTAGE),
-          paymentProvider: txn.paymentProvider,
-        };
-      })
-    );
+    try {
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
+      const teacherCourses = await this._courseRepository.findTeacherCourses(teacherId);
+      const courseIds = teacherCourses.map((c) => c.courseId);
 
-    // Filter by search term if provided
-    let filteredData = enrichedData;
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filteredData = enrichedData.filter(item => 
-        item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
-        item.courseName.toLowerCase().includes(lowerSearchTerm) ||
-        item.studentName.toLowerCase().includes(lowerSearchTerm) ||
-        item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+      // Fetch paginated transactions for the response
+      const transactions = await this._transactionRepository.findByCourseIds(courseIds, params.skip, params.limit);
+
+      // Fetch all teacher transactions to compute total
+      const allTeacherTxns = await this._transactionRepository.findByCourseIds(courseIds, 0, 0);
+
+      apiLogger.info("page-limit", { page: params.page, limit: params.limit });
+      apiLogger.info("Search term", { searchTerm: params.searchTerm });
+
+      // Enrich all transactions for total count
+      const allEnrichedData = await Promise.all(
+        allTeacherTxns.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          const student = await this._authService.findUserById(txn.userId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            studentName: student?.name || "Unknown",
+            earning: txn.amount * (1 - this._ADMIN_PERCENTAGE),
+            paymentProvider: txn.paymentProvider,
+          };
+        })
       );
+
+      // Filter all enriched data to compute total
+      let filteredTotalData = allEnrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredTotalData = allEnrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.studentName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+      const total = filteredTotalData.length;
+
+      // Enrich paginated transactions for response
+      const enrichedData = await Promise.all(
+        transactions.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          const student = await this._authService.findUserById(txn.userId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            studentName: student?.name || "Unknown",
+            earning: txn.amount * (1 - this._ADMIN_PERCENTAGE),
+            paymentProvider: txn.paymentProvider,
+          };
+        })
+      );
+
+      // Filter paginated data by search term
+      let filteredData = enrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredData = enrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.studentName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+
+      const result = {
+        transactions: filteredData,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      };
+
+      apiLogger.info("Teacher earnings fetched successfully", { result });
+      await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
+      return result;
+    } catch (error) {
+      apiLogger.error("Error fetching teacher earnings", { error: (error as Error).message });
+      await this._redisClient.del(cacheKey);
+      throw error;
     }
-
-    const result = {
-      transactions: filteredData,
-      total: filteredData.length,
-      totalPages: Math.ceil(filteredData.length / limit)
-    };
-
-    await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
-    return result;
   }
 
-  async getStudentPurchases(userId: string, page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  /**
+   * This method retrieves the purchases made by a specific student.
+   * @param userId
+   * @param page
+   * @param limit
+   * @param searchTerm
+   * @returns
+   */
+  async getStudentPurchases(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+    searchTerm: string = ""
+  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
     const cacheKey = `student:purchases:${userId}:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -227,47 +369,90 @@ export class TransactionService implements ITransactionService {
       return JSON.parse(cachedData);
     }
 
-    const skip = (page - 1) * limit;
-    const transactions = await this._transactionRepository.findByUserId(userId);
-    apiLogger.info("Transactions fetched successfully");
-    const paginatedTransactions = transactions.slice(skip, skip + limit);
-    
-    const enrichedData = await Promise.all(
-      paginatedTransactions.map(async (txn) => {
-        const course = await this._courseRepository.findById(txn.courseId);
+    try {
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
 
-        return {
-          transactionId: txn.transactionId,
-          date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
-          courseName: course?.title || "Unknown",
-          teacherName: course?.teacherName || "Unknown",
-          amount: txn.amount,
-          paymentProvider: txn.paymentProvider,
-          status: "Completed",
-        };
-      })
-    );
+      // Fetch paginated transactions for the response
+      const transactions = await this._transactionRepository.findByUserId(userId, params.skip, params.limit);
 
-    // Filter by search term if provided
-    let filteredData = enrichedData;
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      filteredData = enrichedData.filter(item => 
-        item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
-        item.courseName.toLowerCase().includes(lowerSearchTerm) ||
-        item.teacherName.toLowerCase().includes(lowerSearchTerm) ||
-        item.paymentProvider.toLowerCase().includes(lowerSearchTerm) ||
-        item.status.toLowerCase().includes(lowerSearchTerm)
+      // Fetch all user transactions to compute total
+      const allTransactions = await this._transactionRepository.findByUserId(userId, 0, 0);
+
+      apiLogger.info("page-limit", { page: params.page, limit: params.limit });
+      apiLogger.info("Search term", { searchTerm: params.searchTerm });
+
+      // Enrich all transactions for total count
+      const allEnrichedData = await Promise.all(
+        allTransactions.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            teacherName: course?.teacherName || "Unknown",
+            amount: txn.amount,
+            paymentProvider: txn.paymentProvider,
+            status: "Completed",
+          };
+        })
       );
-    }
 
-    const result = {
-      transactions: filteredData,
-      total: transactions.length,
-      totalPages: Math.ceil(transactions.length / limit)
-    };
-    apiLogger.info("Result fetched successfully");
-    await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
-    return result;
+      // Filter all enriched data to compute total
+      let filteredTotalData = allEnrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredTotalData = allEnrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.teacherName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm) ||
+          item.status.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+      const total = filteredTotalData.length;
+
+      // Enrich paginated transactions for response
+      const enrichedData = await Promise.all(
+        transactions.map(async (txn) => {
+          const course = await this._courseRepository.findById(txn.courseId);
+          return {
+            transactionId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            teacherName: course?.teacherName || "Unknown",
+            amount: txn.amount,
+            paymentProvider: txn.paymentProvider,
+            status: "Completed",
+          };
+        })
+      );
+
+      // Filter paginated data by search term
+      let filteredData = enrichedData;
+      if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        filteredData = enrichedData.filter((item) =>
+          item.transactionId.toLowerCase().includes(lowerSearchTerm) ||
+          item.courseName.toLowerCase().includes(lowerSearchTerm) ||
+          item.teacherName.toLowerCase().includes(lowerSearchTerm) ||
+          item.paymentProvider.toLowerCase().includes(lowerSearchTerm) ||
+          item.status.toLowerCase().includes(lowerSearchTerm)
+        );
+      }
+
+      const result = {
+        transactions: filteredData,
+        total,
+        totalPages: Math.ceil(total / params.limit),
+      };
+
+      apiLogger.info("Student purchases fetched successfully", { result });
+      await this._redisClient.set(cacheKey, JSON.stringify(result), { EX: this._CACHE_TTL });
+      return result;
+    } catch (error) {
+      apiLogger.error("Error fetching student purchases", { error: (error as Error).message });
+      await this._redisClient.del(cacheKey);
+      throw error;
+    }
   }
 }

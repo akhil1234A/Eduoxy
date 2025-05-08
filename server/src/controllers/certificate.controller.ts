@@ -6,13 +6,25 @@ import { HttpStatus } from "../utils/httpStatus";
 import { successResponse, errorResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { apiLogger } from "../utils/logger";
+import { getPaginationParams, buildPaginationResult } from "../utils/paginationUtil";
 
+/**
+ * Controller for handling certificate
+ * *    1. Generate certificate
+ * *    2. Get user certificates
+ * *    3. Get certificate by ID
+ */
 @injectable()
 export class CertificateController {
   constructor(
     @inject(TYPES.ICertificateService) private _certificateService: ICertificateService
   ) {}
 
+/**
+ * This method generates a certificate for a user
+ * @param req request object 
+ * @param res response object 
+ */
   async generateCertificate(req: Request, res: Response): Promise<void> {
     try {
       const { userId, courseId, courseName } = req.body;
@@ -26,20 +38,25 @@ export class CertificateController {
     }
   }
 
+  /**
+   * This method gets all certificates for a user with pagination
+   * @param req request object
+   * @param res response object
+   */
   async getUserCertificates(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const { page = "1", limit = "10" } = req.query;
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
-      const { certificates, total } = await this._certificateService.getUserCertificates(userId, pageNum, limitNum);
+      const params = getPaginationParams(req);
+      const { certificates, total } = await this._certificateService.getUserCertificates(userId, params.page, params.limit);
+      const result = buildPaginationResult(params, total);
+
       res.status(HttpStatus.OK).json(
         successResponse(RESPONSE_MESSAGES.CERTIFICATE.RETRIEVE_SUCCESS, {
           certificates,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
         })
       );
     } catch (error) {
@@ -49,6 +66,11 @@ export class CertificateController {
     }
   }
 
+  /**
+   * This method gets a certificate by its ID
+   * @param req request object
+   * @param res response object
+   */
   async getCertificateById(req: Request, res: Response): Promise<void> {
     try {
       const { certificateId } = req.params;

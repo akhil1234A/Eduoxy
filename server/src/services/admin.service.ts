@@ -7,6 +7,9 @@ import TYPES from "../di/types";
 import { CacheUtil } from "../utils/cache";
 import { IRedisClient } from "../config/redis";
 
+/**
+ * This is a service responsible for managing admin functionalities
+ */
 @injectable()
 export class AdminService implements IAdminService {
   constructor(
@@ -14,6 +17,13 @@ export class AdminService implements IAdminService {
     @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
   ) {}
 
+  /**
+   * This method retrieves a list of students with pagination and search functionality
+   * @param page 
+   * @param limit 
+   * @param searchTerm 
+   * @returns 
+   */
   async listStudents(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ users: IUser[]; total: number }> {
     const cacheKey = CacheUtil.getListCacheKey("students", page, limit, searchTerm);
     const cachedData = await CacheUtil.get<{ users: IUser[]; total: number }>(cacheKey);
@@ -30,6 +40,14 @@ export class AdminService implements IAdminService {
     return result;
   }
   
+  /**
+   * This method retrives a list of teachers with pagination and search 
+   * Admin Management - list Teachers 
+   * @param page 
+   * @param limit 
+   * @param searchTerm 
+   * @returns 
+   */
   async listTeachers(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{ users: IUser[]; total: number }> {
     const cacheKey = CacheUtil.getListCacheKey("teachers", page, limit, searchTerm);
     const cachedData = await CacheUtil.get<{ users: IUser[]; total: number }>(cacheKey);
@@ -46,6 +64,11 @@ export class AdminService implements IAdminService {
     return result;
   }
 
+  /**
+   * Admin Management - block user
+   * @param userId 
+   * @returns 
+   */
   async blockUser(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
@@ -73,6 +96,12 @@ export class AdminService implements IAdminService {
     return updatedUser;
   }
 
+
+  /**
+   * Admin Management - Unblock a user
+   * @param userId 
+   * @returns 
+   */
   async unblockUser(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");

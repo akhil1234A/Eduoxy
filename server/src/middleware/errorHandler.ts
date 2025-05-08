@@ -2,6 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { errorResponse } from "../types/types";
 import { HttpStatus } from "../utils/httpStatus";
 
+/**
+ * This middleware handles errors in the application.
+ * It catches errors thrown in the application and sends a standardized error response to the client.
+ * @param err 
+ * @param req 
+ * @param res 
+ * @param next 
+ */
 export const errorHandler = (
   err: Error,
   req: Request,

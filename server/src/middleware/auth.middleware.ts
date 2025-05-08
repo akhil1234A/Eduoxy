@@ -4,7 +4,14 @@ import redisClient from "../config/redis";
 import { AuthenticatedRequest, UserRole } from "../types/types";
 
 
-
+/**
+ * This middleware function authenticates the user by verifying the JWT token.
+ * It checks if the token is present in the request cookies and verifies it using the secret key.
+ * @param req 
+ * @param res 
+ * @param next 
+ * @returns 
+ */
 export const authenticateUser = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -40,6 +47,12 @@ export const authenticateUser = async (
   }
 };
 
+/**
+ * This middleware function authorizes the user based on their role.
+ * It checks if the user has the required role to access the requested resource.
+ * @param allowedRoles 
+ * @returns 
+ */
 export const authorizeRoles = (...allowedRoles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction):void => {
     if (!req.user) {

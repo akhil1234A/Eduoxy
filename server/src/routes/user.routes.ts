@@ -8,6 +8,10 @@ const upload = multer({ dest: "uploads/" });
 
 router.use(authenticateUser);
 
+/**
+ * User Routes
+ * These routes are accessible to all authenticated users
+ */
 router.put("/update-password", userController.updatePassword.bind(userController));
 
 router.put("/update-profile", upload.single("profileImage"), userController.updateInstructorProfile.bind(userController));

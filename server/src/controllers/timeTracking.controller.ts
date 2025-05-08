@@ -7,12 +7,22 @@ import { successResponse, errorResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { apiLogger } from "../utils/logger";
 
+/**
+ * Controller for handling time tracking functionality
+ * *    1. Log time spent by user on a course
+ * *    2. Get total time spent by user on a course
+ */
 @injectable()
 export class TimeTrackingController {
   constructor(
     @inject(TYPES.ITimeTrackingService) private service: TimeTrackingService
   ) {}
 
+  /**
+   * This method logs the time spent by a user on a course
+   * @param req userId, courseId, chapterId, timeSpentSeconds
+   * @param res 
+   */
   async logTimeSpent(req: Request, res: Response): Promise<void> {
     try {
       const { userId, courseId, chapterId, timeSpentSeconds } = req.body;
@@ -26,6 +36,11 @@ export class TimeTrackingController {
     }
   }
 
+  /**
+   * This method retrieves the total time spent by a user on a course
+   * @param req userId, courseId
+   * @param res 
+   */
   async getTotalTimeSpent(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;

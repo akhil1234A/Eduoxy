@@ -7,6 +7,26 @@ import { IForumService } from "../interfaces/forum.service";
 import { HttpStatus } from "../utils/httpStatus";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { apiLogger } from "../utils/logger";
+import { buildPaginationResult, getPaginationParams } from "../utils/paginationUtil";
+
+/**
+ * This controller handles all the CRUD operations for forums, posts, and replies.
+ * *    1. Get forums
+ * *    2. Get forum by ID
+ * *    3. Create forum
+ * *    4. Update forum
+ * *    5. Delete forum
+ * *    6. Get posts in a forum
+ * *    7. Create post in a forum
+ * *    8. Get post by ID
+ * *    9. Update post
+ * *    10. Delete post
+ * *    11. Get replies to a post
+ * *    12. Create reply to a post
+ * *    13. Update reply
+ * *    14. Delete reply
+ * *    15. Search posts in a forum
+ */
 
 @injectable()
 export class ForumController {
@@ -14,18 +34,28 @@ export class ForumController {
     @inject(TYPES.IForumService) private _forumService: IForumService,
   ) {}
 
+/**
+ * This method get all forums with pagination and optional search query
+ * @param req request object
+ * @param res 
+ */
   async getForums(req: Request, res: Response): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const query = req.query.query as string;
-      const result = await this._forumService.getForums(page, pageSize, query);
+      const params = getPaginationParams(req);
+      const result = await this._forumService.getForums(params.page, params.limit, params.searchTerm);
       res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_FORUMS_SUCCESS, result));
-    } catch (error) {
+
+      } 
+      catch (error) {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.FORUM.GET_FORUMS_ERROR, (error as Error).message));
     }
   }
 
+  /**
+   * This method gets a forum by forumId
+   * @param req forumId
+   * @param res 
+   */
   async getForum(req: Request, res: Response): Promise<void> {
     try {
       const { forumId } = req.params;
@@ -36,6 +66,12 @@ export class ForumController {
     }
   }
 
+  /**
+   * This update a forum by forumId
+   * @param req forumId
+   * @param req title, description, topics, userId
+   * @param res 
+   */
   async updateForum(req: Request, res: Response): Promise<void> {
     try {
       const { forumId } = req.params;
@@ -47,6 +83,12 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method deletes a forum by forumId
+   * @param req forumId
+   * @param req userId
+   * @param res 
+   */
   async deleteForum(req: Request, res: Response): Promise<void> {
     try {
       const { forumId } = req.params;
@@ -58,6 +100,11 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method creates a forum 
+   * @param req forumId, title, description, topics, userId
+   * @param res 
+   */
   async createForum(req: Request, res: Response): Promise<void> {
     try {
       const { title, description, topics, userId } = req.body;
@@ -68,23 +115,34 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method gets all posts in a forum with pagination and optional search query
+   * @param req forumId, page, pageSize, query
+   * @param res 
+   */
   async getPosts(req: Request, res: Response): Promise<void> {
     try {
       const { forumId } = req.params;
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const query = req.query.query as string;
+      const params = getPaginationParams(req);
+      const result = req.query.query as string
+        ? await this._forumService.searchPosts(forumId, req.query.query as string, params.page, params.limit)
+        : await this._forumService.getPosts(forumId, params.page, params.limit);
+      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_FORUMS_SUCCESS, result));
+
+     
       
-      const result = query 
-        ? await this._forumService.searchPosts(forumId, query, page, pageSize)
-        : await this._forumService.getPosts(forumId, page, pageSize);
-        
-      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_POSTS_SUCCESS, result));
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.FORUM.GET_POSTS_ERROR, (error as Error).message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+        errorResponse(RESPONSE_MESSAGES.FORUM.GET_POSTS_ERROR, (error as Error).message)
+      );
     }
   }
 
+  /**
+   * This method creates a post in a forum
+   * @param req forumId, content, topic, userId, userName, files
+   * @param res 
+   */
   async createPost(req: Request, res: Response): Promise<void> {
     try {
       apiLogger.info(`Creating post for forum ${req.params.forumId} by user ${req.body.userId}`);
@@ -114,6 +172,11 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method gets a post by postId
+   * @param req forumId, postId
+   * @param res 
+   */
   async getPost(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
@@ -124,6 +187,11 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method updates a post by postId
+   * @param req forumId, postId, content, topic, userId, files
+   * @param res 
+   */
   async updatePost(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
@@ -150,6 +218,11 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method deletes a post by postId
+   * @param req forumId, postId, userId
+   * @param res 
+   */
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.body;
@@ -161,18 +234,29 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method gets all replies to a post with pagination
+   * @param req forumId, postId, page, pageSize
+   * @param res 
+   */
   async getReplies(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const result = await this._forumService.getReplies(postId, page, pageSize);
+      const params = getPaginationParams(req);
+      const result = await this._forumService.getReplies(postId, params.page, params.limit);
       res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_REPLIES_SUCCESS, result));
     } catch (error) {
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.FORUM.GET_REPLIES_ERROR, (error as Error).message));
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+        errorResponse(RESPONSE_MESSAGES.FORUM.GET_REPLIES_ERROR, (error as Error).message)
+      );
     }
   }
 
+  /**
+   * This method creates a reply to a post
+   * @param req forumId, postId, content, userId, userName, files, parentReplyId
+   * @param res 
+   */
   async createReply(req: Request, res: Response): Promise<void> {
     try {
       const { postId } = req.params;
@@ -205,7 +289,11 @@ export class ForumController {
   }
 
  
-
+/**
+ * This method updates reply in forum 
+ * @param req forumId, postId, replyId, content, userId, files
+ * @param res 
+ */
   async updateReply(req: Request, res: Response): Promise<void> {
     try {
       const { replyId } = req.params;
@@ -232,6 +320,11 @@ export class ForumController {
     }
   }
 
+  /**
+   * This method deletes a reply by replyId
+   * @param req forumId, postId, replyId, userId
+   * @param res 
+   */
   async deleteReply(req: Request, res: Response): Promise<void> {
     try {
       const { replyId } = req.params;

@@ -27,6 +27,10 @@ import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repo
 import { ICertificateRepository } from "../interfaces/certificate.repository";
 import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
 
+/**
+ * This is a service responsible for managing dashboard functionalities
+ * It handles retrieving and formatting data for admin, teacher, and user dashboards
+ */
 @injectable()
 export class DashboardService implements IDashboardService {
   private readonly _ADMIN_PERCENTAGE = 0.2;
@@ -42,22 +46,27 @@ export class DashboardService implements IDashboardService {
     @inject(TYPES.TimeTrackingRepository) private _timeTrackingRepository: TimeTrackingRepository
   ) {}
 
+  /**
+   * This is a private method that retrieves the date range based on the provided date filter
+   * @param dateFilter 
+   * @returns 
+   */
   private getDateRange(dateFilter?: {
     type: "day" | "week" | "month" | "custom";
     startDate?: string;
     endDate?: string;
   }): { startDate: string; endDate: string } {
     const now = new Date();
-    let startDate = format(subDays(now, 30), "yyyy-MM-dd"); // Default to last 30 days
+    let startDate = format(subDays(now, 30), "yyyy-MM-dd"); 
     let endDate = format(now, "yyyy-MM-dd");
 
     if (dateFilter) {
       if (dateFilter.type === "day") {
-        startDate = format(subDays(now, 30), "yyyy-MM-dd"); // Last 30 days for daily
+        startDate = format(subDays(now, 30), "yyyy-MM-dd"); 
       } else if (dateFilter.type === "week") {
-        startDate = format(subDays(now, 7), "yyyy-MM-dd"); // Last 7 days for transactions
+        startDate = format(subDays(now, 7), "yyyy-MM-dd"); 
       } else if (dateFilter.type === "month") {
-        startDate = format(subDays(now, 30), "yyyy-MM-dd"); // Last 30 days for transactions
+        startDate = format(subDays(now, 30), "yyyy-MM-dd"); 
       } else if (dateFilter.type === "custom" && dateFilter.startDate && dateFilter.endDate) {
         const start = parse(dateFilter.startDate, "yyyy-MM-dd", new Date());
         const end = parse(dateFilter.endDate, "yyyy-MM-dd", new Date());
@@ -77,6 +86,12 @@ export class DashboardService implements IDashboardService {
     return { startDate, endDate };
   }
 
+  /**
+   * This is a private method that formats transaction data for display
+   * @param transactions 
+   * @param isTeacher 
+   * @returns 
+   */
   private async formatTransactionData(
     transactions: any[],
     isTeacher: boolean = false
@@ -98,6 +113,14 @@ export class DashboardService implements IDashboardService {
     );
   }
 
+  /**
+   * This is a private method that retrieves filtered transactions based on the provided parameters
+   * @param skip 
+   * @param limit 
+   * @param dateFilter 
+   * @param teacherCourses 
+   * @returns 
+   */
   private async getFilteredTransactions(
     skip: number,
     limit: number,
@@ -130,6 +153,14 @@ export class DashboardService implements IDashboardService {
     return { transactions: filteredTxns, total };
   }
 
+
+  /**
+   * This a private method that retrieves revenue graph data based on the provided transactions and date filter
+   * @param transactions 
+   * @param dateFilter 
+   * @param isTeacher 
+   * @returns 
+   */
   private async getRevenueGraphData(
     transactions: any[],
     dateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string },
@@ -197,6 +228,13 @@ export class DashboardService implements IDashboardService {
     return { labels, data };
   }
 
+  /**
+   * This is a private method that retrieves the top-selling courses based on the provided transactions and courses
+   * @param transactions 
+   * @param courses 
+   * @param isTeacher 
+   * @returns 
+   */
   private async getTopSellingCourses(
     transactions: any[],
     courses: any[],
@@ -219,6 +257,14 @@ export class DashboardService implements IDashboardService {
       .slice(0, 5);
   }
 
+  /**
+   * This is a public method that retrieves the admin dashboard data
+   * @param page 
+   * @param limit 
+   * @param dateFilter 
+   * @param tableDateFilter 
+   * @returns 
+   */
   async getAdminDashboard(
     page: number = 1,
     limit: number = 10,
@@ -282,6 +328,14 @@ export class DashboardService implements IDashboardService {
     return result;
   }
 
+  /** 
+   * This is a public method that retrieves the teacher dashboard data
+   * @param teacherId
+   * @param page
+   * @param limit
+   * @param dateFilter
+   * @param tableDateFilter
+   */
   async getTeacherDashboard(
     teacherId: string,
     page: number = 1,
@@ -352,6 +406,11 @@ export class DashboardService implements IDashboardService {
     return result;
   }
 
+  /**
+   * This is a public method that retrieves the user dashboard data
+   * @param userId 
+   * @returns 
+   */
   async getUserDashboard(userId: string): Promise<any> {
   
 

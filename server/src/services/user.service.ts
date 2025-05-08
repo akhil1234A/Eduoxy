@@ -7,6 +7,11 @@ import cloudinary from "cloudinary";
 import { IUser } from "../models/user.model";
 import fs from "fs";
 import { S3Service } from "./s3.service";
+
+/**
+ * This is a service class for handling user-related operations.
+ * It provides methods to update user password, update instructor profile, and get user profile.
+ */
 @injectable()
 export class UserService implements IUserService {
 
@@ -18,6 +23,12 @@ export class UserService implements IUserService {
     this.s3Service = new S3Service();
   }
 
+  /**
+   * This method updates the password of a user.
+   * @param userId 
+   * @param currentPassword 
+   * @param newPassword 
+   */
   async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
@@ -33,6 +44,15 @@ export class UserService implements IUserService {
     await this._userRepository.update(userId, { password: hashedNewPassword });
   }
 
+  /**
+   * This method updates the profile of an instructor.
+   * @param userId 
+   * @param name 
+   * @param title 
+   * @param bio 
+   * @param profileImage 
+   * @returns 
+   */
   async updateInstructorProfile(userId: string, name?: string, title?: string, bio?: string, profileImage?: Express.Multer.File): Promise<IUser> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");
@@ -86,6 +106,11 @@ export class UserService implements IUserService {
     return updatedUser as IUser;
   }
 
+  /**
+   * This method retrieves the profile of a user by their ID.
+   * @param userId 
+   * @returns 
+   */
   async getProfile(userId: string): Promise<IUser> {
     const user = await this._userRepository.findById(userId, "-password");
     if(!user) throw new Error("User not found");

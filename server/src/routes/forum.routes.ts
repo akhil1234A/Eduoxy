@@ -4,6 +4,10 @@ import { authenticateUser } from "../middleware/auth.middleware";
 
 const router = Router();
 
+/** 
+ * Routes for forum
+ */
+
 // Forum routes
 router.get("/", forumController.getForums.bind(forumController));
 router.post("/", authenticateUser, forumController.createForum.bind(forumController));

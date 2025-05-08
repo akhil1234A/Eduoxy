@@ -9,6 +9,9 @@ import TYPES from '../di/types';
 import { s3Service } from './s3.service';
 import { IRedisClient } from '../config/redis';
 
+/**
+ * This is a service responsible for managing courses
+ */
 @injectable()
 export class CourseService implements ICourseService {
   constructor(
@@ -16,6 +19,11 @@ export class CourseService implements ICourseService {
     @inject(TYPES.IRedisClient) private _redisClient: IRedisClient
   ) {}
 
+  /**
+   * This method creates a new course
+   * @param courseData 
+   * @returns 
+   */
   async createCourse(courseData: Partial<ICourseDocument>): Promise<ICourseDocument> {
     if (!courseData.teacherId || !courseData.teacherName) {
       throw new Error('Teacher ID and name are required');
@@ -64,6 +72,9 @@ export class CourseService implements ICourseService {
     return course;
   }
 
+  /** 
+   * This method retrieves a course by its ID
+   */
   async getCourse(courseId: string): Promise<ICourseDocument | null> {
     const cacheKey = CacheUtil.getCourseCacheKey(courseId);
     const cachedData = await CacheUtil.get<ICourseDocument>(cacheKey);
@@ -73,6 +84,14 @@ export class CourseService implements ICourseService {
     if (course) await CacheUtil.set(cacheKey, course);
     return course;
   }
+
+  /**
+   * This method retrieves a list of public courses with pagination and optional category filtering
+   * @param category 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
 
   async listPublicCourses(
     category?: string,
@@ -106,6 +125,13 @@ export class CourseService implements ICourseService {
     return result;
   }
 
+  /**
+   * This method retrieves a list of courses for admin with pagination and optional category filtering
+   * @param category 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async listAdminCourses(category?: string, page: number = 1, limit: number = 10): Promise<{ courses: ICourseDocument[]; total: number }> {
     const cacheKey = CacheUtil.getCoursesListCacheKey('admin', category || 'all', page, limit);
     const cachedData = await CacheUtil.get<{ courses: ICourseDocument[]; total: number }>(cacheKey);
@@ -122,6 +148,14 @@ export class CourseService implements ICourseService {
     return result;
   }
 
+  /**
+   * This method retrieves a list of courses for a specific teacher with pagination and optional category filtering
+   * @param teacherId 
+   * @param category 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async listTeacherCourses(
     teacherId: string,
     category?: string,
@@ -143,6 +177,13 @@ export class CourseService implements ICourseService {
     return result;
   }
 
+  /**
+   * This method updates a course by its ID
+   * @param courseId 
+   * @param teacherId 
+   * @param updateData 
+   * @returns 
+   */
   async updateCourse(courseId: string, teacherId: string, updateData: Partial<ICourseDocument>): Promise<ICourseDocument | null> {
     const course = await this._courseRepository.findByCourseId(courseId);
 
@@ -196,6 +237,12 @@ export class CourseService implements ICourseService {
     return updatedCourse;
   }
 
+  /**
+   * This method deletes a course by its ID
+   * @param courseId 
+   * @param teacherId 
+   * @returns 
+   */
   async deleteCourse(courseId: string, teacherId: string): Promise<ICourseDocument | null> {
     const course = await this._courseRepository.findByCourseId(courseId);
 
@@ -248,6 +295,11 @@ export class CourseService implements ICourseService {
     return deletedCourse;
   }
 
+  /**
+   * This method unlist a course 
+   * @param courseId 
+   * @returns 
+   */
   async unlistCourse(courseId: string): Promise<ICourseDocument | null> {
     const course = await this._courseRepository.unlist(courseId);
     if (course) {
@@ -257,6 +309,11 @@ export class CourseService implements ICourseService {
     return course;
   }
 
+  /**
+   * This method publish a course 
+   * @param courseId 
+   * @returns 
+   */
   async publishCourse(courseId: string): Promise<ICourseDocument | null> {
     const course = await this._courseRepository.publish(courseId);
     if (course) {
@@ -266,6 +323,14 @@ export class CourseService implements ICourseService {
     return course;
   }
 
+  /**
+   * This method exits for search functionality for courses 
+   * @param searchTerm 
+   * @param category 
+   * @param page 
+   * @param limit 
+   * @returns 
+   */
   async searchCourses(
     searchTerm: string,
     category?: string,

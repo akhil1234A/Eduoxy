@@ -7,10 +7,22 @@ import { HttpStatus } from "../utils/httpStatus";
 import { apiLogger } from "../utils/logger";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
+/**
+ * Controller for handling review functionality
+ * *    1. Get reviews by course ID
+ * *    2. Add a review
+ * *    3. Delete a review
+ * 
+ */
 @injectable()
 export class ReviewController {
   constructor(@inject(TYPES.IReviewService) private reviewService: IReviewService) {}
 
+  /**
+   * This method fetches revews for a specific course
+   * @param req courseId 
+   * @param res 
+   */
   async getReviewsByCourseId(req: Request, res: Response) {
     try {
       const { courseId } = req.params;
@@ -25,6 +37,12 @@ export class ReviewController {
     }
   }
 
+  /**
+   * This method adds a review for a specific course
+   * @param req courseId, userId, rating, comment
+   * @param res 
+   */
+
   async addReview(req: Request, res: Response) {
     try {
       const review = await this.reviewService.createReview(req.body);
@@ -35,6 +53,11 @@ export class ReviewController {
     }
   }
 
+  /**
+   * This method deletes a review for a specific course
+   * @param req reviewId, userId
+   * @param res 
+   */
   async deleteReview(req: Request, res: Response) {
     try {
       const { id } = req.params;

@@ -7,6 +7,11 @@ import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware"
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+/**
+ * Course Routes
+ * These routes are accessible to all users
+ */
+
 //Public
 router.get("/public", courseController.listPublicCourses.bind(courseController));
 router.get('/search', courseController.searchCourses.bind(courseController));

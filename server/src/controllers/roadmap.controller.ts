@@ -5,11 +5,27 @@ import TYPES from "../di/types";
 import { successResponse, errorResponse } from "../types/types";
 import { HttpStatus } from "../utils/httpStatus";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+import { buildPaginationResult, getPaginationParams } from "../utils/paginationUtil";
 
+/**
+ * Controller for handling roadmap functionality
+ * *    1. Create a roadmap
+ * *    2. Get roadmap by ID
+ * *    3. Get all roadmaps
+ * *    4. Update a roadmap
+ * *    5. Delete a roadmap
+ * *    6. Update topic progress
+ * 
+ */
 @injectable()
 export class RoadmapController {
   constructor(@inject(TYPES.IRoadmapService) private _roadmapService: IRoadmapService) {}
 
+  /**
+   * This method handles the creation of a roadmap
+   * @param req 
+   * @param res 
+   */
   async createRoadmap(req: Request, res: Response): Promise<void> {
     try {
       const roadmap = await this._roadmapService.createRoadmap(req.body);
@@ -20,6 +36,12 @@ export class RoadmapController {
     }
   }
 
+  /**
+   * This method retrieves a roadmap by its ID
+   * @param req id
+   * @param res 
+   * @returns 
+   */
   async getRoadmapById(req: Request, res: Response): Promise<void> {
     try {
       const roadmap = await this._roadmapService.getRoadmapById(req.params.id);
@@ -34,20 +56,31 @@ export class RoadmapController {
     }
   }
 
+  /**
+   * This method get all roadmaps with pagination and search
+   * @param req page, limit, searchTerm
+   * @param res 
+   */
+
   async getAllRoadmaps(req: Request, res: Response): Promise<void> {
     try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const searchTerm = (req.query.searchTerm as string) || "";
+      
+      const params = getPaginationParams(req);
 
-      const result = await this._roadmapService.getAllRoadmaps(page, limit, searchTerm);
+      const result = await this._roadmapService.getAllRoadmaps(params.page, params.limit, params.searchTerm);
       res.json(successResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_ALL_SUCCESS, result));
+
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ROADMAP.FETCH_FAIL, err.message));
     }
   }
 
+  /**
+   * This method updates a roadmap by its ID
+   * @param req id, body
+   * @param res 
+   */
   async updateRoadmap(req: Request, res: Response): Promise<void> {
     try {
       const roadmap = await this._roadmapService.updateRoadmap(req.params.id, req.body);
@@ -62,6 +95,11 @@ export class RoadmapController {
     }
   }
 
+  /**
+   * This method deletes a roadmap by its ID
+   * @param req id
+   * @param res 
+   */
   async deleteRoadmap(req: Request, res: Response): Promise<void> {
     try {
       const success = await this._roadmapService.deleteRoadmap(req.params.id);
@@ -76,6 +114,11 @@ export class RoadmapController {
     }
   }
 
+  /**
+   * This method updates the progress of a topic in a roadmap
+   * @param req roadmapId, sectionId, topicId, isCompleted
+   * @param res 
+   */
   async updateTopicProgress(req: Request, res: Response): Promise<void> {
     try {
       const { roadmapId, sectionId, topicId } = req.params;

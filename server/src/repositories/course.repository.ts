@@ -7,16 +7,31 @@ import { v4 as uuidv4 } from 'uuid';
 import { inject, injectable } from 'inversify';
 import TYPES from '../di/types';
 
+/**
+ * CourseRepository class is responsible for interacting with the Course model.
+ */
 @injectable()
 export class CourseRepository extends BaseRepository<ICourseDocument> implements ICourseRepository {
   constructor(@inject(TYPES.CourseModel) model: Model<ICourseDocument>) {
     super(model);
   }
 
+  /**
+   * Finds a course by its courseId.
+   * @param courseId - The ID of the course to find.
+   * @returns A promise that resolves to the found course or null if not found.
+   */
   async findByCourseId(courseId: string): Promise<ICourseDocument | null> {
     return this.model.findOne({ courseId }).exec();
   }
 
+/**
+ * This methods list all courses that available for public. with pagination and category filter.
+ * @param category 
+ * @param skip 
+ * @param limit 
+ * @returns ICourseDocument[] list of courses
+ */
   async findPublicCourses(category?: string, skip?: number, limit?: number): Promise<ICourseDocument[]> {
     const query: Record<string, unknown> = { status: CourseStatus.Published };
     if (category && category !== 'all') {
@@ -29,6 +44,11 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       .exec();
   }
 
+  /**
+   * This method counts the number of public courses available.
+   * @param category - The category to filter by (optional).
+   * @returns A promise that resolves to the count of public courses.
+   */
   async countPublicCourses(category?: string): Promise<number> {
     const query: Record<string, unknown> = { status: CourseStatus.Published };
     if (category && category !== 'all') {
@@ -37,6 +57,13 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return this.model.countDocuments(query).exec();
   }
 
+  /**
+   * This method find all courses that are created, visible to admin 
+   * @param category 
+   * @param skip 
+   * @param limit 
+   * @returns 
+   */
   async findAdminCourses(category?: string, skip: number = 0, limit: number = 10): Promise<ICourseDocument[]> {
     const query = category && category !== 'all' ? { category } : {};
     return this.model
@@ -46,11 +73,24 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       .exec();
   }
 
+  /**
+   * This method counts the number of courses available for admin.
+   * @param category - The category to filter by (optional).
+   * @returns A promise that resolves to the count of admin courses.
+   */
   async countAdminCourses(category?: string): Promise<number> {
     const query = category && category !== 'all' ? { category } : {};
     return this.model.countDocuments(query).exec();
   }
 
+  /**
+   * This method finds all courses created by a specific teacher.
+   * @param teacherId 
+   * @param category 
+   * @param skip 
+   * @param limit 
+   * @returns 
+   */
   async findTeacherCourses(
     teacherId: string,
     category?: string,
@@ -68,6 +108,12 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       .exec();
   }
 
+  /**
+   * This method counts the number of courses created by a specific teacher.
+   * @param teacherId 
+   * @param category 
+   * @returns 
+   */
   async countTeacherCourses(teacherId: string, category?: string): Promise<number> {
     const query: Record<string, unknown> = { teacherId };
     if (category && category !== 'all') {
@@ -76,18 +122,35 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return this.model.countDocuments(query).exec();
   }
 
+  /**
+   * This method lists a course by changing its status to "listed". - By Admin 
+   * @param courseId 
+   * @returns 
+   */
   async unlist(courseId: string): Promise<ICourseDocument | null> {
     return this.model
       .findOneAndUpdate({ courseId }, { status: CourseStatus.Unlisted }, { new: true })
       .exec();
   }
 
+  /**
+   * This method allow teacher ot publish a course 
+   * @param courseId 
+   * @returns 
+   */
   async publish(courseId: string): Promise<ICourseDocument | null> {
     return this.model
       .findOneAndUpdate({ courseId }, { status: CourseStatus.Published }, { new: true })
       .exec();
   }
 
+  /**
+   * This method allows a teacher to update a course by its courseId.
+   * @param courseId 
+   * @param teacherId 
+   * @param updateData 
+   * @returns 
+   */
   async updateByCourseId(
     courseId: string,
     teacherId: string,
@@ -117,10 +180,21 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return course.save();
   }
 
+  /**
+   * This method allows a teacher to delete a course by its courseId.
+   * @param courseId 
+   * @param teacherId 
+   * @returns 
+   */
   async deleteByCourseId(courseId: string, teacherId: string): Promise<ICourseDocument | null> {
     return this.model.findOneAndDelete({ courseId, teacherId }).exec();
   }
 
+  /**
+   * This method creates a new course in the database.
+   * @param ICourseDocument
+   * @returns 
+   */
   async createCourse(data: Partial<ICourseDocument>): Promise<ICourseDocument> {
     const newCourse = new this.model({
       courseId: uuidv4(),
@@ -139,19 +213,42 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     return newCourse.save();
   }
 
+  /**
+   * This method finds a course by its ID.
+   * @param id - The ID of the course to find.
+   * @returns A promise that resolves to the found course or null if not found.
+   */
   async findById(id: string): Promise<ICourseDocument | null> {
     return this.findByCourseId(id);
   }
 
+  /**
+   * This method updates a course by its ID.
+   * @param id - The ID of the course to update.
+   * @param data - The data to update the course with.
+   * @returns A promise that resolves to the updated course or null if not found.
+   */
   async update(id: string, data: Partial<ICourseDocument>): Promise<ICourseDocument | null> {
     return this.model.findOneAndUpdate({ courseId: id }, data, { new: true }).exec();
   }
 
+  /**
+   * This method deletes a course by its ID.
+   * @param id - The ID of the course to delete.
+   * @returns A promise that resolves to true if the course was deleted, false otherwise.
+   */
   async delete(id: string): Promise<boolean> {
     const result = await this.model.findOneAndDelete({ courseId: id }).exec();
     return result !== null;
   }
 
+  /**
+   * This medhod adds an enrollment to a course.
+   * @param courseId 
+   * @param userId 
+   * @param studentName 
+   * @returns 
+   */
   async addEnrollment(courseId: string, userId: string, studentName: string): Promise<ICourseDocument | null> {
     return this.model
       .findOneAndUpdate(
@@ -162,6 +259,14 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       .exec();
   }
 
+  /**
+   * This method is for searching functionality with category filter.
+   * @param searchTerm 
+   * @param category 
+   * @param skip 
+   * @param limit 
+   * @returns 
+   */
   async searchPublicCourses(
     searchTerm: string,
     category?: string,
@@ -187,6 +292,13 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
       .exec();
   }
 
+  /**
+   * This method counts the number of public courses that match the search term and category.
+   * exists for pagination purpose 
+   * @param searchTerm 
+   * @param category 
+   * @returns 
+   */
   async countSearchPublicCourses(searchTerm: string, category?: string): Promise<number> {
     const query: Record<string, any> = {
       status: CourseStatus.Published,

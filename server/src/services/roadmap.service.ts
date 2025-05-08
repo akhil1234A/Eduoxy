@@ -4,18 +4,39 @@ import { IRoadmapRepository } from "../interfaces/roadmap.repository";
 import TYPES from "../di/types";
 import { IRoadmap, IRoadmapDocument } from "../models/roadmap.model";
 
+/**
+ * This is a service responsible for managing roadmap functionalities
+ * It handles creating, retrieving, updating, and deleting roadmaps
+ */
 @injectable()
 export class RoadmapService implements IRoadmapService {
   constructor(@inject(TYPES.IRoadmapRepository) private _roadmapRepository: IRoadmapRepository) {}
 
+  /**
+   * This method creates a new roadmap for a course
+   * @param roadmap 
+   * @returns 
+   */
   async createRoadmap(roadmap: IRoadmap): Promise<IRoadmapDocument> {
     return this._roadmapRepository.create(roadmap);
   }
 
+  /**
+   * This method retrieves a roadmap by id
+   * @param id 
+   * @returns 
+   */
   async getRoadmapById(id: string): Promise<IRoadmapDocument | null> {
     return this._roadmapRepository.findById(id);
   }
 
+  /**
+   * This method retrieves all roadmaps with pagination and search functionality
+   * @param page 
+   * @param limit 
+   * @param searchTerm 
+   * @returns 
+   */
    async getAllRoadmaps(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{
     roadmaps: IRoadmapDocument[];
     total: number;
@@ -49,14 +70,32 @@ export class RoadmapService implements IRoadmapService {
     };
   }
 
+  /**
+   * This method updates the roadmap by id
+   * @param id 
+   * @param roadmap 
+   * @returns 
+   */
   async updateRoadmap(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null> {
     return this._roadmapRepository.update(id, roadmap);
   }
 
+  /** 
+   * This method deletes a roadmap by id
+   * @param id
+   */
   async deleteRoadmap(id: string): Promise<boolean> {
     return this._roadmapRepository.delete(id);
   }
 
+  /**
+   * This method updates the progress of a topic in a roadmap
+   * @param roadmapId 
+   * @param sectionId 
+   * @param topicId 
+   * @param isCompleted 
+   * @returns 
+   */
   async updateTopicProgress(
     roadmapId: string,
     sectionId: string,

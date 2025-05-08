@@ -6,6 +6,10 @@ const router = express.Router();
 
 router.use(authenticateUser, authorizeRoles("admin"));
 
+/** 
+ * Admin Routes
+ * These routes are accessible only to admin users
+ */
 router.get("/students", adminController.listStudents.bind(adminController));
 router.get("/teachers", adminController.listTeachers.bind(adminController));
 router.put("/users/:userId/block", adminController.blockUser.bind(adminController));

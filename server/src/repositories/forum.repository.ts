@@ -7,12 +7,24 @@ import { BaseRepository } from "./base.repository";
 import { IForumRepository } from "../interfaces/forum.repository";
 import { apiLogger } from "../utils/logger";
 
+/**
+ * ForumRepository class is responsible for interacting with the Forum model.
+ * It provides methods to manage forums, posts, and replies in the database.
+ */
 @injectable()
 export class ForumRepository extends BaseRepository<IForum> implements IForumRepository {
   constructor() {
     super(Forum);
   }
 
+  /**
+   * This method retrieves a paginated list of forums.
+   * It takes a page number, page size, and an optional search query as parameters.
+   * @param page 
+   * @param pageSize 
+   * @param query 
+   * @returns 
+   */
   async getForums(page: number, pageSize: number, query?: string): Promise<IPaginated<IForum>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -27,6 +39,12 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method creates a forum or discussion channel 
+   * Only by Admin 
+   * @param forum 
+   * @returns 
+   */
   async createForum(forum: Omit<IForum, "_id" | "createdAt" | "updatedAt">): Promise<IForum> {
     try {
       const newForum = new Forum(forum);
@@ -37,6 +55,13 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method get all the posts in a forum 
+   * @param forumId 
+   * @param page 
+   * @param pageSize 
+   * @returns 
+   */
   async getPosts(forumId: string, page: number, pageSize: number): Promise<IPaginated<IPost>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -50,6 +75,14 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method get the posts by topic filter 
+   * @param forumId 
+   * @param topic 
+   * @param page 
+   * @param pageSize 
+   * @returns 
+   */
   async getPostsByTopic(forumId: string, topic: string, page: number, pageSize: number): Promise<IPaginated<IPost>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -63,6 +96,14 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help to us to search posts
+   * @param forumId 
+   * @param query 
+   * @param page 
+   * @param pageSize 
+   * @returns 
+   */
   async searchPosts(forumId: string, query: string, page: number, pageSize: number): Promise<IPaginated<IPost>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -84,6 +125,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to get a post detail with postId 
+   * @param postId 
+   * @returns 
+   */
   async getPost(postId: string): Promise<IPost> {
     try {
       const post = await Post.findById(postId).lean();
@@ -94,6 +140,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to create a post 
+   * @param post 
+   * @returns 
+   */
   async createPost(post: Omit<IPost, "_id" | "createdAt" | "updatedAt">): Promise<IPost> {
     try {
       const forum = await Forum.findById(post.forumId).exec();
@@ -111,6 +162,15 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to update a post
+   * @param postId 
+   * @param userId 
+   * @param content 
+   * @param topic 
+   * @param files 
+   * @returns 
+   */
   async updatePost(postId: string, userId: string, content: string, topic: string, files: IFile[] = []): Promise<IPost> {
     try {
       const post = await Post.findById(postId).exec();
@@ -134,6 +194,12 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method deletes a post
+   * Also cleanup images in the post in s3 bucket
+   * @param postId 
+   * @param userId 
+   */
   async deletePost(postId: string, userId: string): Promise<void> {
     try {
       const post = await Post.findById(postId).exec();
@@ -152,6 +218,14 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to retrive all the reply in post along with nested reply 
+   * @param postId 
+   * @param page 
+   * @param pageSize 
+   * @param parentReplyId for allowing nested reply 
+   * @returns 
+   */
   async getReplies(postId: string, page: number, pageSize: number, parentReplyId?: string): Promise<IPaginated<IReply>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -166,6 +240,14 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method build a reply tree 
+   * @param postId 
+   * @param page 
+   * @param pageSize 
+   * @param maxDepth 
+   * @returns 
+   */
   async getReplyTree(postId: string, page: number, pageSize: number, maxDepth?: number): Promise<IPaginated<IReplyTreeNode>> {
     try {
       const skip = (page - 1) * pageSize;
@@ -242,6 +324,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to create a reply 
+   * @param reply 
+   * @returns 
+   */
   async createReply(reply: Omit<IReply, "_id" | "createdAt" | "updatedAt">): Promise<IReply> {
     try {
       const post = await Post.findById(reply.postId).exec();
@@ -272,6 +359,14 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help use to update reply 
+   * @param replyId 
+   * @param userId 
+   * @param content 
+   * @param files 
+   * @returns 
+   */
   async updateReply(replyId: string, userId: string, content: string, files: IFile[] = []): Promise<IReply> {
     try {
       const reply = await Reply.findById(replyId).exec();
@@ -294,6 +389,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help use to delete a reply 
+   * @param replyId 
+   * @param userId 
+   */
   async deleteReply(replyId: string, userId: string): Promise<void> {
     try {
       const reply = await Reply.findById(replyId).exec();
@@ -312,12 +412,23 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     }
   }
 
+  /**
+   * This method help us to retrieve a forum by forumId
+   * @param forumId 
+   * @returns 
+   */
   async getForum(forumId: string): Promise<IForum> {
     const forum = await Forum.findById(forumId);
     if (!forum) throw new Error("Forum not found");
     return forum;
   }
 
+  /**
+   * This method help us to update forum by forumId
+   * @param forumId 
+   * @param data 
+   * @returns 
+   */
   async updateForum(forumId: string, data: Partial<IForum>): Promise<IForum> {
     const forum = await Forum.findByIdAndUpdate(
       forumId,
@@ -328,17 +439,27 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     return forum;
   }
 
+  /**
+   * This method help us to delete a forum 
+   * @param forumId 
+   */
   async deleteForum(forumId: string): Promise<void> {
     const result = await Forum.findByIdAndDelete(forumId);
     if (!result) throw new Error("Forum not found");
   }
 
+  /** This method help us to get a reply */
   async getReply(replyId: string): Promise<IReply> {
     const reply = await Reply.findById(replyId);
     if (!reply) throw new Error("Reply not found");
     return reply;
   }
 
+  /**
+   * This is a utiliity function map forum data in response 
+   * @param forum 
+   * @returns 
+   */
   private mapForum(forum: any): IForum {
     return {
       _id: forum._id.toString(),
@@ -350,6 +471,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     };
   }
 
+  /**
+   * This is a utility function map forum post data in response 
+   * @param post 
+   * @returns 
+   */
   private mapPost(post: any): IPost {
     return {
       _id: post._id.toString(),
@@ -371,6 +497,9 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     };
   }
 
+  /** 
+   * This is a utility function to map reply 
+   */
   private mapReply(reply: any): IReply {
     return {
       _id: reply._id.toString(),
@@ -392,6 +521,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     };
   }
 
+/**
+ * This is a utility function to map replies with replies 
+ * @param reply 
+ * @returns 
+ */
   private mapReplyTreeNode(reply: any): IReplyTreeNode {
     if (!reply) {
       throw new Error("Invalid reply data");
@@ -405,6 +539,11 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     };
   }
 
+  /**
+   * this is a utility function to build a reply tree
+   * @param replies 
+   * @returns 
+   */
   private buildReplyTree(replies: any[]): any[] {
     const replyMap = new Map<string, any>();
     const tree: any[] = [];

@@ -7,11 +7,30 @@ import { injectable, inject } from 'inversify';
 import TYPES from '../di/types';
 import { apiLogger } from '../utils/logger';
 import { RESPONSE_MESSAGES } from '../utils/responseMessages';
+import { buildPaginationResult, getPaginationParams } from '../utils/paginationUtil';
+
+/**
+ * Controller for handling course management
+ * *    1. Create course
+ * *    2. Update course
+ * *    3. Delete course
+ * *    4. List courses (public, admin, teacher)
+ * *    5. Get course by ID
+ * *    6. Search courses
+ * *    7. Publish course
+ * *    8. Unlist course
+ */
 
 @injectable()
 export class CourseController {
   constructor(@inject(TYPES.ICourseService) private _courseService: ICourseService) {}
 
+  /**
+   * Unlists a course by its ID
+   * @param req courseId
+   * @param res course details
+   * @returns 
+   */
   async unlistCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
 
@@ -28,6 +47,12 @@ export class CourseController {
     }
   }
 
+  /**
+   * Publishes a course by its ID
+   * @param req courseId
+   * @param res course details
+   * @returns 
+   */
   async publishCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
     apiLogger.info('Publishing course', { courseId });
@@ -45,16 +70,31 @@ export class CourseController {
     }
   }
 
+  /**
+   * list courses for users with pagination and search 
+   * @param req category, page, limit for pagination 
+   * @param res list of courses
+   */
   async listPublicCourses(req: Request, res: Response): Promise<void> {
     const { category, page = '1', limit = '10' } = req.query;
     apiLogger.info('Listing public courses', { category, page, limit });
 
     try {
-      const pageNumber = parseInt(page as string, 10);
-      const limitNumber = parseInt(limit as string, 10);
+      const params = getPaginationParams(req);
 
-      const result = await this._courseService.listPublicCourses(category as string, pageNumber, limitNumber);
-      res.json(successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, result));
+
+      const result = await this._courseService.listPublicCourses(category as string, params.page, params.limit);
+      const pagination = buildPaginationResult(params, result.total);
+      
+      res.json(
+        successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, {
+          courses: result.courses,
+          total: pagination.total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: pagination.totalPages,
+        })
+      );
     } catch (error) {
       const err = error as Error;
       apiLogger.error('Error retrieving courses', { error: err.message });
@@ -62,21 +102,28 @@ export class CourseController {
     }
   }
 
+  /**
+   * list courses for admin with pagination and search
+   * @param req categoy, page, limit for pagination
+   * @param res admin courses 
+   */
   async listAdminCourses(req: Request, res: Response): Promise<void> {
-    const { category, page = '1', limit = '10' } = req.query;
+    const { category } = req.query;
 
     try {
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
 
-      const { courses, total } = await this._courseService.listAdminCourses(category as string, pageNum, limitNum);
+      const params = getPaginationParams(req);
+
+      const { courses, total } = await this._courseService.listAdminCourses(category as string, params.page, params.limit);
+      const pagination = buildPaginationResult(params, total);
+
       res.json(
         successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_ALL_SUCCESS, {
           courses,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: pagination.total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: pagination.totalPages,
         })
       );
     } catch (error) {
@@ -85,8 +132,14 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method lists courses for a teacher with pagination and search
+   * @param req category, page, limit for pagination, teacherId
+   * @param res 
+   * @returns 
+   */
   async listTeacherCourses(req: AuthenticatedRequest, res: Response): Promise<void> {
-    const { category, page = '1', limit = '10' } = req.query;
+    const { category } = req.query;
     const teacherId = req.user?.userId;
 
     if (!teacherId) {
@@ -95,17 +148,19 @@ export class CourseController {
     }
 
     try {
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
+      
+      const params = getPaginationParams(req);
 
-      const { courses, total } = await this._courseService.listTeacherCourses(teacherId, category as string, pageNum, limitNum);
-      res.json(
+      const { courses, total } = await this._courseService.listTeacherCourses(teacherId, category as string, params.page, params.limit);
+      const pagination = buildPaginationResult(params, total);
+
+        res.json(
         successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_TEACHER_SUCCESS, {
           courses,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: pagination.total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: pagination.totalPages,
         })
       );
     } catch (error) {
@@ -114,6 +169,12 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method retrieves a course by its ID
+   * @param req courseId
+   * @param res 
+   * @returns 
+   */
   async getCourse(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
 
@@ -130,6 +191,12 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method creates a new course
+   * @param req course data, userId
+   * @param res 
+   * @returns 
+   */
   async createCourse(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user?.userId;
     const formData = req.body;
@@ -139,11 +206,7 @@ export class CourseController {
         res.status(HttpStatus.UNAUTHORIZED).json(errorResponse(RESPONSE_MESSAGES.COURSE.UNAUTHORIZED, 'User ID not found'));
         return;
       }
-
-
       
-
-
       const courseData: Partial<ICourseDocument> = {
         teacherId: formData.teacherId,
         teacherName: formData.teacherName,
@@ -179,6 +242,12 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method updates a course by its ID
+   * @param req courseId, userId, courseData
+   * @param res 
+   * @returns 
+   */
   async updateCourse(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { courseId } = req.params;
     const updateData = { ...req.body };
@@ -213,6 +282,12 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method deletes a course by its ID
+   * @param req courseId, userId
+   * @param res 
+   * @returns 
+   */
   async deleteCourse(req: AuthenticatedRequest, res: Response): Promise<void> {
     const { courseId } = req.params;
     const userId = req.user?.userId;
@@ -230,9 +305,14 @@ export class CourseController {
     }
   }
 
+  /**
+   * This method searches for courses based on a search term and category
+   * @param req searchTerm, category, page, limit
+   * @param res 
+   * @returns 
+   */
   async searchCourses(req: Request, res: Response): Promise<void> {
-    const { q: searchTerm, category, page = '1', limit = '10' } = req.query;
-    apiLogger.info('Searching courses', { searchTerm, category, page, limit });
+    const { q: searchTerm, category } = req.query;
 
     try {
       if (!searchTerm || typeof searchTerm !== 'string') {
@@ -248,26 +328,29 @@ export class CourseController {
         return;
       }
 
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
+      const params = getPaginationParams(req);
+
+      apiLogger.info('Searching courses', { searchTerm, category, page: params.page, limit: params.limit });
 
       const { courses, total } = await this._courseService.searchCourses(
         searchTerm as string,
         category as string,
-        pageNum,
-        limitNum
+        params.page,
+        params.limit
       );
+
+      const pagination = buildPaginationResult(params, total);
 
       res.json(
         successResponse(RESPONSE_MESSAGES.COURSE.RETRIEVE_SUCCESS, {
           courses,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: pagination.total,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: pagination.totalPages,
         })
       );
-      apiLogger.info('Courses retrieved successfully', { courses });
+      apiLogger.info('Courses retrieved successfully');
     } catch (error) {
       const err = error as Error;
       apiLogger.error('Error searching courses', { error: err.message });

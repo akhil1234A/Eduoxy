@@ -5,24 +5,39 @@ import { HttpStatus } from "../utils/httpStatus";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+import { buildPaginationResult, getPaginationParams } from "../utils/paginationUtil";
+
+/**
+ * Controller for handling admin management 
+ *    1. List students
+ *    2. List teachers
+ *    3. Block user
+ *    4. Unblock user
+ */
+@injectable()
 export class AdminController {
   constructor(@inject(TYPES.IAdminService) private _adminService: IAdminService) {}
 
+  /**
+   * Lists students with pagination and search functionality 
+   * @param req request object
+   * @param res response object 
+   * @return list of students
+   */
   async listStudents(req: Request, res: Response): Promise<void> {
     try {
-      const { page = "1", limit = "10", q = "" } = req.query;
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
-      const searchTerm = q as string;
-  
-      const { users, total } = await this._adminService.listStudents(pageNum, limitNum, searchTerm);
+      
+      const params = getPaginationParams(req);
+      const { users, total } = await this._adminService.listStudents(params.page, params.limit, params.searchTerm);
+      const result = buildPaginationResult(params, total);
+
       res.json(
         successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.STUDENT_LISTED_SUCCESS, {
           users,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
         })
       );
     } catch (error) {
@@ -30,22 +45,27 @@ export class AdminController {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.STUDENT_LISTED_ERROR, err.message));
     }
   }
+
+  /**
+   * list teachers with pagination and search 
+   * @param req request object
+   * @param res response object
+   * @return list of teachers
+   */
   
   async listTeachers(req: Request, res: Response): Promise<void> {
     try {
-      const { page = "1", limit = "10", q = "" } = req.query;
-      const pageNum = parseInt(page as string, 10);
-      const limitNum = parseInt(limit as string, 10);
-      const searchTerm = q as string;
-  
-      const { users, total } = await this._adminService.listTeachers(pageNum, limitNum, searchTerm);
+      const params = getPaginationParams(req);
+      const { users, total } = await this._adminService.listTeachers(params.page, params.limit, params.searchTerm);
+      const result = buildPaginationResult(params, total);
+
       res.json(
         successResponse(RESPONSE_MESSAGES.ADMIN_MANAGEMENT.TEACHER_LISTED_SUCCESS, {
           users,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum),
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
         })
       );
     } catch (error) {
@@ -54,6 +74,11 @@ export class AdminController {
     }
   }
 
+  /**
+   * Block a user by userId
+   * @param req request object
+   * @param res response object
+   */
   async blockUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
@@ -65,6 +90,12 @@ export class AdminController {
     }
   }
 
+
+  /**
+   * Unblock a user by userId
+   * @param req request object
+   * @param res response object
+   */
   async unblockUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;

@@ -5,6 +5,10 @@ import { authenticateUser, authorizeRoles } from "../middleware/auth.middleware"
 const router = Router();
 
 
+/** 
+ * Roadmap routes 
+ */
+
 // Admin routes
 router.post(
   "/",

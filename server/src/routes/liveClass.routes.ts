@@ -6,6 +6,10 @@ const router = express.Router();
 
 router.use(authenticateUser);
 
+/**
+ * Live Class Routes
+ * These routes are accessible to all authenticated users
+ */
 router.post("/", liveClassController.createLiveClass.bind(liveClassController));
 router.get("/:courseId", liveClassController.getSchedule.bind(liveClassController));
 router.post("/:liveClassId/join", liveClassController.joinLiveClass.bind(liveClassController));

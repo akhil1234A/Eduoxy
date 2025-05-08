@@ -6,12 +6,21 @@ import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
+/**
+ * Controller for handling dashboard functionality
+ */
+
 @injectable()
 export class DashboardController {
   constructor(
     @inject(TYPES.IDashboardService) private _dashboardService: IDashboardService
   ) {}
 
+  /**
+   * This method handles the parsing of query parameters for pagination and date filters
+   * @param req page, limit, dateFilterType, startDate, endDate, tableDateFilterType, tableStartDate, tableEndDate
+   * @returns 
+   */
   private parseQueryParams(req: Request): {
     page: number;
     limit: number;
@@ -58,6 +67,13 @@ export class DashboardController {
     return { page, limit, dateFilter, tableDateFilter };
   }
 
+  /**
+   * This method handles the response for dashboard requests
+   * @param res response object
+   * @param successMessage 
+   * @param errorMessage 
+   * @param fetchData 
+   */
   private async handleDashboardResponse<T>(
     res: Response,
     successMessage: string,
@@ -75,6 +91,11 @@ export class DashboardController {
     }
   }
 
+  /**
+   * This method gets the admin dashboard data with pagination and date filters
+   * @param req page, limit, dateFilter, tableDateFilter
+   * @param res response object
+   */
   async getAdminDashboard(req: Request, res: Response): Promise<void> {
     const { page, limit, dateFilter, tableDateFilter } = this.parseQueryParams(req);
     await this.handleDashboardResponse(
@@ -85,6 +106,12 @@ export class DashboardController {
     );
   }
 
+  /**
+   * This method gets the teacher dashboard data with pagination and date filters
+   * @param req teacherId, page, limit, dateFilter, tableDateFilter
+   * @param res 
+   * @returns 
+   */
   async getTeacherDashboard(req: Request, res: Response): Promise<void> {
     const { teacherId } = req.params;
     if (!teacherId) {
@@ -115,6 +142,12 @@ export class DashboardController {
     );
   }
 
+  /**
+   * This method gets the user dashboard data with pagination and date filters
+   * @param req userId, page, limit, dateFilter, tableDateFilter
+   * @param res 
+   * @returns 
+   */
   async getUserDashboard(req: Request, res: Response): Promise<void> {
     const { userId } = req.params;
     if (!userId) {

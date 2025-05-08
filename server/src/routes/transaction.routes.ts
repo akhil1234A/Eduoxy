@@ -6,6 +6,10 @@ const router = express.Router();
 
 router.use(authenticateUser);
 
+/**
+ * Transaction Routes
+ * These routes are accessible only to authenticated users
+ */
 router.post("/", transactionController.createTransaction.bind(transactionController));
 router.post("/stripe/payment-intent", transactionController.createStripePaymentIntent.bind(transactionController));
 router.get("/admin/earnings", authorizeRoles("admin"), transactionController.getAdminEarnings.bind(transactionController));

@@ -5,6 +5,10 @@ import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repo
 import { ICourseDocument } from "../models/course.model";
 import { Model } from "mongoose";
 
+/**
+ * UserCourseProgressRepository class is responsible for interacting with the UserCourseProgress model.
+ * It provides methods to manage user course progress in the database.
+ */
 @injectable()
 export class UserCourseProgressRepository implements IUserCourseProgressRepository {
   constructor(
@@ -12,6 +16,14 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
     @inject(TYPES.CourseModel) private _courseModel: Model<ICourseDocument>
   ) {}
 
+  /**
+   * This method retrieves a list of courses that a user is enrolled in.
+   * It takes a userId, skip, and limit as parameters for pagination.
+   * @param userId 
+   * @param skip 
+   * @param limit 
+   * @returns 
+   */
   async getUserEnrolledCourses(
     userId: string,
     skip: number = 0,
@@ -31,14 +43,32 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
     return courses;
   }
 
+  /**
+   * This method counts the number of courses a user is enrolled in.
+   * @param userId 
+   * @returns number of courses
+   */
   async countUserEnrolledCourses(userId: string): Promise<number> {
     return this._userCourseProgressModel.countDocuments({ userId }).exec();
   }
 
+  /**
+   * This method retrieves the progress of a specific course for a user.
+   * It takes a userId and courseId as parameters.
+   * @param userId 
+   * @param courseId 
+   * @returns 
+   */
   async getUserCourseProgress(userId: string, courseId: string): Promise<IUserCourseProgress | null> {
     return this._userCourseProgressModel.findOne({ userId, courseId }).exec();
   }
 
+  /**
+   * This method saves or updates the progress of a course for a user.
+   * It takes an IUserCourseProgress object as a parameter.
+   * @param progress - The progress data to be saved or updated.
+   * @returns 
+   */
   async saveUserCourseProgress(progress: IUserCourseProgress): Promise<IUserCourseProgress> {
     const { userId, courseId } = progress;
     const updatedProgress = await this._userCourseProgressModel.findOneAndUpdate(
@@ -49,6 +79,16 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
     return updatedProgress;
   }
 
+  /**
+   * This method retrieves a list of courses that a user is enrolled in along with their progress.
+   * It takes a userId, skip, and limit as parameters for pagination.
+   * This method is useful for displaying a list of courses with progress information in User Dashboard
+   * - Not Started, In Progress, Completed
+   * @param userId 
+   * @param skip 
+   * @param limit 
+   * @returns 
+   */
   async getEnrolledCoursesWithProgress(
     userId: string,
     skip: number = 0,
@@ -86,6 +126,15 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
     }));
   }
 
+  /**
+   * This method checks if a course is completed by a user.
+   * It takes a userId and courseId as parameters.
+   * This method is useful for determining if a user has completed a course.
+   * prevents duplicate certificates for the same course.
+   * @param userId 
+   * @param courseId 
+   * @returns 
+   */
   async isCourseCompleted(userId: string, courseId: string): Promise<boolean> {
     const progress = await this._userCourseProgressModel.findOne({ userId, courseId }).exec();
     if (!progress) return false;

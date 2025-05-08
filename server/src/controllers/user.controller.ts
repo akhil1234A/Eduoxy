@@ -6,12 +6,26 @@ import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { IUser } from "../models/user.model";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+
+/**
+ * Controller for handling user management
+ * *    1. Update password
+ * *    2. Update instructor profile
+ * *    3. Get instructor profile
+ * 
+ */
 @injectable()
 export class UserController {
   constructor(
     @inject(TYPES.IUserService) private _userService: IUserService
   ) {}
 
+  /**
+   * This method handles update password
+   * @param req userId, currentPassword, newPassword
+   * @param res 
+   * @returns 
+   */
   async updatePassword(req: Request, res: Response): Promise<void> {
     const { userId, currentPassword, newPassword } = req.body;
 
@@ -29,6 +43,12 @@ export class UserController {
     }
   }
 
+  /**
+   * This mehod handles update instructor profile
+   * @param req userId, name, title, bio, profileImage
+   * @param res 
+   * @returns 
+   */
   async updateInstructorProfile(req: Request, res: Response): Promise<void> {
     
     const { userId, name, title, bio } = req.body;
@@ -48,6 +68,12 @@ export class UserController {
     }
   }
 
+  /**
+   * This method handles get instructor profile
+   * @param req userId
+   * @param res 
+   * @returns 
+   */
   async getProfile(req: Request, res: Response): Promise<void>{
     const userId = req.query.userId as string;
 

@@ -6,13 +6,26 @@ import { successResponse, errorResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { HttpStatus } from "../utils/httpStatus";
 
-
+/**
+ * Controller for handling live class functionality
+ * *    1. Create live class
+ * *    2. Get schedule
+ * *    3. Join live class
+ * *    4. Leave live class
+ * *    5. Start live class
+ */
 @injectable()
 export class LiveClassController {
   constructor(
     @inject(TYPES.ILiveClassService) private liveClassService: ILiveClassService
   ) {}
 
+  /**
+   * This method handles the creation of a live class
+   * @param req courseId, teacherId, title, startTime, endTime
+   * @param res 
+   * @returns 
+   */
   async createLiveClass(req: Request, res: Response): Promise<void> {
     const { courseId, teacherId, title, startTime, endTime } = req.body;
     try {
@@ -24,6 +37,11 @@ export class LiveClassController {
     }
   }
 
+  /**
+   * This method retrieves the schedule of live classes for a specific course
+   * @param req courseId
+   * @param res 
+   */
   async getSchedule(req: Request, res: Response): Promise<void> {
     const { courseId } = req.params;
     try {
@@ -35,6 +53,11 @@ export class LiveClassController {
     }
   }
 
+  /**
+   * This method allows a user to join a live class
+   * @param req liveClassId, userId
+   * @param res 
+   */
   async joinLiveClass(req: Request, res: Response): Promise<void> {
     const { liveClassId } = req.params;
     const { userId } = req.body; 
@@ -47,6 +70,11 @@ export class LiveClassController {
     }
   }
 
+  /**
+   * This method allows a user to leave a live class
+   * @param req liveClassId, userId
+   * @param res 
+   */
   async leaveLiveClass(req: Request, res: Response): Promise<void> {
     const { liveClassId } = req.params;
     const { userId } = req.body;
@@ -59,6 +87,11 @@ export class LiveClassController {
     }
   }
 
+  /**
+   * This method allows a teacher to start a live class
+   * @param req liveClassId, teacherId
+   * @param res 
+   */
   async startLiveClass(req: Request, res: Response): Promise<void> {
     const { liveClassId } = req.params;
     const { teacherId } = req.body;

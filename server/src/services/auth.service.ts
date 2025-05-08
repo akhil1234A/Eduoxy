@@ -10,6 +10,9 @@ import { v4 as uuidv4 } from "uuid";
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
 
+/**
+ * This is a service responsible for managing authentication functionalities
+ */
 @injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -19,6 +22,14 @@ export class AuthService implements IAuthService {
     @inject(TYPES.IJwtService) private _jwtService: IJwtService
   ) {}
 
+  /**
+   * This method handles user sign-up process
+   * @param name 
+   * @param email 
+   * @param password 
+   * @param userType 
+   * @returns 
+   */
   async signUp(name: string, email: string, password: string, userType: "student" | "admin" | "teacher"): Promise<UserResponse> {
     const existingUser = await this._userRepository.findByEmail(email);
     if (existingUser) throw new Error("User already exists");
@@ -45,6 +56,12 @@ export class AuthService implements IAuthService {
     };
   }
 
+  /**
+   * This method handles user login process
+   * @param email 
+   * @param password 
+   * @returns 
+   */
   async login(email: string, password: string): Promise<LoginResponse> {
     const user = await this._userRepository.findByEmail(email);
     if (!user) throw new Error("No User Found");
@@ -77,6 +94,11 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken, user: userResponse };
   }
 
+
+  /**
+   * This method sends an OTP to the user's email for verification
+   * @param email 
+   */
   async sendOtp(email: string): Promise<void> {
     const user = await this._userRepository.findByEmail(email);
     if (!user) throw new Error("User not found");
@@ -86,6 +108,13 @@ export class AuthService implements IAuthService {
     await this._mailService.sendOtpEmail(email, otp);
   }
 
+
+  /**
+   * This method verifies the OTP sent to the user's email
+   * @param email 
+   * @param otp 
+   * @returns 
+   */
   async verifyOtp(email: string, otp: string): Promise<LoginResponse> {
     const storedOtp = await this._redisClient.get(`otp:${email}`);
     if (!storedOtp || storedOtp !== otp) throw new Error("Invalid or expired OTP");
@@ -111,11 +140,20 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken, user: userResponse };
   }
 
+  /**
+   * this method handles user logout process
+   * @param userId 
+   * @param accessToken 
+   */
   async logout(userId: string, accessToken: string): Promise<void> {
     await this._redisClient.del(`refresh_token:${userId}`);
     await this._jwtService.blacklistToken(accessToken);
   }
 
+
+  /** 
+   * This method handles Google authentication
+   */
   async googleAuth(idToken: string): Promise<AuthTokens & { user: UserResponse }> {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const googleId = decodedToken.uid;
@@ -161,6 +199,12 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken, user: userResponse };
   }
 
+
+  /**
+   * This method handles password reset request
+   * @param email 
+   * 
+   */
   async requestPasswordReset(email: string): Promise<void> {
     const user = await this._userRepository.findByEmail(email);
     if (!user) throw new Error("User not found");
@@ -174,6 +218,11 @@ export class AuthService implements IAuthService {
     await this._mailService.sendPasswordResetEmail(email, resetUrl);
   }
 
+  /**
+   * This method handles password reset using the token sent to the user's email
+   * @param token 
+   * @param newPassword 
+   */
   async resetPassword(token: string, newPassword: string): Promise<void> {
     const resetTokenKeyPrefix = "reset_token:";
     const keys = await this._redisClient.keys(`${resetTokenKeyPrefix}*`);
@@ -197,6 +246,12 @@ export class AuthService implements IAuthService {
     await this._redisClient.del(`reset_token:${userId}`);
   }
 
+  /**
+   * This method keeps user logged in after access token expired
+   * @param userId 
+   * @param refreshToken 
+   * @returns 
+   */
   async loginWithRefresh(userId: string, refreshToken: string): Promise<AuthTokens & { user: UserResponse }> {
     const storedToken = await this._redisClient.get(`refresh_token:${userId}`);
     if (refreshToken !== storedToken) throw new Error("Invalid refresh token");
@@ -218,6 +273,11 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken: newRefreshToken, user: userResponse };
   }
 
+  /**
+   * This method finds a user by id 
+   * @param userId 
+   * @returns 
+   */
   async findUserById(userId: string): Promise<UserResponse> {
     const user = await this._userRepository.findById(userId);
     if (!user) throw new Error("User not found");

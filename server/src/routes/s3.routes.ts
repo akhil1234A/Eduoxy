@@ -3,6 +3,13 @@ import { s3Service } from "../services/s3.service";
 
 const router = express.Router();
 
+/** 
+ * Routes handle resource upload in s3 bucket
+ */
+
+/** 
+ * This route is used to generate a presigned URL for uploading files to S3.
+ */
 router.post("/presigned-url", async (req: Request, res: Response) => {
   try {
     // const { type, fileName } = req.query as { type: string; fileName: string };
@@ -19,6 +26,9 @@ router.post("/presigned-url", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * This route is used to delete a file upload in s3 bucket.
+ */
 router.delete("/delete", async (req: Request, res: Response) => {
   try {
     console.log("DELETE /api/upload/delete request body:", req.body);

@@ -4,12 +4,25 @@ import { ILiveClassService } from "../interfaces/liveClass.service";
 import { ILiveClassRepository } from "../interfaces/liveClass.repository";
 import { ILiveClass } from "../models/liveClass.model";
 
+/**
+ * This is a service responsible for managing live class functionalities
+ * It handles creating, joining, leaving, starting, and deleting live classes
+ */
 @injectable()
 export class LiveClassService implements ILiveClassService {
   constructor(
     @inject(TYPES.ILiveClassRepository) private liveClassRepository: ILiveClassRepository
   ) {}
 
+  /**
+   * This method creates a new live class
+   * @param courseId 
+   * @param teacherId 
+   * @param title 
+   * @param startTime 
+   * @param endTime 
+   * @returns liveClass
+   */
   async createLiveClass(courseId: string, teacherId: string, title: string, startTime: string, endTime: string): Promise<ILiveClass> {
     const liveClassData = {
       courseId,
@@ -23,10 +36,20 @@ export class LiveClassService implements ILiveClassService {
     return await this.liveClassRepository.create(liveClassData);
   }
 
+  /**
+   * This method retrieves a list of live classes for a specific course
+   * @param courseId 
+   * @returns list of live classes
+   */
   async getSchedule(courseId: string): Promise<ILiveClass[]> {
     return await this.liveClassRepository.findByCourseId(courseId);
   }
 
+  /**
+   * This method retrieves a specific live class by its ID
+   * @param liveClassId 
+   * @returns live class
+   */
   async joinLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
     if (!liveClass) throw new Error("Live class not found");
@@ -43,6 +66,12 @@ export class LiveClassService implements ILiveClassService {
     return updatedClass;
   }
 
+  /**
+   * This method allows a user to leave a live class
+   * @param liveClassId 
+   * @param userId 
+   * @returns 
+   */
   async leaveLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
     if (!liveClass) throw new Error("Live class not found");
@@ -51,6 +80,12 @@ export class LiveClassService implements ILiveClassService {
     return updatedClass;
   }
 
+  /**
+   * This method allows a teacher to start a live class
+   * @param liveClassId 
+   * @param teacherId 
+   * @returns 
+   */
   async startLiveClass(liveClassId: string, teacherId: string): Promise<ILiveClass> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
     if (!liveClass) throw new Error("Live class not found");
@@ -65,11 +100,21 @@ export class LiveClassService implements ILiveClassService {
     return updatedClass;
   }
 
+  /**
+   * This method retrieves the teacher ID for a specific live class
+   * @param liveClassId 
+   * @returns 
+   */
   async getTeacherId(liveClassId: string): Promise<string | null> {
     const liveClass = await this.liveClassRepository.findById(liveClassId);
     return liveClass?.teacherId || null;
   }
 
+  /**
+   * This method allows a teacher to delete a live class
+   * @param liveClassId 
+   * @returns 
+   */
   async deleteLiveClass(liveClassId: string): Promise<boolean> {
     try {
       const result = await this.liveClassRepository.findByIdAndDelete(liveClassId);

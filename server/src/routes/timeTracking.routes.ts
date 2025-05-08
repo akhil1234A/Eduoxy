@@ -6,6 +6,9 @@ const router = express.Router();
 
 router.use(authenticateUser);
 
+/**
+ * Time Tracking Routes
+ */
 router.post('/', authorizeRoles('student'), timeTrackingController.logTimeSpent.bind(timeTrackingController));
 router.get('/user/:userId', authorizeRoles('student'), timeTrackingController.getTotalTimeSpent.bind(timeTrackingController));
 
