@@ -6,7 +6,7 @@ export const setAuthCookies = (res: Response, tokens: { accessToken: string; ref
   const cookieOptions: import("express").CookieOptions = {
     httpOnly: true,
     secure: isProd,
-    sameSite: "strict",
+    sameSite: isProd ? 'none' : 'lax',
     path: "/",
   };
 
