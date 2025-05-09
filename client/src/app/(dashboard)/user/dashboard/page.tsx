@@ -25,7 +25,7 @@ const UserDashboard = () => {
   const dashboard = dashboardResponse?.data
 
   if (!userId) {
-    router.push("/sigin")
+    router.push("/signin")
     return null
   }
 

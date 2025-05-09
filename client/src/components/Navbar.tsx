@@ -29,7 +29,7 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
     setIsProfileOpen((prev) => !prev);
   };
 
-  const profileRoute = userType === "teacher" ? "/teacher/profile" : "/user/profile";
+  const profileRoute = `/${userType}/profile`;
 
   return (
     <nav className="dashboard-navbar">

@@ -35,7 +35,7 @@ const NonDashboardNavbar = () => {
     setIsProfileOpen((prev) => !prev);
   };
 
-  const profileRoute = userType === "teacher" ? "/teacher/profile" : "/user/profile";
+  const profileRoute = `/${userType}/profile`;
 
   return (
     <nav className="nondashboard-navbar">
