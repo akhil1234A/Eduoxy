@@ -22,7 +22,7 @@ export const useCourseProgressData = (propCourseId?: string) => {
   const [updateProgress] = useUpdateUserCourseProgressMutation();
   const [logTimeSpent] = useLogTimeSpentMutation();
 
-  const userId = Cookies.get("userId") || null;
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   const {
     data: courseResponse,

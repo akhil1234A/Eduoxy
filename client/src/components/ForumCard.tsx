@@ -25,14 +25,14 @@ interface ForumCardProps {
 export function ForumCard({ forum }: ForumCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteForum, { isLoading: isDeleting }] = useDeleteForumMutation();
-  const userType = Cookies.get("userType");
+  const userType = Cookies.get("userType") || localStorage.getItem("userType");
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this forum?")) {
       try {
         await deleteForum({
           forumId: forum._id,
-          userId: Cookies.get("userId") || "",
+          userId: localStorage.getItem("userId") || "",
         }).unwrap();
         toast.success("Forum deleted successfully");
       } catch (error) {

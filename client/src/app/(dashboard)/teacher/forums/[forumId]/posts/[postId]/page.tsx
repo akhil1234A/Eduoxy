@@ -35,7 +35,7 @@ export default function PostPage() {
   const [page, setPage] = useState(1)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isReplyModalOpen, setIsReplyModalOpen] = useState(false)
-  const userId = Cookies.get("userId")
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
   const { socket } = useSocket()
 
   const { data: postData, isLoading: isPostLoading } = useGetPostQuery(postId as string)

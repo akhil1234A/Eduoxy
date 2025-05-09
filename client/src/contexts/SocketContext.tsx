@@ -14,7 +14,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const userId = Cookies.get("userId");
+    const userId = Cookies.get("userId") || localStorage.getItem("userId");
     if (!userId) return;
 
     const socketIo = io(process.env.NEXT_PUBLIC_API_URL, {

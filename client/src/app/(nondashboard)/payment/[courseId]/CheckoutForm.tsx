@@ -15,7 +15,7 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [createTransaction] = useCreateTransactionMutation();
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   useEffect(() => {
     const paymentChannel = new BroadcastChannel("payment_channel");

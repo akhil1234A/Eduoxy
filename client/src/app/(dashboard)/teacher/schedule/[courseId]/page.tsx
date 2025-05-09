@@ -12,7 +12,7 @@ const ScheduleLiveClass = () => {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   const [title, setTitle] = useState("");
   const [startTime, setStartTime] = useState(""); // Keep raw input format

@@ -11,7 +11,7 @@ import Cookies from 'js-cookie';
 import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const userType = Cookies.get("userType");
+  const userType = Cookies.get("userType") || localStorage.getItem("userType");
   const router = useRouter();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);

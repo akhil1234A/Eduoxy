@@ -11,7 +11,7 @@ import Cookies from "js-cookie";
 export default function SuccessPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   // Trigger refetch of enrolled courses on mount
   useEffect(() => {

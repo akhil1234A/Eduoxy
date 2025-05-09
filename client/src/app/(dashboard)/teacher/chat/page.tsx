@@ -18,7 +18,7 @@ interface StudentData {
 }
 
 export default function InstructorChatPage() {
-  const senderId = Cookies.get("userId"); 
+  const senderId = Cookies.get("userId") || localStorage.getItem("userId"); 
   const [selectedChat, setSelectedChat] = useState<{
     courseId: string;
     receiverId: string; 

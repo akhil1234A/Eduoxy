@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Loading from "@/components/Loading";
 
 const ProfilePage = () => {
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [localProfileData, setLocalProfileData] = useState({
     name: "",

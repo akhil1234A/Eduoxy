@@ -49,8 +49,8 @@ const CourseView = () => {
   const params = useParams()
   const router = useRouter()
   const courseId = params.courseId as string
-  const userId = Cookies.get("userId")
-  const userName = Cookies.get("userName")
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const userName = Cookies.get("userName") || localStorage.getItem("userName");
 
   const { data: courseData, isLoading: isCourseLoading, isError: isCourseError } = useGetCourseQuery(courseId)
   const course = courseData?.data as Course

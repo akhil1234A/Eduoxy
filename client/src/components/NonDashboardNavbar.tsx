@@ -16,9 +16,9 @@ const NonDashboardNavbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
-    const id = Cookies.get("userId");
+    const id = Cookies.get("userId") || localStorage.getItem("userId");
     setUserId(id || null); 
-    setUserType(Cookies.get("userType"));
+    setUserType(localStorage.getItem("userType") || "");
   }, []);
 
 

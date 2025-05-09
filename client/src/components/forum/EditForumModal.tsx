@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useUpdateForumMutation } from "@/state/api/forumApi";
 import { toast } from "sonner";
-import Cookies from "js-cookie";
 interface EditForumModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,7 +23,7 @@ export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumM
     try {
       await updateForum({
         forumId: forum._id,
-        userId: Cookies.get("userId") || "",
+        userId: localStorage.getItem("userId") || "",
         title,
         description,
         topics: topics.split(",").map(topic => topic.trim()).filter(Boolean),

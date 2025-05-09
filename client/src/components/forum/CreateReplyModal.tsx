@@ -54,8 +54,8 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
 
   const onSubmit = async (data: ReplyFormData) => {
     try {
-      const userId = Cookies.get('userId');
-      const userName = Cookies.get('userName');
+      const userId = Cookies.get('userId') || localStorage.getItem("userId");
+      const userName = Cookies.get('userName') || localStorage.getItem("userName");
 
       if (!userId || !userName) {
         toast.error('Please sign in to create a reply');

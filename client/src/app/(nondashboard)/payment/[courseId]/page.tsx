@@ -15,7 +15,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 const PaymentPage = () => {
   const params = useParams();
   const courseId = params.courseId as string;
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
   const [clientSecret, setClientSecret] = useState<string>();
   const { data: courseData, isLoading: courseLoading } = useGetCourseQuery(courseId);
   const [createPaymentIntent] = useCreatePaymentIntentMutation();

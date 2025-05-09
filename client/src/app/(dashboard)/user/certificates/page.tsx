@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator"
 
 const CertificateView = () => {
   const router = useRouter()
-  const userId = Cookies.get("userId") || null
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
   const [page, setPage] = useState(1)
   const limit = 9
 

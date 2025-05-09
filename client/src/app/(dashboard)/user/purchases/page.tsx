@@ -17,7 +17,7 @@ const UserPurchaseContent = () => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
   const { data, isLoading, isError } = useGetStudentPurchasesQuery({ 
     userId: userId as string,
     page, 

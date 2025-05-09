@@ -34,7 +34,7 @@ const TeacherDashboardContent = () => {
     handleTableCustomDateRangeChange,
   } = useDashboard('/teacher/dashboard');
 
-  const teacherId = Cookies.get('userId');
+  const teacherId = Cookies.get('userId') || localStorage.getItem("userId");
 
   const { data, isLoading, isError } = useGetTeacherDashboardQuery(
       {

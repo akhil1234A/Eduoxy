@@ -50,8 +50,8 @@ export function EditReplyModal({ isOpen, onClose, reply }: EditReplyModalProps) 
 
   const onSubmit = async (data: { content: string }) => {
     try {
-      const userId = Cookies.get('userId');
-      const userName = Cookies.get('userName');
+      const userId = Cookies.get('userId') || localStorage.getItem("userId");
+      const userName = Cookies.get('userName') || localStorage.getItem("userName");
 
       if (!userId || !userName) {
         toast.error('Please sign in to update your reply');

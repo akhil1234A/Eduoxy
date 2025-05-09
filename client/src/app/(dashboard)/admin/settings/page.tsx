@@ -27,7 +27,7 @@ const SettingsPage = () => {
   const onSubmit = async (data: PasswordFormData) => {
     setLoading(true);
 
-    const userId = Cookies.get("userId");
+    const userId = Cookies.get("userId") || localStorage.get("userId");
     if (!userId) {
       toast.error("Please sign in to update your password.");
       setLoading(false);

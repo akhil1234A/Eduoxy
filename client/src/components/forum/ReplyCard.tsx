@@ -57,7 +57,7 @@ export const ReplyCard: React.FC<ReplyCardProps> = memo(({ reply, canEdit, canDe
   const [isReplyModalOpen, setIsReplyModalOpen] = useState(false)
   const [showNestedReplies, setShowNestedReplies] = useState(level === 0)
   const [deleteReply, { isLoading: isDeleting }] = useDeleteReplyMutation()
-  const userId = Cookies.get("userId")
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   const handleDelete = async () => {
     try {

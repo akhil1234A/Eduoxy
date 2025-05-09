@@ -26,7 +26,7 @@ const CoursesContent = () => {
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const userId = Cookies.get('userId');
+  const userId = Cookies.get('userId') || localStorage.getItem("userId");
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');

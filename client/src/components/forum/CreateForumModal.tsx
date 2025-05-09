@@ -32,7 +32,7 @@ export const CreateForumModal: React.FC<CreateForumModalProps> = ({
 
   const onSubmit = async (data: ForumSchemaType) => {
     try {
-      const userId = Cookies.get("userId");
+      const userId = Cookies.get("userId") || localStorage.getItem("userId");
       const topics = data.topics ? (data.topics as string).split(",").map((t) => t.trim()) : [];
       await createForum({
         userId: userId || "",

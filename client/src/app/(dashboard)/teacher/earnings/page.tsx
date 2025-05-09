@@ -18,7 +18,7 @@ const TeacherEarningsContent = () => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   
-  const teacherId = Cookies.get("userId");
+  const teacherId = Cookies.get("userId") || localStorage.getItem("userId");
   const { data, isLoading, isError } = useGetTeacherEarningsQuery({ 
     teacherId: teacherId as string,
     page, 

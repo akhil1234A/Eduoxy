@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator"
 
 const UserDashboard = () => {
   const router = useRouter()
-  const userId = Cookies.get("userId") || null
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
 
   const {
     data: dashboardResponse,

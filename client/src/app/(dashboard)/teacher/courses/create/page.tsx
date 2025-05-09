@@ -29,8 +29,8 @@ const CourseCreator = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
   const sections = useAppSelector((state) => state.global.courseEditor.sections) || [];
-  const userId = Cookies.get('userId');
-  const userName = Cookies.get('userName');
+  const userId = Cookies.get('userId') || localStorage.get("userId");
+  const userName = Cookies.get('userName') || localStorage.get("userName");
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),

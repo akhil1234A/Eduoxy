@@ -23,8 +23,8 @@ export default function ForumPostsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const userId = Cookies.get("userId")
-  const userName = Cookies.get("userName")
+  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const userName = Cookies.get("userName") || localStorage.getItem("userName");
 
   const { data: forumData } = useGetForumQuery(forumId as string)
   const { data, isLoading, error } = useGetPostsQuery({

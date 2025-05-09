@@ -10,7 +10,7 @@ import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
 
 export default function StudentChatPage() {
-  const senderId = Cookies.get("userId");
+  const senderId = Cookies.get("userId") || localStorage.getItem("userId");
   const [selectedCourse, setSelectedCourse] = useState<{
     courseId: string;
     receiverId: string;

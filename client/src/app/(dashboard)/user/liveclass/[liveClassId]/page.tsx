@@ -2,7 +2,6 @@
 import React, { Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import StudentLiveClass from "@/components/StudentLiveClass"
-import Cookies from "js-cookie"
 import Loading from "@/components/Loading"
 
 // Add export for dynamic rendering
@@ -20,7 +19,7 @@ const StudentLiveClassContent = () => {
   const params = useParams()
   const searchParams = useSearchParams()
   const liveClassId = params.liveClassId as string
-  const userId = searchParams.get("userId") ?? Cookies.get("userId")
+  const userId = searchParams.get("userId") ?? localStorage.getItem("userId");
   const courseId = searchParams.get("courseId") as string
   const teacherId = searchParams.get("teacherId") as string
 
