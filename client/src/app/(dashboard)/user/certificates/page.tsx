@@ -28,7 +28,7 @@ const CertificateView = () => {
   const total = certificatesData?.total || 0
 
   if (!userId) {
-    router.push("/login")
+    router.push("/signin")
     return null
   }
 

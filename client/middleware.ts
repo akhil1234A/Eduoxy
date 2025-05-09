@@ -4,8 +4,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const userType = request.cookies.get("userType")?.value?.toLowerCase(); 
 
-  console.log(`Requested path: ${pathname}`);
-  console.log(`UserType: ${userType}`);
+
 
   const routeRoles: Record<string, string> = {
     admin: "/admin/courses",
