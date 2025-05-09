@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
 import { useForm, FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,9 +12,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Loading from "@/components/Loading";
+import { useUser } from "@/contexts/UserContext";
 
 const ProfilePage = () => {
-  const userId = Cookies.get("userId") || localStorage.get("userId");
+  const {userId} = useUser();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [localProfileData, setLocalProfileData] = useState({
     name: "",
@@ -24,6 +24,8 @@ const ProfilePage = () => {
     email: "",
   });
   const [isDataLoaded, setIsDataLoaded] = useState(false); 
+
+
 
   const { data: profileData, isLoading: isProfileLoading } = useGetProfileQuery(
     userId || "",

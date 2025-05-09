@@ -1,8 +1,7 @@
-"use client"
+"use client";
 
 import type React from "react"
 import { useRouter } from "next/navigation"
-import Cookies from "js-cookie"
 import { Trophy, Clock, BookOpen, Download, ArrowRight, CheckCircle, Award } from "lucide-react"
 import { useGetUserDashboardQuery } from "@/state/redux"
 import Loading from "@/components/Loading"
@@ -10,10 +9,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { useUser } from "@/contexts/UserContext";
+
 
 const UserDashboard = () => {
   const router = useRouter()
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
 
   const {
     data: dashboardResponse,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -24,7 +24,6 @@ import {
   BarChart,
   MessageCircle,
   MessageSquareMore,
-  
 } from "lucide-react";
 import Loading from "./Loading";
 import { cn } from "@/lib/utils";
@@ -32,18 +31,15 @@ import Link from "next/link";
 import { useLogoutMutation } from "@/state/api/authApi";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { useUser } from "@/contexts/UserContext";
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const router = useRouter();
-  const [userType, setUserType] = useState<string | null>(null); 
+  const { userType } = useUser();
 
-  useEffect(() => {
-    const type = Cookies.get("userType") || localStorage.getItem("userType"); 
-    setUserType(type);
-  }, []);
 
   const navLinks = {
     student: [
@@ -80,6 +76,12 @@ const AppSidebar = () => {
   const handleSignOut = async () => {
     try {
       await logout().unwrap();
+      ["userId", "userName", "userType"].forEach((item) => {
+        Cookies.remove(item);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(item); 
+        }
+      });
       router.push("/signin");
     } catch (error) {
       console.error("Logout error:", error);
@@ -87,7 +89,7 @@ const AppSidebar = () => {
   };
 
   if (isLoggingOut) return <Loading />;
-  if (!userType) return <Loading />; 
+  if (!userType) return <Loading />;
 
   const currentNavLinks = navLinks[userType as keyof typeof navLinks] || navLinks.student;
 

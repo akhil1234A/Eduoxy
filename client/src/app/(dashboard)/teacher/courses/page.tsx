@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Header from '@/components/Header';
 import Loading from '@/components/Loading';
@@ -9,7 +9,7 @@ import { useGetTeacherCoursesQuery, useDeleteCourseMutation } from '@/state/api/
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useMemo, useState, Suspense } from 'react';
 import { toast } from 'sonner';
-import Cookies from 'js-cookie';
+import { useUser } from '@/contexts/UserContext';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,7 @@ const CoursesContent = () => {
   const searchParams = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const userId = Cookies.get('userId') || localStorage.getItem("userId");
+ const { userId } = useUser();
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');

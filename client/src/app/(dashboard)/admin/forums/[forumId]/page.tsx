@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { CreatePostModal } from "@/components/forum/CreatePostModal"
 import { toast } from "sonner"
-import Cookies from "js-cookie"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Loader2, Search, Plus, MessageSquare, ArrowLeft, Calendar, User } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
+import { useUser } from "@/contexts/UserContext";
 
 export default function ForumPostsPage() {
   const { forumId } = useParams()
@@ -23,8 +23,7 @@ export default function ForumPostsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
-  const userName = Cookies.get("userName") || localStorage.getItem("userName");
+  const { userId, userName} = useUser();
 
   const { data: forumData } = useGetForumQuery(forumId as string)
   const { data, isLoading, error } = useGetPostsQuery({
@@ -33,6 +32,8 @@ export default function ForumPostsPage() {
     pageSize: 10,
     query: debouncedSearchQuery,
   })
+
+
 
   // Reset to first page when search query changes
   useEffect(() => {

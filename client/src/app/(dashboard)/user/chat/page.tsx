@@ -6,11 +6,12 @@ import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 export default function StudentChatPage() {
-  const senderId = Cookies.get("userId") || localStorage.getItem("userId");
+  const {userId} = useUser();
+  const senderId = userId;
   const [selectedCourse, setSelectedCourse] = useState<{
     courseId: string;
     receiverId: string;

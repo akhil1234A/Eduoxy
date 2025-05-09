@@ -1,9 +1,8 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useGetCourseQuery, useGetProfileQuery, useGetReviewsByCourseIdQuery, useAddReviewMutation, useDeleteReviewMutation } from "@/state/redux"
-import Cookies from "js-cookie"
 import Loading from "@/components/Loading"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -18,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
+import { useUser } from "@/contexts/UserContext";
 
 // Add export for dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -49,8 +49,8 @@ const CourseView = () => {
   const params = useParams()
   const router = useRouter()
   const courseId = params.courseId as string
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
-  const userName = Cookies.get("userName") || localStorage.getItem("userName");
+  const { userId, userName } = useUser();
+
 
   const { data: courseData, isLoading: isCourseLoading, isError: isCourseError } = useGetCourseQuery(courseId)
   const course = courseData?.data as Course

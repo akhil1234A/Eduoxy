@@ -5,9 +5,9 @@ import Header from "@/components/Header";
 import DynamicTable from "@/components/DynamicTable";
 import { useGetStudentPurchasesQuery } from "@/state/api/transactionApi";
 import { toast } from "sonner";
-import Cookies from "js-cookie";
 import { useRouter, useSearchParams } from "next/navigation";
 import Loading from "@/components/Loading";
+import { useUser } from "@/contexts/UserContext";
 const UserPurchaseContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ const UserPurchaseContent = () => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
   const { data, isLoading, isError } = useGetStudentPurchasesQuery({ 
     userId: userId as string,
     page, 

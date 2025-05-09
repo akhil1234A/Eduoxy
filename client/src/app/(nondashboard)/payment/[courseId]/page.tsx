@@ -6,7 +6,7 @@ import { useGetCourseQuery, useCreatePaymentIntentMutation } from "@/state/redux
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 import { lazy, Suspense, useEffect, useState } from "react";
-import Cookies from "js-cookie";
+import { useUser } from "@/contexts/UserContext";
 
 const CheckoutForm = lazy(() => import("./CheckoutForm"));
 
@@ -15,7 +15,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 const PaymentPage = () => {
   const params = useParams();
   const courseId = params.courseId as string;
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
   const [clientSecret, setClientSecret] = useState<string>();
   const { data: courseData, isLoading: courseLoading } = useGetCourseQuery(courseId);
   const [createPaymentIntent] = useCreatePaymentIntentMutation();

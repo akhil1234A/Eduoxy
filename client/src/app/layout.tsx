@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 import Providers from "./providers";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SocketProvider } from "@/contexts/SocketContext";
-
+import { UserProvider } from "@/contexts/UserContext";
 
 
 export const metadata: Metadata = {
@@ -21,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className="font-dm-sans">
+        <UserProvider>
         <SocketProvider>
           <NotificationProvider>
             <Providers>
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </Providers>
           </NotificationProvider>
         </SocketProvider>
+        </UserProvider>
         <Toaster richColors position="top-right" />
       </body>
     </html>

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -6,12 +6,12 @@ import { CheckCircle } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
 import { coursesApi } from "@/state/redux"; // Import coursesApi
-import Cookies from "js-cookie";
+import { useUser } from "@/contexts/UserContext";
 
 export default function SuccessPage() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
 
   // Trigger refetch of enrolled courses on mount
   useEffect(() => {

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,8 @@ import ChapterModal from '@/components/ChapterModal';
 import Image from 'next/image';
 import { Upload, ArrowLeft, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import Cookies from 'js-cookie';
+import { useUser } from '@/contexts/UserContext';
+
 
 const CourseCreator = () => {
   const router = useRouter();
@@ -29,8 +30,8 @@ const CourseCreator = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedKeys, setUploadedKeys] = useState<string[]>([]);
   const sections = useAppSelector((state) => state.global.courseEditor.sections) || [];
-  const userId = Cookies.get('userId') || localStorage.get("userId");
-  const userName = Cookies.get('userName') || localStorage.get("userName");
+  const { userId, userName } = useUser();
+
 
   const methods = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),

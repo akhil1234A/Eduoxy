@@ -2,18 +2,17 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 
 const ScheduleLiveClass = () => {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
-
+  const {userId} = useUser();
   const [title, setTitle] = useState("");
   const [startTime, setStartTime] = useState(""); // Keep raw input format
   const [endTime, setEndTime] = useState("");

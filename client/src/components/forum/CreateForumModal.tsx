@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import Cookies from "js-cookie";
+import { useUser } from "@/contexts/UserContext";
 
 interface CreateForumModalProps {
   isOpen: boolean;
@@ -30,9 +30,10 @@ export const CreateForumModal: React.FC<CreateForumModalProps> = ({
     resolver: zodResolver(ForumSchema),
   });
 
+  const {userId} = useUser();
+
   const onSubmit = async (data: ForumSchemaType) => {
     try {
-      const userId = Cookies.get("userId") || localStorage.getItem("userId");
       const topics = data.topics ? (data.topics as string).split(",").map((t) => t.trim()) : [];
       await createForum({
         userId: userId || "",

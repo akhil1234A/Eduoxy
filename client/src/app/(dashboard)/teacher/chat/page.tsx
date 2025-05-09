@@ -6,8 +6,8 @@ import Chat from "@/components/Chat";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Cookies from "js-cookie";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
 
 
 interface StudentData {
@@ -18,7 +18,8 @@ interface StudentData {
 }
 
 export default function InstructorChatPage() {
-  const senderId = Cookies.get("userId") || localStorage.getItem("userId"); 
+  const {userId} = useUser();
+  const senderId = userId; 
   const [selectedChat, setSelectedChat] = useState<{
     courseId: string;
     receiverId: string; 

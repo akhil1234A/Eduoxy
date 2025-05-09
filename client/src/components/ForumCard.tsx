@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import Link from 'next/link';
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
-import Cookies from "js-cookie";
+import { useUser } from "@/contexts/UserContext";
 
 interface ForumCardProps {
   forum: IForum;
@@ -25,14 +25,14 @@ interface ForumCardProps {
 export function ForumCard({ forum }: ForumCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteForum, { isLoading: isDeleting }] = useDeleteForumMutation();
-  const userType = Cookies.get("userType") || localStorage.getItem("userType");
+  const { userType, userId } = useUser();
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this forum?")) {
       try {
         await deleteForum({
           forumId: forum._id,
-          userId: localStorage.getItem("userId") || "",
+          userId: userId || "",
         }).unwrap();
         toast.success("Forum deleted successfully");
       } catch (error) {

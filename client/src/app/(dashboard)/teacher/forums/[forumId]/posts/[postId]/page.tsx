@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { CreateReplyModal } from "@/components/forum/CreateReplyModal"
 import { PaginationControls } from "@/components/PaginationControls"
 import { toast } from "sonner"
-import Cookies from "js-cookie"
 import { useSocket } from "@/contexts/SocketContext"
 import { Loader2, Edit, Trash2, ArrowLeft, MessageSquare, Calendar, User } from "lucide-react"
 import { FileViewer } from "@/components/FileViewer"
@@ -26,6 +25,7 @@ import {
 import { EditPostModal } from "@/components/forum/EditPostModal"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { useUser } from "@/contexts/UserContext";
 
 
 
@@ -35,7 +35,7 @@ export default function PostPage() {
   const [page, setPage] = useState(1)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isReplyModalOpen, setIsReplyModalOpen] = useState(false)
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const {userId} = useUser();
   const { socket } = useSocket()
 
   const { data: postData, isLoading: isPostLoading } = useGetPostQuery(postId as string)

@@ -1,8 +1,7 @@
-"use client"
+"use client";
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Cookies from "js-cookie"
 import { Download, FileText, Award, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react"
 import { useGetUserCertificatesQuery } from "@/state/redux"
 import Loading from "@/components/Loading"
@@ -10,14 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { useUser } from "@/contexts/UserContext";
 
 
 const CertificateView = () => {
   const router = useRouter()
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
   const [page, setPage] = useState(1)
   const limit = 9
 
+ 
   const {
     data: certificatesResponse,
     isLoading,

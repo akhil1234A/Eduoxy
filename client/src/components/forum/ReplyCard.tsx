@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import type React from "react"
 
@@ -21,9 +21,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Loader2, User, ChevronDown, ChevronUp, MessageSquare, Calendar, Edit, Trash2 } from "lucide-react"
-import Cookies from "js-cookie"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
+import { useUser } from "@/contexts/UserContext";
 
 interface IReplyTreeNode {
   _id: string
@@ -57,7 +57,7 @@ export const ReplyCard: React.FC<ReplyCardProps> = memo(({ reply, canEdit, canDe
   const [isReplyModalOpen, setIsReplyModalOpen] = useState(false)
   const [showNestedReplies, setShowNestedReplies] = useState(level === 0)
   const [deleteReply, { isLoading: isDeleting }] = useDeleteReplyMutation()
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const {userId} = useUser();
 
   const handleDelete = async () => {
     try {

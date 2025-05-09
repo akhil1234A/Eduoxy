@@ -1,20 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BookOpen, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useLogoutMutation } from "@/state/redux";
 import { useRouter } from "next/navigation";
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const userType = Cookies.get("userType") || localStorage.getItem("userType");
+  const [userType, setUserType] = useState<string | null>(null);
   const router = useRouter();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  useEffect(() => {
+    const type = Cookies.get("userType") || (typeof window !== "undefined" ? localStorage.getItem("userType") : null);
+    setUserType(type);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -33,7 +38,7 @@ const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
     setIsProfileOpen((prev) => !prev);
   };
 
-  const profileRoute = `/${userType}/profile`;
+  const profileRoute = `/${userType || "student"}/profile`;
 
   return (
     <nav className="dashboard-navbar">

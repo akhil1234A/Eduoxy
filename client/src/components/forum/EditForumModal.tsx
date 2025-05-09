@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useUpdateForumMutation } from "@/state/api/forumApi";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 interface EditForumModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,13 +18,14 @@ export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumM
   const [description, setDescription] = useState(forum.description);
   const [topics, setTopics] = useState(forum.topics.join(", "));
   const [updateForum, { isLoading }] = useUpdateForumMutation();
+  const {userId} = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await updateForum({
         forumId: forum._id,
-        userId: localStorage.getItem("userId") || "",
+        userId: userId || "",
         title,
         description,
         topics: topics.split(",").map(topic => topic.trim()).filter(Boolean),

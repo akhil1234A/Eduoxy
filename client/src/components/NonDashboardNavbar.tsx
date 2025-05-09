@@ -16,9 +16,10 @@ const NonDashboardNavbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
-    const id = Cookies.get("userId") || localStorage.getItem("userId");
-    setUserId(id || null); 
-    setUserType(localStorage.getItem("userType") || "");
+    const id = Cookies.get("userId") || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
+    const type = typeof window !== "undefined" ? localStorage.getItem("userType") : null;
+    setUserId(id || null);
+    setUserType(type || "");
   }, []);
 
 
@@ -27,7 +28,9 @@ const NonDashboardNavbar = () => {
       await logout().unwrap();
       ["userId", "userName", "userType"].forEach((item) => {
         Cookies.remove(item);
-        localStorage.removeItem(item);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(item);
+        }
       });
       router.push("/signin");
     } catch (error) {

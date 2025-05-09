@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Cookies from "js-cookie";
 import { useForm, FormProvider } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -10,9 +9,11 @@ import { CustomFormField } from "@/components/CustomFormField";
 import { useUpdatePasswordMutation } from "@/state/api/userApi"; 
 import { PasswordFormData , passwordUpdateSchema} from "@/lib/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useUser } from "@/contexts/UserContext";
 
 
 const SettingsPage = () => {
+  const {userId} = useUser();
   const [loading, setLoading] = useState(false);
   const [updatePassword] = useUpdatePasswordMutation(); 
   const methods = useForm<PasswordFormData>({
@@ -27,7 +28,7 @@ const SettingsPage = () => {
   const onSubmit = async (data: PasswordFormData) => {
     setLoading(true);
 
-    const userId = Cookies.get("userId") || localStorage.getItem("userId");
+
     if (!userId) {
       toast.error("Please sign in to update your password.");
       setLoading(false);

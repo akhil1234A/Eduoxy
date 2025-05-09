@@ -5,8 +5,8 @@ import { PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useCreateTransactionMutation } from "@/state/redux";
-import Cookies from "js-cookie";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 
 export default function CheckoutForm({ courseId, amount }: { courseId: string; amount: number }) {
   const stripe = useStripe();
@@ -15,7 +15,7 @@ export default function CheckoutForm({ courseId, amount }: { courseId: string; a
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [createTransaction] = useCreateTransactionMutation();
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
 
   useEffect(() => {
     const paymentChannel = new BroadcastChannel("payment_channel");

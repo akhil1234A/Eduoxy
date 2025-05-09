@@ -8,8 +8,8 @@ import Toolbar from "@/components/Toolbar";
 import CourseCard from "@/components/CourseCard";
 import Loading from "@/components/Loading";
 import { useGetUserEnrolledCoursesQuery } from "@/state/redux";
-import Cookies from "js-cookie";
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/contexts/UserContext";
 
 // Add export for dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ const CoursesContent = () => {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId } = useUser();
 
   const {
     data: courseResponse,

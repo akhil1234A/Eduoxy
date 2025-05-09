@@ -5,9 +5,9 @@ import Header from "@/components/Header";
 import DynamicTable from "@/components/DynamicTable";
 import { useGetTeacherEarningsQuery } from "@/state/api/transactionApi";
 import { toast } from "sonner";
-import Cookies from "js-cookie";
 import { useRouter, useSearchParams } from "next/navigation";
 import Loading from '@/components/Loading'
+import { useUser } from "@/contexts/UserContext";
 
 const TeacherEarningsContent = () => {
   const router = useRouter();
@@ -18,7 +18,8 @@ const TeacherEarningsContent = () => {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
   
-  const teacherId = Cookies.get("userId") || localStorage.getItem("userId");
+  const { userId}  = useUser();
+  const teacherId = userId; 
   const { data, isLoading, isError } = useGetTeacherEarningsQuery({ 
     teacherId: teacherId as string,
     page, 

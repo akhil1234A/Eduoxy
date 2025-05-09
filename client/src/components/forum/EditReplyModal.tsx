@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { FileUpload } from '@/components/FileUpload';
 import { toast } from 'sonner';
 import { IFile } from '@/types/file';
-import Cookies from 'js-cookie';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 interface EditReplyModalProps {
   isOpen: boolean;
@@ -40,6 +40,7 @@ export function EditReplyModal({ isOpen, onClose, reply }: EditReplyModalProps) 
     })
   );
   const [updateReply, { isLoading }] = useUpdateReplyMutation();
+  const { userId, userName} = useUser();
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(ReplySchema),
@@ -50,8 +51,7 @@ export function EditReplyModal({ isOpen, onClose, reply }: EditReplyModalProps) 
 
   const onSubmit = async (data: { content: string }) => {
     try {
-      const userId = Cookies.get('userId') || localStorage.getItem("userId");
-      const userName = Cookies.get('userName') || localStorage.getItem("userName");
+;
 
       if (!userId || !userName) {
         toast.error('Please sign in to update your reply');

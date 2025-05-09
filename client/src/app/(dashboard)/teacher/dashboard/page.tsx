@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { Suspense } from 'react';
 import Header from '@/components/Header';
@@ -6,9 +6,9 @@ import DynamicTable from '@/components/DynamicTable';
 import DashboardGraphs from '@/components/DashboardGraphs';
 import { useGetTeacherDashboardQuery } from '@/state/redux';
 import { toast } from 'sonner';
-import Cookies from 'js-cookie';
 import { DateRangePicker } from '@/components/DateRangePicker';
 import { useDashboard } from '@/hooks/useDashboard';
+import { useUser } from '@/contexts/UserContext';
 
 
 
@@ -34,7 +34,8 @@ const TeacherDashboardContent = () => {
     handleTableCustomDateRangeChange,
   } = useDashboard('/teacher/dashboard');
 
-  const teacherId = Cookies.get('userId') || localStorage.getItem("userId");
+  const {userId} = useUser();
+  const teacherId = userId; 
 
   const { data, isLoading, isError } = useGetTeacherDashboardQuery(
       {

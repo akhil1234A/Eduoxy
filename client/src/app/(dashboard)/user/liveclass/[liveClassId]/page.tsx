@@ -1,8 +1,9 @@
-"use client"
+"use client";
 import React, { Suspense } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import StudentLiveClass from "@/components/StudentLiveClass"
 import Loading from "@/components/Loading"
+import { useUser } from "@/contexts/UserContext";
 
 // Add export for dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,8 @@ const StudentLiveClassContent = () => {
   const params = useParams()
   const searchParams = useSearchParams()
   const liveClassId = params.liveClassId as string
-  const userId = searchParams.get("userId") ?? localStorage.getItem("userId");
+  const {userId: temp} = useUser();
+  const userId = searchParams.get("userId") ?? temp;
   const courseId = searchParams.get("courseId") as string
   const teacherId = searchParams.get("teacherId") as string
 

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -12,8 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { FileUpload } from '@/components/FileUpload';
 import { toast } from 'sonner';
 import { IFile } from '@/types/file';
-import Cookies from 'js-cookie';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 interface CreateReplyModalProps {
   isOpen: boolean;
@@ -52,10 +52,11 @@ export const CreateReplyModal: React.FC<CreateReplyModalProps> = ({
   console.log(parentReplyId, 'Parent Reply ID from props');
   console.log(level, 'Level from props');
 
+  const {userId, userName } = useUser();
+
   const onSubmit = async (data: ReplyFormData) => {
     try {
-      const userId = Cookies.get('userId') || localStorage.getItem("userId");
-      const userName = Cookies.get('userName') || localStorage.getItem("userName");
+
 
       if (!userId || !userName) {
         toast.error('Please sign in to create a reply');
