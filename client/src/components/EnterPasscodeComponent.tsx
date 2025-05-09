@@ -8,20 +8,19 @@ import { z } from "zod";
 
 interface Props {
   email: string;
-  userType: "student" | "teacher"; 
+  userType: "student" | "teacher";
 }
 
 const EnterPasscodeComponent = ({ email }: Props) => {
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [timer, setTimer] = useState(120); // 2 minutes (120 seconds)
+  const [timer, setTimer] = useState(120);
   const [canResend, setCanResend] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verifyOtp, { isLoading: verifying }] = useVerifyOtpMutation();
   const router = useRouter();
 
-  
   useEffect(() => {
     if (timer > 0) {
       const countdown = setInterval(() => {
@@ -29,11 +28,10 @@ const EnterPasscodeComponent = ({ email }: Props) => {
       }, 1000);
       return () => clearInterval(countdown);
     } else {
-      setCanResend(true); 
+      setCanResend(true);
     }
   }, [timer]);
 
-  // Format timer as MM:SS
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -52,7 +50,16 @@ const EnterPasscodeComponent = ({ email }: Props) => {
         setSuccess("OTP verified successfully. Redirecting...");
         localStorage.removeItem("signupEmail");
 
-        const { user } = response.data || {};
+        const user = response.data?.user as {
+          id?: string;
+          name?: string;
+          userType?: string;
+        };
+        
+        if (user?.id) localStorage.setItem('userId', user.id);
+        if (user?.name) localStorage.setItem('userName', user.name);
+        if (user?.userType) localStorage.setItem('userType', user.userType);
+
         const targetRoute = user?.userType === "teacher" ? "/teacher/courses" : "/user/courses";
         setTimeout(() => router.push(targetRoute), 2000);
       } else {
@@ -87,9 +94,9 @@ const EnterPasscodeComponent = ({ email }: Props) => {
       const data = await response.json();
       if (data.success) {
         setSuccess("New OTP sent. Check your email.");
-        setTimer(120); 
-        setCanResend(false); 
-        setPasscode(""); 
+        setTimer(120);
+        setCanResend(false);
+        setPasscode("");
       } else {
         setError(data.message || "Failed to resend OTP");
       }

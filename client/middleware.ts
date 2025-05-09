@@ -1,55 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ROUTE_ROLES: Record<string, string> = {
+  admin: "/admin",
+  teacher: "/teacher",
+  student: "/user",
+};
+
+const PUBLIC_ROUTES = ["/signin", "/signup"];
+const ROOT_ROUTE = "/";
+const UNAUTHORIZED_ROUTE = "/unauthorized";
+const SIGNIN_ROUTE = "/signin";
+const PAYMENT_PREFIX = "/payment";
+
+function isPublicRoute(pathname: string) {
+  return PUBLIC_ROUTES.includes(pathname);
+}
+
+function getUserRolePath(userType: string) {
+  return ROUTE_ROLES[userType] ?? "/user";
+}
+
+function isAnyProtectedRoute(pathname: string) {
+  return Object.values(ROUTE_ROLES).some((prefix) => pathname.startsWith(prefix));
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const userType = request.cookies.get("userType")?.value?.toLowerCase(); 
+  const userType = request.cookies.get("userType")?.value?.toLowerCase();
 
+  if (pathname === ROOT_ROUTE) return NextResponse.next();
 
+  const isLoggedIn = Boolean(userType);
+  const userBaseRoute = getUserRolePath(userType || "student");
 
-  const routeRoles: Record<string, string> = {
-    admin: "/admin/courses",
-    teacher: "/teacher/courses",
-    student: "/user/courses",
-  };
-
-  const publicRoutes = ["/signin", "/signup"];
-  const isPublicRoute = publicRoutes.includes(pathname);
-  const isProtectedRoute = Object.values(routeRoles).some((prefix) =>
-    pathname.startsWith(prefix)
-  );
-  const isPaymentRoute = pathname.startsWith("/payment");
-
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
-
-  if (isPublicRoute && userType) {
-    const targetRoute = routeRoles[userType] || "/user/courses";
-    if (!pathname.startsWith(targetRoute)) {
-      console.log(`Redirecting to: ${targetRoute}`);
-      return NextResponse.redirect(new URL(targetRoute, request.url));
+  // Redirect logged-in users away from public routes
+  if (isPublicRoute(pathname) && isLoggedIn) {
+    if (!pathname.startsWith(userBaseRoute)) {
+      console.log(`[Redirect] Logged-in user accessing public → ${userBaseRoute}`);
+      return NextResponse.redirect(new URL(userBaseRoute + "/courses", request.url));
     }
     return NextResponse.next();
   }
 
-  if (!userType && (isProtectedRoute || isPaymentRoute)) {
-    const loginUrl = new URL("/signin", request.url);
+  const isProtected = isAnyProtectedRoute(pathname);
+  const isPayment = pathname.startsWith(PAYMENT_PREFIX);
+
+  // Redirect unauthenticated users
+  if (!isLoggedIn && (isProtected || isPayment)) {
+    const loginUrl = new URL(SIGNIN_ROUTE, request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    console.log(`Redirecting to login: ${loginUrl}`);
+    console.log(`[Redirect] Not logged in → Signin`);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (userType && isProtectedRoute) {
-    const allowedPrefix = routeRoles[userType].replace("/courses", ""); 
+  // Role-based access restriction
+  if (isLoggedIn && isProtected) {
+    const allowedPrefix = getUserRolePath(userType!);
     if (!pathname.startsWith(allowedPrefix)) {
-      console.log(`Redirecting to unauthorized`);
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
+      console.log(`[Unauthorized] ${userType} tried to access ${pathname}`);
+      return NextResponse.redirect(new URL(UNAUTHORIZED_ROUTE, request.url));
     }
   }
 
   return NextResponse.next();
 }
-
 
 export const config = {
   matcher: ['/((?!api|_next|static|favicon.ico).*)'],

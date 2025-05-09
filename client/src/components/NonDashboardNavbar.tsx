@@ -25,6 +25,10 @@ const NonDashboardNavbar = () => {
   const handleLogout = async () => {
     try {
       await logout().unwrap();
+      ["userId", "userName", "userType"].forEach((item) => {
+        Cookies.remove(item);
+        localStorage.removeItem(item);
+      });
       router.push("/signin");
     } catch (error) {
       console.error("Logout error:", error);

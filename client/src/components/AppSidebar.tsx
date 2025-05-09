@@ -41,7 +41,7 @@ const AppSidebar = () => {
   const [userType, setUserType] = useState<string | null>(null); 
 
   useEffect(() => {
-    const type = Cookies.get("userType") || "student"; 
+    const type = Cookies.get("userType") || localStorage.getItem("userType"); 
     setUserType(type);
   }, []);
 
