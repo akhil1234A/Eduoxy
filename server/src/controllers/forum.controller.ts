@@ -11,21 +11,6 @@ import { buildPaginationResult, getPaginationParams } from "../utils/paginationU
 
 /**
  * This controller handles all the CRUD operations for forums, posts, and replies.
- * *    1. Get forums
- * *    2. Get forum by ID
- * *    3. Create forum
- * *    4. Update forum
- * *    5. Delete forum
- * *    6. Get posts in a forum
- * *    7. Create post in a forum
- * *    8. Get post by ID
- * *    9. Update post
- * *    10. Delete post
- * *    11. Get replies to a post
- * *    12. Create reply to a post
- * *    13. Update reply
- * *    14. Delete reply
- * *    15. Search posts in a forum
  */
 
 @injectable()

@@ -2,6 +2,12 @@ import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import fs from "fs";
 import path from "path";
+import { Request, Response } from "express";
+
+// Extend Request to include user property
+interface CustomRequest extends Request {
+  user?: { userId: string };
+}
 
 const logDir = path.join(__dirname, "../logs");
 if (!fs.existsSync(logDir)) {
@@ -34,17 +40,17 @@ const SENSITIVE_FIELDS = [
 ];
 
 // Sanitize sensitive data
-const sanitizeData = (data: any, seen = new WeakMap()): any => {
-  if (!data || typeof data !== "object") return data;
+const sanitizeData = (input: unknown, seen = new WeakMap()): unknown => {
+  if (!input || typeof input !== "object") return input;
 
-  if (seen.has(data)) return "[Circular]";
-  seen.set(data, true);
+  if (seen.has(input)) return "[Circular]";
+  seen.set(input, true);
 
-  if (data._doc) return sanitizeData(data._doc, seen);
-  if (Array.isArray(data)) return data.map((item) => sanitizeData(item, seen));
+  if ("_doc" in input && input._doc) return sanitizeData(input._doc, seen);
+  if (Array.isArray(input)) return input.map((item) => sanitizeData(item, seen));
 
-  const sanitized: any = {};
-  for (const [key, value] of Object.entries(data)) {
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
     if (key.startsWith("$") || key === "__v" || key === "_id") continue;
     sanitized[key] = SENSITIVE_FIELDS.includes(key.toLowerCase())
       ? "[REDACTED]"
@@ -59,9 +65,9 @@ const sanitizeData = (data: any, seen = new WeakMap()): any => {
 const consoleFormat = winston.format.combine(
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
   winston.format.colorize(),
-  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+  winston.format.printf(({ timestamp, level, message, ...metadata }) => {
     const msg = `[${timestamp}] ${level}: ${message}`;
-    return Object.keys(meta).length ? `${msg} ${JSON.stringify(sanitizeData(meta))}` : msg;
+    return Object.keys(metadata).length ? `${msg} ${JSON.stringify(sanitizeData(metadata))}` : msg;
   })
 );
 
@@ -96,7 +102,7 @@ export const apiLogger = winston.createLogger({
 });
 
 // Structured logging helpers
-export const logRequest = (req: any) => {
+export const logRequest = (req: CustomRequest) => {
   apiLogger.info("HTTP Request", {
     method: req.method,
     url: req.url,
@@ -106,7 +112,7 @@ export const logRequest = (req: any) => {
   });
 };
 
-export const logResponse = (req: any, res: any, duration: number) => {
+export const logResponse = (req: CustomRequest, res: Response, duration: number) => {
   apiLogger.info("HTTP Response", {
     method: req.method,
     url: req.url,
@@ -116,7 +122,7 @@ export const logResponse = (req: any, res: any, duration: number) => {
   });
 };
 
-export const logError = (error: any, req?: any) => {
+export const logError = (error: Error, req?: CustomRequest) => {
   apiLogger.error("Error", {
     message: error.message,
     stack: error.stack,

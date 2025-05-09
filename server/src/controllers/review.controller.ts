@@ -9,10 +9,6 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 /**
  * Controller for handling review functionality
- * *    1. Get reviews by course ID
- * *    2. Add a review
- * *    3. Delete a review
- * 
  */
 @injectable()
 export class ReviewController {

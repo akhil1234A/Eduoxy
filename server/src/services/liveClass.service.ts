@@ -34,7 +34,7 @@ export class LiveClassService implements ILiveClassService {
       participants: [teacherId], 
       isActive: false,
     };
-    return await this.liveClassRepository.create(liveClassData);
+    return await this.liveClassRepository.createLiveClass(liveClassData);
   }
 
   /**
@@ -52,7 +52,7 @@ export class LiveClassService implements ILiveClassService {
    * @returns live class
    */
   async joinLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
-    const liveClass = await this.liveClassRepository.findById(liveClassId);
+    const liveClass = await this.liveClassRepository.findLiveClassById(liveClassId);
     if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     if (!liveClass.isActive) throw new Error("Live class is not active yet");
     if (liveClass.participants.length >= 5) throw new Error("Class is full (max 5 participants)");
@@ -74,7 +74,7 @@ export class LiveClassService implements ILiveClassService {
    * @returns 
    */
   async leaveLiveClass(liveClassId: string, userId: string): Promise<ILiveClass> {
-    const liveClass = await this.liveClassRepository.findById(liveClassId);
+    const liveClass = await this.liveClassRepository.findLiveClassById(liveClassId);
     if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     const updatedClass = await this.liveClassRepository.removeParticipant(liveClassId, userId);
     if (!updatedClass) throw new Error("Failed to leave live class");
@@ -88,7 +88,7 @@ export class LiveClassService implements ILiveClassService {
    * @returns 
    */
   async startLiveClass(liveClassId: string, teacherId: string): Promise<ILiveClass> {
-    const liveClass = await this.liveClassRepository.findById(liveClassId);
+    const liveClass = await this.liveClassRepository.findLiveClassById(liveClassId);
     if (!liveClass) throw new Error(SERVICE_MESSAGES.LIVE_CLASS_NOT_FOUND);
     if (liveClass.teacherId !== teacherId) throw new Error("Only the teacher can start the class");
     if (liveClass.isActive) throw new Error("Class is already active");
@@ -107,7 +107,7 @@ export class LiveClassService implements ILiveClassService {
    * @returns 
    */
   async getTeacherId(liveClassId: string): Promise<string | null> {
-    const liveClass = await this.liveClassRepository.findById(liveClassId);
+    const liveClass = await this.liveClassRepository.findLiveClassById(liveClassId);
     return liveClass?.teacherId || null;
   }
 
@@ -118,7 +118,7 @@ export class LiveClassService implements ILiveClassService {
    */
   async deleteLiveClass(liveClassId: string): Promise<boolean> {
     try {
-      const result = await this.liveClassRepository.findByIdAndDelete(liveClassId);
+      const result = await this.liveClassRepository.findLiveClassByIdAndDelete(liveClassId);
       return !!result;
     } catch (error) {
       console.error('Error deleting live class:', error);

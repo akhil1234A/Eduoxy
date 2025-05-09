@@ -18,7 +18,7 @@ export class RoadmapService implements IRoadmapService {
    * @returns 
    */
   async createRoadmap(roadmap: IRoadmap): Promise<IRoadmapDocument> {
-    return this._roadmapRepository.create(roadmap);
+    return this._roadmapRepository.createRoadmap(roadmap);
   }
 
   /**
@@ -27,7 +27,7 @@ export class RoadmapService implements IRoadmapService {
    * @returns 
    */
   async getRoadmapById(id: string): Promise<IRoadmapDocument | null> {
-    return this._roadmapRepository.findById(id);
+    return this._roadmapRepository.findRoadmapById(id);
   }
 
   /**
@@ -37,7 +37,7 @@ export class RoadmapService implements IRoadmapService {
    * @param searchTerm 
    * @returns 
    */
-   async getAllRoadmaps(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{
+  async getAllRoadmaps(page: number = 1, limit: number = 10, searchTerm: string = ""): Promise<{
     roadmaps: IRoadmapDocument[];
     total: number;
     page: number;
@@ -45,7 +45,7 @@ export class RoadmapService implements IRoadmapService {
     totalPages: number;
   }> {
     const skip = (page - 1) * limit;
-    const query = searchTerm
+    const query: any = searchTerm
       ? {
           $or: [
             { title: { $regex: searchTerm, $options: "i" } },
@@ -55,8 +55,8 @@ export class RoadmapService implements IRoadmapService {
       : {};
 
     const [roadmaps, total] = await Promise.all([
-      this._roadmapRepository.find(query, skip, limit),
-      this._roadmapRepository.count(query),
+      this._roadmapRepository.listAllRoadmap(query as any, skip, limit),
+      this._roadmapRepository.count(query as any),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -77,7 +77,7 @@ export class RoadmapService implements IRoadmapService {
    * @returns 
    */
   async updateRoadmap(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null> {
-    return this._roadmapRepository.update(id, roadmap);
+    return this._roadmapRepository.updateRoadmap(id, roadmap);
   }
 
   /** 
@@ -85,7 +85,7 @@ export class RoadmapService implements IRoadmapService {
    * @param id
    */
   async deleteRoadmap(id: string): Promise<boolean> {
-    return this._roadmapRepository.delete(id);
+    return this._roadmapRepository.deleteRoadmap(id);
   }
 
   /**
@@ -102,7 +102,7 @@ export class RoadmapService implements IRoadmapService {
     topicId: string,
     isCompleted: boolean
   ): Promise<IRoadmapDocument | null> {
-    const roadmap = await this._roadmapRepository.findById(roadmapId);
+    const roadmap = await this._roadmapRepository.findRoadmapById(roadmapId);
     if (!roadmap) return null;
 
     const section = roadmap.sections.find((s) => s.id === sectionId);
@@ -112,6 +112,6 @@ export class RoadmapService implements IRoadmapService {
     if (!topic) return null;
 
     topic.isCompleted = isCompleted;
-    return this._roadmapRepository.update(roadmapId, roadmap);
+    return this._roadmapRepository.updateRoadmap(roadmapId, roadmap);
   }
-} 
+}

@@ -21,7 +21,7 @@ export class ReviewRepository extends BaseRepository<IReviewDocument> implements
    * @param courseId 
    * @returns 
    */
-  async findByCourseId(courseId: string): Promise<IReviewDocument[]> {
+  async listReviewsByCourse(courseId: string): Promise<IReviewDocument[]> {
     return this.model.find({ courseId }).sort({ createdAt: -1 }).exec();
   }
 
@@ -31,7 +31,7 @@ export class ReviewRepository extends BaseRepository<IReviewDocument> implements
  * @param userId 
  * @returns 
  */
-  async deleteById(reviewId: string, userId: string): Promise<boolean> {
+  async deleteReviewById(reviewId: string, userId: string): Promise<boolean> {
     const result = await this.model.findOneAndDelete({ _id: reviewId, userId }).exec();
     apiLogger.info(`Review deleted successfully ${reviewId} for user ${userId}, result: ${result}`);
     return !!result;

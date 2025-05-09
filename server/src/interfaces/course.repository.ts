@@ -12,7 +12,7 @@ export interface ICourseRepository extends IBaseRepository<ICourseDocument> {
   countTeacherCourses(teacherId: string, category?: string): Promise<number>;
   unlist(courseId: string): Promise<ICourseDocument | null>;
   publish(courseId: string): Promise<ICourseDocument | null>;
-  updateByCourseId(courseId: string, teacherId: string, updateData: Partial<ICourseDocument>): Promise<ICourseDocument | null>;
+  updateByCourseId(courseId: string, teacherId: string, courseData: Partial<ICourseDocument>): Promise<ICourseDocument | null>;
   deleteByCourseId(courseId: string, teacherId: string): Promise<ICourseDocument | null>;
   addEnrollment(courseId: string, userId: string, studentName: string): Promise<ICourseDocument | null>;
   searchPublicCourses(searchTerm: string, category?: string, skip?: number, limit?: number): Promise<ICourseDocument[]>;

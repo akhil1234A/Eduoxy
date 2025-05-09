@@ -16,7 +16,7 @@ export class CertificateRepository extends BaseRepository<ICertificate> implemen
    * @param {Partial<ICertificate>} certificate - The certificate data to be created.
    * @returns {Promise<ICertificate>} - The created certificate.
    */
-  async create(certificate: Partial<ICertificate>): Promise<ICertificate> {
+  async createCertificate(certificate: Partial<ICertificate>): Promise<ICertificate> {
     return await Certificate.create(certificate);
   }
 

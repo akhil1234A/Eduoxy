@@ -11,14 +11,6 @@ import { buildPaginationResult, getPaginationParams } from '../utils/paginationU
 
 /**
  * Controller for handling course management
- * *    1. Create course
- * *    2. Update course
- * *    3. Delete course
- * *    4. List courses (public, admin, teacher)
- * *    5. Get course by ID
- * *    6. Search courses
- * *    7. Publish course
- * *    8. Unlist course
  */
 
 @injectable()

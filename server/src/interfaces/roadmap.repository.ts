@@ -4,11 +4,11 @@ import { IRoadmap } from "../models/roadmap.model";
 export interface IRoadmapDocument extends IRoadmap, Document {}
 
 export interface IRoadmapRepository {
-  create(roadmap: IRoadmap): Promise<IRoadmapDocument>;
-  findById(id: string): Promise<IRoadmapDocument | null>;
+  createRoadmap(roadmap: IRoadmap): Promise<IRoadmapDocument>;
+  findRoadmapById(id: string): Promise<IRoadmapDocument | null>;
   findAll(): Promise<IRoadmapDocument[]>;
-  update(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null>;
-  delete(id: string): Promise<boolean>;
-  find(query: any, skip: number, limit: number): Promise<IRoadmapDocument[]>;
-  count(query: any): Promise<number>;
+  updateRoadmap(id: string, roadmap: Partial<IRoadmap>): Promise<IRoadmapDocument | null>;
+  deleteRoadmap(id: string): Promise<boolean>;
+  listAllRoadmap(query: string, skip: number, limit: number): Promise<IRoadmapDocument[]>;
+  count(query: string): Promise<number>;
 } 

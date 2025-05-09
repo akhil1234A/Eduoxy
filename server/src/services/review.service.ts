@@ -31,7 +31,7 @@ export class ReviewService implements IReviewService {
    */
   async getReviewsByCourseId(courseId: string): Promise<IReviewDocument[]> {
     apiLogger.info(`Fetching reviews for course ${courseId}`);
-    const reviews = await this.reviewRepository.findByCourseId(courseId);
+    const reviews = await this.reviewRepository.listReviewsByCourse(courseId);
     apiLogger.info(`Reviews fetched successfully for course ${courseId}`);
     return reviews;
   }
@@ -44,7 +44,7 @@ export class ReviewService implements IReviewService {
    */
   async deleteReview(reviewId: string, userId: string): Promise<boolean> {
     apiLogger.info(`Deleting review ${reviewId} for user ${userId}`);
-    const result = await this.reviewRepository.deleteById(reviewId, userId);
+    const result = await this.reviewRepository.deleteReviewById(reviewId, userId);
     apiLogger.info(`Review deleted successfully ${reviewId} for user ${userId}`);
     return result;
   }

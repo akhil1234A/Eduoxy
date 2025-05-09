@@ -9,9 +9,6 @@ import { buildPaginationResult, getPaginationParams } from "../utils/paginationU
 
 /**
  * Controller for handling user course progress
- * *    1. Get user enrolled courses
- * *    2. Get user course progress
- * *    3. Update user course progress
  */
 
 @injectable()

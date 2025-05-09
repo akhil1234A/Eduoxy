@@ -4,17 +4,20 @@ import { UserCourseProgress, IUserCourseProgress } from "../models/userCoursePro
 import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
 import { ICourseDocument } from "../models/course.model";
 import { Model } from "mongoose";
+import { BaseRepository } from "./base.repository";
 
 /**
  * UserCourseProgressRepository class is responsible for interacting with the UserCourseProgress model.
  * It provides methods to manage user course progress in the database.
  */
 @injectable()
-export class UserCourseProgressRepository implements IUserCourseProgressRepository {
+export class UserCourseProgressRepository extends BaseRepository<IUserCourseProgress> implements IUserCourseProgressRepository {
   constructor(
-    @inject(TYPES.UserCourseProgressModel) private _userCourseProgressModel: typeof UserCourseProgress,
+    @inject(TYPES.UserCourseProgressModel) private _userCourseProgressModel: Model<IUserCourseProgress>,
     @inject(TYPES.CourseModel) private _courseModel: Model<ICourseDocument>
-  ) {}
+  ) {
+    super(_userCourseProgressModel)
+  }
 
   /**
    * This method retrieves a list of courses that a user is enrolled in.
@@ -81,9 +84,6 @@ export class UserCourseProgressRepository implements IUserCourseProgressReposito
 
   /**
    * This method retrieves a list of courses that a user is enrolled in along with their progress.
-   * It takes a userId, skip, and limit as parameters for pagination.
-   * This method is useful for displaying a list of courses with progress information in User Dashboard
-   * - Not Started, In Progress, Completed
    * @param userId 
    * @param skip 
    * @param limit 

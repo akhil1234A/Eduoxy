@@ -1,16 +1,20 @@
 import { injectable, inject } from "inversify";
 import TYPES from "../di/types";
-import { IUserTimeTracking } from "../models/userTimeTracking.model";
+import { IUserTimeTracking, UserTimeTracking } from "../models/userTimeTracking.model";
 import { Model } from "mongoose";
+import { ITimeTrackingRepository } from "../interfaces/timeTracking.repository";
+import { BaseRepository } from "./base.repository";
 
 /**
  * This is a repository responsible for interacting with user time tracking data
  */
 @injectable()
-export class TimeTrackingRepository {
+export class TimeTrackingRepository extends BaseRepository<IUserTimeTracking> implements ITimeTrackingRepository{
   constructor(
-    @inject(TYPES.UserTimeTrackingModel) private model: Model<IUserTimeTracking>
-  ) {}
+    @inject(TYPES.UserTimeTrackingModel) private timeTrackingModel: Model<IUserTimeTracking>
+  ) {
+    super(timeTrackingModel)
+  }
 
 
   /**

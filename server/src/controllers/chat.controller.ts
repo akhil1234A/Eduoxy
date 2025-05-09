@@ -8,7 +8,6 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 /**
  * Controller for handling chat functionality
- * *    1. Get chat history between user and teacher
  */
 @injectable()
 export class ChatController {

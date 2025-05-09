@@ -19,7 +19,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
    * @param roadmap 
    * @returns 
    */
-  async create(roadmap: any): Promise<IRoadmapDocument> {
+  async createRoadmap(roadmap: IRoadmapDocument): Promise<IRoadmapDocument> {
     return this.model.create(roadmap);
   }
 
@@ -28,7 +28,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
  * @param id 
  * @returns 
  */
-  async findById(id: string): Promise<IRoadmapDocument | null> {
+  async findRoadmapById(id: string): Promise<IRoadmapDocument | null> {
     return this.model.findById(id).exec();
   }
 
@@ -39,7 +39,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
    * @param limit 
    * @returns 
    */
-  async find(query: any = {}, skip: number = 0, limit: number = 10): Promise<IRoadmapDocument[]> {
+  async listAllRoadmap(query = {}, skip: number = 0, limit: number = 10): Promise<IRoadmapDocument[]> {
     return this.model.find(query).skip(skip).limit(limit).exec();
   }
 
@@ -48,7 +48,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
  * @param query 
  * @returns 
  */
-  async count(query: any = {}): Promise<number> {
+  async count(query ={}): Promise<number> {
     return this.model.countDocuments(query).exec();
   }
 
@@ -59,7 +59,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
    * @returns 
    */
 
-  async update(id: string, roadmap: any): Promise<IRoadmapDocument | null> {
+  async updateRoadmap(id: string, roadmap: IRoadmapDocument): Promise<IRoadmapDocument | null> {
     return this.model.findByIdAndUpdate(id, roadmap, { new: true }).exec();
   }
 
@@ -68,7 +68,7 @@ export class RoadmapRepository extends BaseRepository<IRoadmapDocument> implemen
  * @param id 
  * @returns 
  */
-  async delete(id: string): Promise<boolean> {
+  async deleteRoadmap(id: string): Promise<boolean> {
     const result = await this.model.findByIdAndDelete(id).exec();
     return !!result;
   }

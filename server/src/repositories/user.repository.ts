@@ -4,6 +4,7 @@ import User, { IUser, UserInput } from "../models/user.model";
 import { injectable } from "inversify";
 import TYPES from "../di/types";
 import { inject } from "inversify";
+import { FilterQuery, Model } from "mongoose";
 
 /**
  * This is a repository responsible for interacting with user repository
@@ -11,8 +12,8 @@ import { inject } from "inversify";
  */
 @injectable()
 export class UserRepository extends BaseRepository<IUser> implements IUserRepository {
-  constructor(@inject(TYPES.UserModel) private _userModel: typeof User) {
-    super(_userModel);
+  constructor(@inject(TYPES.UserModel) private userModel: Model<IUser>) {
+    super(userModel);
   }
 
   /**
@@ -21,7 +22,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns Created user object
    */
   async create(data: UserInput): Promise<IUser> {
-    return this._userModel.create(data);
+    return this.userModel.create(data);
   }
 
   /**
@@ -30,7 +31,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns User object if found, null otherwise
    */
   async findByEmail(email: string): Promise<IUser | null> {
-    return this._userModel.findOne({ email }).exec();
+    return this.userModel.findOne({ email }).exec();
   }
 
   /**
@@ -39,7 +40,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns User object if found, null otherwise
    */
   async findByGoogleId(googleId: string): Promise<IUser | null> {
-    return this._userModel.findOne({ googleId }).exec();
+    return this.userModel.findOne({ googleId }).exec();
   }
 
   /**
@@ -47,7 +48,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @param id - ID of the user to be blocked
    */
   async blockUser(id: string): Promise<boolean> {
-    const updatedUser = await this._userModel
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(id, { isBlocked: true }, { new: true })
       .select("-password") 
       .exec();
@@ -60,7 +61,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns 
    */
   async unblockUser(id: string): Promise<boolean> {
-    const updatedUser = await this._userModel
+    const updatedUser = await this.userModel
       .findByIdAndUpdate(id, { isBlocked: false }, { new: true })
       .select("-password") 
       .exec();
@@ -81,7 +82,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
     limit: number = 10,
     searchTerm: string = ""
   ): Promise<IUser[]> {
-    const query: any = { userType };
+    const query: FilterQuery<IUser> = { userType };
     
     if (searchTerm) {
       query.$or = [
@@ -90,7 +91,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
       ];
     }
     
-    return this._userModel
+    return this.userModel
       .find(query)
       .select("-password")
       .skip(skip)
@@ -105,7 +106,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns 
    */
   async countByUserType(userType: "student" | "teacher" | "admin", searchTerm: string = ""): Promise<number> {
-    const query: any = { userType };
+    const query: FilterQuery<IUser> = { userType };
     
     if (searchTerm) {
       query.$or = [
@@ -114,7 +115,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
       ];
     }
     
-    return this._userModel.countDocuments(query).exec();
+    return this.userModel.countDocuments(query).exec();
   }
 
   /**
@@ -124,7 +125,7 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns User object if found, null otherwise
    */
   async findById(id: string, select="-password"): Promise<IUser | null> {
-    return this._userModel.findById(id).select(select).exec();
+    return this.userModel.findById(id).select(select).exec();
   }
 
   /**
@@ -135,6 +136,6 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
    * @returns 
    */
   async update(id: string, user: Partial<IUser>, select=""): Promise<IUser | null> {
-    return this._userModel.findByIdAndUpdate(id, user, { new: true }).select(select).exec();
+    return this.userModel.findByIdAndUpdate(id, user, { new: true }).select(select).exec();
   }
 }

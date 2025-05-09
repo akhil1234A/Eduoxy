@@ -21,7 +21,7 @@ import {
   startOfMonth,
   endOfMonth,
 } from "date-fns";
-import { UserRole, CourseStatus } from "../types/types";
+import { UserRole, CourseStatus, UserDashboardResponse, TeacherDashboardResponse, AdminDashboardResponse, RecentTransactionAdmin, RecentEnrollmentTeacher, Course, SectionProgress, ChapterProgress, UserCourseProgress, Certificate } from "../types/types";
 import { CacheUtil } from "../utils/cache";
 import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
 import { ICertificateRepository } from "../interfaces/certificate.repository";
@@ -93,22 +93,29 @@ export class DashboardService implements IDashboardService {
    * @returns 
    */
   private async formatTransactionData(
-    transactions: any[],
+    transactions: ITransaction[],
     isTeacher: boolean = false
-  ): Promise<any[]> {
+  ): Promise<RecentTransactionAdmin[] | RecentEnrollmentTeacher[]> {
     return Promise.all(
       transactions.map(async (txn) => {
         const course = await this._courseRepository.findById(txn.courseId);
         const student = await this._authService.findUserById(txn.userId);
+        if (isTeacher) {
+          return {
+            enrollmentId: txn.transactionId,
+            date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
+            courseName: course?.title || "Unknown",
+            studentName: student?.name || "Unknown",
+            earning: txn.amount * (1 - this._ADMIN_PERCENTAGE),
+          } as RecentEnrollmentTeacher;
+        }
         return {
-          [isTeacher ? "enrollmentId" : "transactionId"]: txn.transactionId,
+          transactionId: txn.transactionId,
           date: format(new Date(txn.dateTime), "yyyy-MM-dd HH:mm"),
           courseName: course?.title || "Unknown",
           studentName: student?.name || "Unknown",
-          [isTeacher ? "earning" : "amount"]: isTeacher
-            ? txn.amount * (1 - this._ADMIN_PERCENTAGE)
-            : txn.amount,
-        };
+          amount: txn.amount,
+        } as RecentTransactionAdmin;
       })
     );
   }
@@ -125,9 +132,9 @@ export class DashboardService implements IDashboardService {
     skip: number,
     limit: number,
     dateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string },
-    teacherCourses?: any[]
-  ): Promise<{ transactions: any[]; total: number }> {
-    let filteredTxns: any[] = [];
+    teacherCourses?: Course[]
+  ): Promise<{ transactions: ITransaction[]; total: number }> {
+    let filteredTxns: ITransaction[] = [];
     let total = 0;
 
     if (dateFilter) {
@@ -153,7 +160,6 @@ export class DashboardService implements IDashboardService {
     return { transactions: filteredTxns, total };
   }
 
-
   /**
    * This a private method that retrieves revenue graph data based on the provided transactions and date filter
    * @param transactions 
@@ -162,7 +168,7 @@ export class DashboardService implements IDashboardService {
    * @returns 
    */
   private async getRevenueGraphData(
-    transactions: any[],
+    transactions: ITransaction[],
     dateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string },
     isTeacher: boolean = false
   ): Promise<{ labels: string[]; data: number[] }> {
@@ -236,8 +242,8 @@ export class DashboardService implements IDashboardService {
    * @returns 
    */
   private async getTopSellingCourses(
-    transactions: any[],
-    courses: any[],
+    transactions: ITransaction[],
+    courses: Course[],
     isTeacher: boolean = false
   ): Promise<{ name: string; revenue: number; enrollments: number }[]> {
     const courseStats = courses.map((course) => {
@@ -270,11 +276,11 @@ export class DashboardService implements IDashboardService {
     limit: number = 10,
     dateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string },
     tableDateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string }
-  ): Promise<any> {
+  ): Promise<AdminDashboardResponse> {
     const skip = (page - 1) * limit;
     const cacheKey = `admin_dashboard:${JSON.stringify({ page, limit, dateFilter, tableDateFilter })}`;
 
-    const cachedData = await CacheUtil.get<any>(cacheKey);
+    const cachedData = await CacheUtil.get<AdminDashboardResponse>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
@@ -301,7 +307,7 @@ export class DashboardService implements IDashboardService {
     const totalUsers = users.length + teachers.length;
 
     const { transactions, total } = await this.getFilteredTransactions(skip, limit, tableDateFilter);
-    const recentTransactions = await this.formatTransactionData(transactions);
+    const recentTransactions = await this.formatTransactionData(transactions) as RecentTransactionAdmin[];
 
     const [revenueGraph, topCourses] = await Promise.all([
       this.getRevenueGraphData(allTransactions, dateFilter),
@@ -342,11 +348,11 @@ export class DashboardService implements IDashboardService {
     limit: number = 10,
     dateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string },
     tableDateFilter?: { type: "day" | "week" | "month" | "custom"; startDate?: string; endDate?: string }
-  ): Promise<any> {
+  ): Promise<TeacherDashboardResponse> {
     const skip = (page - 1) * limit;
     const cacheKey = `teacher_dashboard:${teacherId}:${JSON.stringify({ page, limit, dateFilter, tableDateFilter })}`;
 
-    const cachedData = await CacheUtil.get<any>(cacheKey);
+    const cachedData = await CacheUtil.get<TeacherDashboardResponse>(cacheKey);
     if (cachedData) {
       return cachedData;
     }
@@ -379,7 +385,7 @@ export class DashboardService implements IDashboardService {
       tableDateFilter,
       teacherCourses
     );
-    const recentEnrollments = await this.formatTransactionData(transactions, true);
+    const recentEnrollments = await this.formatTransactionData(transactions, true) as RecentEnrollmentTeacher[];
 
     const [revenueGraph, topCourses] = await Promise.all([
       this.getRevenueGraphData(teacherTxns, dateFilter, true),
@@ -411,9 +417,7 @@ export class DashboardService implements IDashboardService {
    * @param userId 
    * @returns 
    */
-  async getUserDashboard(userId: string): Promise<any> {
-  
-
+  async getUserDashboard(userId: string): Promise<UserDashboardResponse> {
     const [coursesWithProgress, certificates, totalTimeSpent] = await Promise.all([
       this._userCourseProgressRepository.getEnrolledCoursesWithProgress(userId, 0, 100),
       this._certificateRepository.findByUserId(userId, 1, 100),
@@ -421,10 +425,10 @@ export class DashboardService implements IDashboardService {
     ]);
 
     const enrolledCourses = await Promise.all(
-      coursesWithProgress.map(async ({ course, progress }) => {
-        const courseTimeSpent = await this._timeTrackingRepository.getTotalTimeSpent(userId, course.courseId);
+      coursesWithProgress.map(async ({ course, progress }: { course: any; progress: any }) => {
+        const courseTimeSpent = await this._timeTrackingRepository.getTotalTimeSpent(userId, course.courseId || course._id);
         return {
-          courseId: course.courseId,
+          courseId: course.courseId || course._id,
           title: course.title || "Unknown",
           progress: Number((progress?.overallProgress || 0).toFixed(2)),
           completed: progress?.overallProgress === 100,
@@ -443,12 +447,12 @@ export class DashboardService implements IDashboardService {
       minutes: Math.floor((totalTimeSpent % 3600) / 60),
     };
 
-    const completedChapters = coursesWithProgress.reduce((total: number, { progress }: any) => {
+    const completedChapters = coursesWithProgress.reduce((total: number, { progress }: { course: any; progress: any }) => {
       if (!progress) return total;
       return (
         total +
-        progress.sections.reduce((sectionTotal: number, section: any) => {
-          return sectionTotal + section.chapters.filter((chapter: any) => chapter.completed).length;
+        progress.sections.reduce((sectionTotal: number, section: SectionProgress) => {
+          return sectionTotal + section.chapters.filter((chapter: ChapterProgress) => chapter.completed).length;
         }, 0)
       );
     }, 0);
@@ -458,7 +462,7 @@ export class DashboardService implements IDashboardService {
       courseId: cert.courseId,
       courseName: cert.courseName,
       certificateUrl: cert.certificateUrl,
-      issuedAt: cert.issuedAt,
+      issuedAt: format(cert.issuedAt, "yyyy-MM-dd"),
     }));
 
     const result = {
@@ -468,20 +472,19 @@ export class DashboardService implements IDashboardService {
       certificates: certificatesEarned,
       enrolledCourses: {
         startLearning: enrolledCourses
-          .filter((course: any) => course.progress === 0 && !course.completed)
-          .sort((a: any, b: any) => new Date(b.enrollmentDate).getTime() - new Date(a.enrollmentDate).getTime())
+          .filter((course) => course.progress === 0 && !course.completed)
+          .sort((a, b) => new Date(b.enrollmentDate).getTime() - new Date(a.enrollmentDate).getTime())
           .slice(0, 3),
         continueLearning: enrolledCourses
-          .filter((course: any) => course.progress > 0 && !course.completed)
-          .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
+          .filter((course) => course.progress > 0 && !course.completed)
+          .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime())
           .slice(0, 3),
         completedCourses: enrolledCourses
-          .filter((course: any) => course.completed)
-          .sort((a: any, b: any) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()),
+          .filter((course) => course.completed)
+          .sort((a, b) => new Date(b.lastAccessed).getTime() - new Date(a.lastAccessed).getTime()),
       },
     };
 
-   
     return result;
   }
 }

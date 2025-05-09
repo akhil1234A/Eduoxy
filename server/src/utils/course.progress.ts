@@ -1,3 +1,5 @@
+import { SectionProgress, ChapterProgress } from "../types/types";
+
 /**
  * This file contains utility functions for managing course progress and merging sections and chapters.
  * It includes functions to merge chapters and sections, and to calculate overall progress.
@@ -5,12 +7,11 @@
  * @param newChapters 
  * @returns 
  */
-
 export const mergeChapters = (
-  existingChapters: any[],
-  newChapters: any[]
-): any[] => {
-  const existingChaptersMap = new Map<string, any>();
+  existingChapters: ChapterProgress[],
+  newChapters: ChapterProgress[]
+): ChapterProgress[] => {
+  const existingChaptersMap = new Map<string, ChapterProgress>();
   for (const existingChapter of existingChapters) {
     existingChaptersMap.set(existingChapter.chapterId, existingChapter);
   }
@@ -32,10 +33,10 @@ export const mergeChapters = (
  * @returns 
  */
 export const mergeSections = (
-  existingSections: any[],
-  newSections: any[]
-): any[] => {
-  const existingSectionsMap = new Map<string, any>();
+  existingSections: SectionProgress[],
+  newSections: SectionProgress[]
+): SectionProgress[] => {
+  const existingSectionsMap = new Map<string, SectionProgress>();
   for (const existingSection of existingSections) {
     existingSectionsMap.set(existingSection.sectionId, existingSection);
   }
@@ -60,15 +61,15 @@ export const mergeSections = (
  * @param sections 
  * @returns 
  */
-export const calculateOverallProgress = (sections: any[]): number => {
+export const calculateOverallProgress = (sections: SectionProgress[]): number => {
   const totalChapters = sections.reduce(
-    (acc: number, section: any) => acc + section.chapters.length,
+    (acc: number, section: SectionProgress) => acc + section.chapters.length,
     0
   );
 
   const completedChapters = sections.reduce(
-    (acc: number, section: any) =>
-      acc + section.chapters.filter((chapter: any) => chapter.completed).length,
+    (acc: number, section: SectionProgress) =>
+      acc + section.chapters.filter((chapter: ChapterProgress) => chapter.completed).length,
     0
   );
 

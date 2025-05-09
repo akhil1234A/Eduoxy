@@ -8,11 +8,6 @@ import { HttpStatus } from "../utils/httpStatus";
 
 /**
  * Controller for handling live class functionality
- * *    1. Create live class
- * *    2. Get schedule
- * *    3. Join live class
- * *    4. Leave live class
- * *    5. Start live class
  */
 @injectable()
 export class LiveClassController {

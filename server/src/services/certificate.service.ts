@@ -52,7 +52,6 @@ export class CertificateService implements ICertificateService {
       throw new Error(SERVICE_MESSAGES.USER_NOT_FOUND);
     }
     
-    // Generate PDF
     const doc = new PDFDocument({
       size: "A4",
       layout: "landscape",
@@ -62,7 +61,6 @@ export class CertificateService implements ICertificateService {
     doc.on("data", buffers.push.bind(buffers));
     doc.on("end", () => {});
 
-    // Design certificate
     doc.fontSize(36).text("Certificate of Completion", { align: "center" });
     doc.moveDown();
     doc.fontSize(24).text(`This certifies that`, { align: "center" });
@@ -80,7 +78,6 @@ export class CertificateService implements ICertificateService {
 
     const pdfBuffer = Buffer.concat(await new Promise<Buffer[]>((resolve) => doc.on("end", () => resolve(buffers))));
 
-    // Upload to S3
     
     const { publicUrl } = await s3Service.uploadFile(
         pdfBuffer,
@@ -99,7 +96,7 @@ export class CertificateService implements ICertificateService {
       certificateId,
     };
 
-    return await this._certificateRepository.create(certificate);
+    return await this._certificateRepository.createCertificate(certificate);
   }
 
   /**

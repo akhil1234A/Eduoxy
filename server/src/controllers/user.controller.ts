@@ -9,10 +9,6 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 /**
  * Controller for handling user management
- * *    1. Update password
- * *    2. Update instructor profile
- * *    3. Get instructor profile
- * 
  */
 @injectable()
 export class UserController {

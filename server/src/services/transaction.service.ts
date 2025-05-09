@@ -12,6 +12,17 @@ import { CacheUtil } from "../utils/cache";
 import { format } from "date-fns";
 import { apiLogger } from "../utils/logger";
 import { getPaginationParams } from "../utils/paginationUtil";
+import { TransactionResponse } from "../types/types";
+import { Request } from "express";
+
+// Interface for pagination query parameters
+interface PaginationQuery {
+  query: {
+    page: string;
+    limit: string;
+    q: string;
+  };
+}
 
 /**
  * Service for handling transactions related to course enrollments.
@@ -144,7 +155,7 @@ export class TransactionService implements ITransactionService {
     page: number = 1,
     limit: number = 10,
     searchTerm: string = ""
-  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  ): Promise<{ transactions: TransactionResponse[]; total: number; totalPages: number }> {
     const cacheKey = `admin:earnings:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -153,7 +164,7 @@ export class TransactionService implements ITransactionService {
     }
 
     try {
-      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as unknown as Request);
       
       // Fetch paginated transactions for the response
       const transactions = await this._transactionRepository.findAll(params.skip, params.limit);
@@ -253,7 +264,7 @@ export class TransactionService implements ITransactionService {
     page: number = 1,
     limit: number = 10,
     searchTerm: string = ""
-  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  ): Promise<{ transactions: TransactionResponse[]; total: number; totalPages: number }> {
     const cacheKey = `teacher:earnings:${teacherId}:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -262,7 +273,7 @@ export class TransactionService implements ITransactionService {
     }
 
     try {
-      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as unknown as Request);
       const teacherCourses = await this._courseRepository.findTeacherCourses(teacherId);
       const courseIds = teacherCourses.map((c) => c.courseId);
 
@@ -361,7 +372,7 @@ export class TransactionService implements ITransactionService {
     page: number = 1,
     limit: number = 10,
     searchTerm: string = ""
-  ): Promise<{ transactions: any[]; total: number; totalPages: number }> {
+  ): Promise<{ transactions: TransactionResponse[]; total: number; totalPages: number }> {
     const cacheKey = `student:purchases:${userId}:${page}:${limit}:${searchTerm}`;
     const cachedData = await this._redisClient.get(cacheKey);
 
@@ -370,7 +381,7 @@ export class TransactionService implements ITransactionService {
     }
 
     try {
-      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as any);
+      const params = getPaginationParams({ query: { page: page.toString(), limit: limit.toString(), q: searchTerm } } as unknown as Request);
 
       // Fetch paginated transactions for the response
       const transactions = await this._transactionRepository.findByUserId(userId, params.skip, params.limit);

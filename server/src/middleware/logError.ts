@@ -8,7 +8,7 @@ import { logError } from "../utils/logger";
  * @param res - Response object
  * @param next - Next function to call the next middleware
  */
-export const logErrors = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const logErrors = (err: Error, req: Request, res: Response, next: NextFunction) => {
   logError(err, req);
   next(err);
 };

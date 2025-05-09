@@ -1,24 +1,27 @@
 import { injectable } from "inversify";
 import { ILiveClassRepository } from "../interfaces/liveClass.repository";
 import LiveClassModel, { ILiveClass } from "../models/liveClass.model";
+import { BaseRepository } from "./base.repository";
 
 /**
  * This is a repository responsible for interacting with live class repository
  * Managing live clasess 
  */
 @injectable()
-export class LiveClassRepository implements ILiveClassRepository {
+export class LiveClassRepository extends BaseRepository<ILiveClass> implements ILiveClassRepository {
+  constructor(){
+    super(LiveClassModel)
+  }
 
-
-  async create(liveClass: Partial<ILiveClass>): Promise<ILiveClass> {
+  async createLiveClass(liveClass: Partial<ILiveClass>): Promise<ILiveClass> {
     return await LiveClassModel.create(liveClass);
   }
 
-  async findById(id: string): Promise<ILiveClass | null> {
+  async findLiveClassById(id: string): Promise<ILiveClass | null> {
     return await LiveClassModel.findById(id).exec();
   }
 
-  async findByIdAndDelete(id: string): Promise<ILiveClass | null> {
+  async findLiveClassByIdAndDelete(id: string): Promise<ILiveClass | null> {
     return await LiveClassModel.findByIdAndDelete(id).exec();
   }
 

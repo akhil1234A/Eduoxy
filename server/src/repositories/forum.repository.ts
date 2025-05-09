@@ -460,7 +460,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
    * @param forum 
    * @returns 
    */
-  private mapForum(forum: any): IForum {
+  private mapForum(forum: IForum): IForum {
     return {
       _id: forum._id.toString(),
       title: forum.title,
@@ -476,7 +476,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
    * @param post 
    * @returns 
    */
-  private mapPost(post: any): IPost {
+  private mapPost(post: IPost): IPost {
     return {
       _id: post._id.toString(),
       forumId: post.forumId.toString(),
@@ -484,7 +484,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       userName: post.userName,
       content: post.content,
       topic: post.topic,
-      files: (post.files || []).map((file: any) => ({
+      files: (post.files || []).map((file: IFile) => ({
         url: file.publicUrl || file.url,
         key: file.key,
         type: file.type,
@@ -500,7 +500,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
   /** 
    * This is a utility function to map reply 
    */
-  private mapReply(reply: any): IReply {
+  private mapReply(reply: IReply): IReply {
     return {
       _id: reply._id.toString(),
       postId: reply.postId.toString(),
@@ -508,7 +508,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       userId: reply.userId,
       userName: reply.userName,
       content: reply.content,
-      files: (reply.files || []).map((file: any) => ({
+      files: (reply.files || []).map((file: IFile) => ({
         url: file.publicUrl || file.url,
         key: file.key,
         type: file.type,
@@ -526,7 +526,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
  * @param reply 
  * @returns 
  */
-  private mapReplyTreeNode(reply: any): IReplyTreeNode {
+  private mapReplyTreeNode(reply: IReplyTreeNode): IReplyTreeNode {
     if (!reply) {
       throw new Error("Invalid reply data");
     }
@@ -534,7 +534,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
       ...this.mapReply(reply),
       depth: reply.depth || 0,
       children: Array.isArray(reply.children) 
-        ? reply.children.map((child: any) => this.mapReplyTreeNode(child))
+        ? reply.children.map((child) => this.mapReplyTreeNode(child))
         : [],
     };
   }
@@ -544,9 +544,9 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
    * @param replies 
    * @returns 
    */
-  private buildReplyTree(replies: any[]): any[] {
-    const replyMap = new Map<string, any>();
-    const tree: any[] = [];
+  private buildReplyTree(replies: IReplyTreeNode[]): IReplyTreeNode[] {
+    const replyMap = new Map<string, IReplyTreeNode>();
+    const tree: IReplyTreeNode[] = [];
 
     // Initialize all replies with empty children arrays
     replies.forEach(reply => {
@@ -572,7 +572,7 @@ export class ForumRepository extends BaseRepository<IForum> implements IForumRep
     // Sort children by createdAt
     replyMap.forEach(reply => {
       if (reply.children.length > 0) {
-        reply.children.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        reply.children.sort((a: IReply, b: IReply) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       }
     });
 

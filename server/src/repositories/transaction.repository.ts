@@ -1,77 +1,105 @@
-import { injectable } from "inversify";
+import { inject, injectable } from "inversify";
+import { Model, FilterQuery } from "mongoose";
 import Transaction, { ITransaction } from "../models/transaction.model";
 import { ITransactionRepository } from "../interfaces/transaction.repository";
+import { BaseRepository } from "./base.repository";
+import TYPES from "../di/types";
 
 /**
- * This is a repository responsible for interacting with transaction repository
- *
+ * Repository for managing transaction-related database operations.
  */
 @injectable()
-export class TransactionRepository implements ITransactionRepository {
+export class TransactionRepository extends BaseRepository<ITransaction> implements ITransactionRepository {
+  constructor(@inject(TYPES.TransactionModel) private transactionModel: Model<ITransaction>) {
+    super(transactionModel);
+  }
+
   /**
-   * This method retrieves all transactions for a specific user
-   * @param userId
-   * @returns
+   * Retrieves transactions for a specific user.
+   * @param userId 
+   * @param skip 
+   * @param limit 
+   * @returns 
    */
   async findByUserId(userId: string, skip: number = 0, limit: number = 0): Promise<ITransaction[]> {
-    let query = Transaction.find({ userId }).sort({ createdAt: -1 });
-    if (skip > 0) query = query.skip(skip);
-    if (limit > 0) query = query.limit(limit);
-    return query.exec();
+    try {
+      let transactionQuery = this.model.find({ userId }).sort({ createdAt: -1 });
+      if (skip > 0) transactionQuery = transactionQuery.skip(skip);
+      if (limit > 0) transactionQuery = transactionQuery.limit(limit);
+      return await transactionQuery.exec();
+    } catch (error) {
+      throw new Error(`Failed to fetch transactions for user ${userId}: ${(error as Error).message}`);
+    }
   }
 
   /**
-   * This method retrieves all transactions to list in admin panel
-   * @param skip
-   * @param limit
-   * @returns
+   * Retrieves all transactions for the admin panel.
+   * @param skip 
+   * @param limit 
+   * @returns 
    */
   async findAll(skip: number = 0, limit: number = 0): Promise<ITransaction[]> {
-    let query = Transaction.find().sort({ createdAt: -1 });
-    if (skip > 0) query = query.skip(skip);
-    if (limit > 0) query = query.limit(limit);
-    return query.exec();
+    try {
+      let transactionQuery = this.model.find().sort({ createdAt: -1 });
+      if (skip > 0) transactionQuery = transactionQuery.skip(skip);
+      if (limit > 0) transactionQuery = transactionQuery.limit(limit);
+      return await transactionQuery.exec();
+    } catch (error) {
+      throw new Error(`Failed to fetch all transactions: ${(error as Error).message}`);
+    }
   }
 
   /**
-   * This method retrieves transactions for specific course IDs
-   * @param courseIds
-   * @param skip
-   * @param limit
-   * @returns
+   * Retrieves transactions for specific course IDs.
+   * @param courseIds 
+   * @param skip 
+   * @param limit 
+   * @returns 
    */
   async findByCourseIds(courseIds: string[], skip: number = 0, limit: number = 0): Promise<ITransaction[]> {
-    let query = Transaction.find({ courseId: { $in: courseIds } }).sort({ createdAt: -1 });
-    if (skip > 0) query = query.skip(skip);
-    if (limit > 0) query = query.limit(limit);
-    return query.exec();
+    try {
+      let transactionQuery = this.model.find({ courseId: { $in: courseIds } }).sort({ createdAt: -1 });
+      if (skip > 0) transactionQuery = transactionQuery.skip(skip);
+      if (limit > 0) transactionQuery = transactionQuery.limit(limit);
+      return await transactionQuery.exec();
+    } catch (error) {
+      throw new Error(`Failed to fetch transactions for courses ${courseIds.join(", ")}: ${(error as Error).message}`);
+    }
   }
 
   /**
-   * This method exists for pagination purpose, count the number of transactions
-   * @returns
+   * Counts the total number of transactions.
+   * @returns 
    */
   async countAll(): Promise<number> {
-    return Transaction.countDocuments().exec();
+    try {
+      return await this.model.countDocuments().exec();
+    } catch (error) {
+      throw new Error(`Failed to count transactions: ${(error as Error).message}`);
+    }
   }
 
   /**
-   * This method creates a new transaction for a user
-   * @param transaction
-   * @returns
+   * Creates a new transaction.
+   * @param transactionData 
+   * @returns 
    */
-  async create(transaction: Partial<ITransaction>): Promise<ITransaction> {
-    const newTransaction = new Transaction(transaction);
-    return newTransaction.save();
+  async create(transactionData: Partial<ITransaction>): Promise<ITransaction> {
+    try {
+      const newTransaction = new this.model(transactionData);
+      return await newTransaction.save();
+    } catch (error) {
+      throw new Error(`Failed to create transaction: ${(error as Error).message}`);
+    }
   }
 
   /**
-   * This method exists for filtering transactions by date range in admin panel
-   * @param startDate
-   * @param endDate
-   * @param skip
-   * @param limit
-   * @returns
+   * Retrieves transactions within a date range for the admin panel.
+   * @param startDate 
+   * @param endDate 
+   * @param skip 
+   * @param limit 
+   * @returns 
    */
   async findByDateRange(
     startDate: string,
@@ -79,18 +107,25 @@ export class TransactionRepository implements ITransactionRepository {
     skip: number = 0,
     limit: number = 10
   ): Promise<{ transactions: ITransaction[]; total: number }> {
-    const query = {
-      dateTime: {
-        $gte: startDate,
-        $lte: endDate,
-      },
-    };
-
-    const [transactions, total] = await Promise.all([
-      Transaction.find(query).skip(skip).limit(limit).sort({ dateTime: -1 }).exec(),
-      Transaction.countDocuments(query).exec(),
-    ]);
-
-    return { transactions, total };
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new Error("Invalid date format");
+      }
+      const transactionQuery: FilterQuery<ITransaction> = {
+        dateTime: {
+          $gte: start,
+          $lte: end,
+        },
+      };
+      const [transactions, total] = await Promise.all([
+        this.model.find(transactionQuery).sort({ dateTime: -1 }).skip(skip).limit(limit).exec(),
+        this.model.countDocuments(transactionQuery).exec(),
+      ]);
+      return { transactions, total };
+    } catch (error) {
+      throw new Error(`Failed to fetch transactions for date range ${startDate} to ${endDate}: ${(error as Error).message}`);
+    }
   }
 }

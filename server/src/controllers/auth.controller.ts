@@ -14,14 +14,6 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 
 /**
  * Controller for handling authentication
- * *    1. Sign up
- * *    2. Login
- * *    3. Verify OTP
- * *    4. Refresh token
- * *    5. Logout
- * *    6. Google authentication
- * *    7. Password reset request
- * *    8. Password reset using token
  */
 @injectable()
 export class AuthController implements IAuthController {

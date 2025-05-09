@@ -9,13 +9,6 @@ import { buildPaginationResult, getPaginationParams } from "../utils/paginationU
 
 /**
  * Controller for handling roadmap functionality
- * *    1. Create a roadmap
- * *    2. Get roadmap by ID
- * *    3. Get all roadmaps
- * *    4. Update a roadmap
- * *    5. Delete a roadmap
- * *    6. Update topic progress
- * 
  */
 @injectable()
 export class RoadmapController {

@@ -8,11 +8,7 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { buildPaginationResult, getPaginationParams } from "../utils/paginationUtil";
 
 /**
- * Controller for handling admin management 
- *    1. List students
- *    2. List teachers
- *    3. Block user
- *    4. Unblock user
+ * Controller for handling admin management
  */
 @injectable()
 export class AdminController {

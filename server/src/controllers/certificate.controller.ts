@@ -10,9 +10,6 @@ import { getPaginationParams, buildPaginationResult } from "../utils/paginationU
 
 /**
  * Controller for handling certificate
- * *    1. Generate certificate
- * *    2. Get user certificates
- * *    3. Get certificate by ID
  */
 @injectable()
 export class CertificateController {

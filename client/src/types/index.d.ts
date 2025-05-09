@@ -98,12 +98,12 @@ declare global {
     type: "Text" | "Quiz" | "Video" | "PDF";
   }
 
-  interface ChapterProgress {
+  export interface ChapterProgress {
     chapterId: string;
     completed: boolean;
   }
 
-  interface SectionProgress {
+  export interface SectionProgress {
     sectionId: string;
     chapters: ChapterProgress[];
   }

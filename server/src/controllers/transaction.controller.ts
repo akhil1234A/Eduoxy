@@ -13,11 +13,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion:
 
 /**
  * Controller for handling transaction functionality
- * * *    1. Create a Stripe payment intent
- * * *    2. Create a transaction
- * * *    3. Get admin earnings
- * * *    4. Get teacher earnings
- * * *    5. Get student purchases
  * 
  */
 @injectable()

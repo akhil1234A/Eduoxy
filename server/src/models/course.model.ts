@@ -18,6 +18,7 @@ export interface ICourse {
     sectionTitle: string;
     sectionDescription?: string;
     chapters: {
+      image: string | null | undefined;
       chapterId: string;
       type: ChapterType; 
       title: string;

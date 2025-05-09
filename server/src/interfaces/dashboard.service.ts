@@ -1,10 +1,12 @@
+import { UserDashboardResponse, AdminDashboardResponse, TeacherDashboardResponse } from "../types/types";
+
 export interface IDashboardService {
   getAdminDashboard(
     page?: number, 
     limit?: number, 
     dateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string },
     tableDateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string }
-  ): Promise<any>;
+  ): Promise<AdminDashboardResponse>;
   
   getTeacherDashboard(
     teacherId: string, 
@@ -12,7 +14,7 @@ export interface IDashboardService {
     limit?: number, 
     dateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string },
     tableDateFilter?: { type: 'day' | 'week' | 'month' | 'custom', startDate?: string, endDate?: string }
-  ): Promise<any>;
+  ): Promise<TeacherDashboardResponse>;
 
-  getUserDashboard(userId:string): Promise<any>;
+  getUserDashboard(userId:string): Promise<UserDashboardResponse>;
 }

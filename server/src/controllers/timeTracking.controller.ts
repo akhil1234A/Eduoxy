@@ -9,8 +9,6 @@ import { apiLogger } from "../utils/logger";
 
 /**
  * Controller for handling time tracking functionality
- * *    1. Log time spent by user on a course
- * *    2. Get total time spent by user on a course
  */
 @injectable()
 export class TimeTrackingController {

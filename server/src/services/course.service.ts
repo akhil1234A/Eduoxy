@@ -31,7 +31,7 @@ export class CourseService implements ICourseService {
     }
 
     if (courseData.price) {
-      const price = parseInt(courseData.price as any, 10);
+      const price = parseInt(courseData.price as unknown as string, 10);
       if (isNaN(price)) {
         throw new Error(SERVICE_MESSAGES.INVALID_PRICE_FORMAT);
       }
@@ -39,11 +39,11 @@ export class CourseService implements ICourseService {
     }
 
     if (courseData.sections && Array.isArray(courseData.sections)) {
-      courseData.sections = courseData.sections.map((section: any) => ({
+      courseData.sections = courseData.sections.map((section) => ({
         ...section,
         sectionId: section.sectionId || uuidv4(),
         chapters: Array.isArray(section.chapters)
-          ? section.chapters.map((chapter: any) => ({
+          ? section.chapters.map((chapter) => ({
               ...chapter,
               chapterId: chapter.chapterId || uuidv4(),
             }))
@@ -197,7 +197,7 @@ export class CourseService implements ICourseService {
     }
 
     if (updateData.price) {
-      const price = parseInt(updateData.price as any, 10);
+      const price = parseInt(updateData.price as unknown as string, 10);
       if (isNaN(price)) {
         throw new Error(SERVICE_MESSAGES.INVALID_PRICE_FORMAT);
       }
@@ -217,11 +217,11 @@ export class CourseService implements ICourseService {
         throw new Error(SERVICE_MESSAGES.INVALID_FORMAT);
       }
 
-      updateData.sections = updateData.sections.map((section: any) => ({
+      updateData.sections = updateData.sections.map((section) => ({
         ...section,
         sectionId: section.sectionId || uuidv4(),
         chapters: Array.isArray(section.chapters)
-          ? section.chapters.map((chapter: any) => ({
+          ? section.chapters.map((chapter) => ({
               ...chapter,
               chapterId: chapter.chapterId || uuidv4(),
             }))
@@ -258,8 +258,8 @@ export class CourseService implements ICourseService {
       s3KeysToDelete.push(courseImageKey);
     }
 
-    course.sections.forEach((section: any) => {
-      section.chapters.forEach((chapter: any) => {
+    course.sections.forEach((section) => {
+      section.chapters.forEach((chapter) => {
         const videoKey = s3Service.extractKeyFromUrl(chapter.video);
         const imageKey = s3Service.extractKeyFromUrl(chapter.image);
         const subtitleKey = s3Service.extractKeyFromUrl(chapter.subtitle);

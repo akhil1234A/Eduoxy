@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, FilterQuery } from 'mongoose';
 import { ICourseRepository } from '../interfaces/course.repository';
 import { BaseRepository } from './base.repository';
 import Course, { ICourseDocument } from '../models/course.model';
@@ -154,29 +154,29 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
   async updateByCourseId(
     courseId: string,
     teacherId: string,
-    updateData: Partial<ICourseDocument>
+    courseData: Partial<ICourseDocument>
   ): Promise<ICourseDocument | null> {
     const course = await this.model.findOne({ courseId, teacherId }).exec();
     if (!course) return null;
 
-    if (updateData.price) {
-      const price = parseInt(updateData.price as unknown as string);
+    if (courseData.price) {
+      const price = parseInt(courseData.price as unknown as string);
       if (isNaN(price)) throw new Error('Invalid price format');
-      updateData.price = price;
+      courseData.price = price;
     }
 
-    if (updateData.sections) {
-      updateData.sections = (updateData.sections as any[]).map((section) => ({
+    if (courseData.sections) {
+      courseData.sections = (courseData.sections).map((section) => ({
         ...section,
         sectionId: section.sectionId || uuidv4(),
-        chapters: section.chapters.map((chapter: any) => ({
+        chapters: section.chapters.map((chapter) => ({
           ...chapter,
           chapterId: chapter.chapterId || uuidv4(),
         })),
       }));
     }
 
-    Object.assign(course, updateData);
+    Object.assign(course, courseData);
     return course.save();
   }
 
@@ -273,7 +273,7 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
     skip: number = 0,
     limit: number = 10
   ): Promise<ICourseDocument[]> {
-    const query: Record<string, any> = {
+    const query: FilterQuery<ICourseDocument> = {
       status: CourseStatus.Published,
       $or: [
         { title: { $regex: searchTerm, $options: 'i' } },
@@ -300,7 +300,7 @@ export class CourseRepository extends BaseRepository<ICourseDocument> implements
    * @returns 
    */
   async countSearchPublicCourses(searchTerm: string, category?: string): Promise<number> {
-    const query: Record<string, any> = {
+    const query: FilterQuery<ICourseDocument> = {
       status: CourseStatus.Published,
       $or: [
         { title: { $regex: searchTerm, $options: 'i' } },
