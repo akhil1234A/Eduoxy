@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState} from "react";
 import { usePathname } from "next/navigation";
 import {
   Sidebar,
@@ -31,14 +31,22 @@ import Link from "next/link";
 import { useLogoutMutation } from "@/state/api/authApi";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
-import { useUser } from "@/contexts/UserContext";
 
 const AppSidebar = () => {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const router = useRouter();
-  const { userType } = useUser();
+  const [userType, setUserType] = useState<string | null>(null); // no default "user"
+
+useEffect(() => {
+  const rawType =
+    Cookies.get("userType") ||
+    (typeof window !== "undefined" ? localStorage.getItem("userType") : null);
+
+  const normalizedType = rawType === "student" ? "user" : rawType;
+  setUserType(normalizedType);
+}, []);
 
 
   const navLinks = {
