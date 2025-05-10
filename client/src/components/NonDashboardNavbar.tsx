@@ -10,17 +10,23 @@ import { NotificationBell } from "@/components/NotificationBell";
 
 const NonDashboardNavbar = () => {
   const [userId, setUserId] = useState<string | null>(null); 
-  const [userType, setUserType] = useState<string | undefined>(undefined);
+  const [userType, setUserType] = useState<string | null>(null);
   const router = useRouter();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  useEffect(() => {
-    const id = Cookies.get("userId") || (typeof window !== "undefined" ? localStorage.getItem("userId") : null);
-    const type = typeof window !== "undefined" ? localStorage.getItem("userType") : null;
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const id = Cookies.get("userId") || localStorage.getItem("userId");
+    const rawType = Cookies.get("userType") || localStorage.getItem("userType");
+
+    const normalizedType = rawType === "student" ? "user" : rawType;
+
     setUserId(id || null);
-    setUserType(type || "");
-  }, []);
+    setUserType(normalizedType ?? null); 
+  }
+}, []);
+
 
 
   const handleLogout = async () => {

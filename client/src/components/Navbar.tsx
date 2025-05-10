@@ -11,15 +11,19 @@ import Cookies from "js-cookie";
 import { NotificationBell } from "@/components/NotificationBell";
 
 const Navbar = ({ isCoursePage }: { isCoursePage: boolean }) => {
-  const [userType, setUserType] = useState<string | null>(null);
-  const router = useRouter();
-  const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+const [userType, setUserType] = useState<string | null>(null);
+const router = useRouter();
+const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  useEffect(() => {
-    const type = Cookies.get("userType") || (typeof window !== "undefined" ? localStorage.getItem("userType") : null);
-    setUserType(type);
-  }, []);
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const rawType = Cookies.get("userType") || localStorage.getItem("userType");
+    const normalizedType = rawType === "student" ? "user" : rawType;
+    setUserType(normalizedType ?? null);
+  }
+}, []);
+
 
   const handleLogout = async () => {
     try {
