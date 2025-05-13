@@ -14,7 +14,7 @@ import { useUser } from "@/contexts/UserContext";
 
 const CertificateView = () => {
   const router = useRouter()
-  const { userId } = useUser();
+  const { userId, userLoading } = useUser();
   const [page, setPage] = useState(1)
   const limit = 9
 
@@ -28,14 +28,12 @@ const CertificateView = () => {
   const certificates = certificatesData?.certificates || []
   const total = certificatesData?.total || 0
 
-  if (!userId) {
-    router.push("/signin")
-    return null
-  }
 
+  if(userLoading) return <Loading /> 
   if (isLoading) return <Loading />
   if (error) return <div className="text-center py-12 text-red-500">Error loading certificates</div>
 
+  
   const handleDownload = (certificateUrl: string) => {
     window.open(certificateUrl, "_blank")
   }

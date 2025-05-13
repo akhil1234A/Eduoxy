@@ -30,7 +30,9 @@ const CoursesContent = () => {
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
-  const { userId } = useUser();
+  const { userId, userLoading} = useUser();
+
+
 
   const {
     data: courseResponse,
@@ -102,6 +104,7 @@ const CoursesContent = () => {
     router.push(`/user/courses?${query}`, { scroll: false });
   };
 
+  if(userLoading) return <Loading/>
   if (isLoading) return <Loading />;
   if (isError || (!filteredCourses.length && !searchTerm && selectedCategory === "all")) {
     return (

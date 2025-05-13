@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useUpdateForumMutation } from "@/state/api/forumApi";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
+
 interface EditForumModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -13,12 +19,16 @@ interface EditForumModalProps {
   onSuccess: () => void;
 }
 
-export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumModalProps) {
+export function EditForumModal({
+  isOpen,
+  onClose,
+  forum,
+  onSuccess,
+}: EditForumModalProps) {
   const [title, setTitle] = useState(forum.title);
   const [description, setDescription] = useState(forum.description);
-  const [topics, setTopics] = useState(forum.topics.join(", "));
   const [updateForum, { isLoading }] = useUpdateForumMutation();
-  const {userId} = useUser();
+  const { userId } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +38,6 @@ export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumM
         userId: userId || "",
         title,
         description,
-        topics: topics.split(",").map(topic => topic.trim()).filter(Boolean),
       }).unwrap();
       onSuccess();
       onClose();
@@ -63,15 +72,6 @@ export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumM
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="topics">Topics (comma-separated)</Label>
-            <Input
-              id="topics"
-              value={topics}
-              onChange={(e) => setTopics(e.target.value)}
-              placeholder="e.g. General, Support, Feedback"
-            />
-          </div>
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
@@ -84,4 +84,4 @@ export function EditForumModal({ isOpen, onClose, forum, onSuccess }: EditForumM
       </DialogContent>
     </Dialog>
   );
-} 
+}

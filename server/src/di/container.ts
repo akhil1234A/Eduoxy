@@ -10,6 +10,7 @@ import { CourseController } from "../controllers/course.controller";
 import { CourseRepository } from "../repositories/course.repository";
 import { MailService } from "../services/mail.service";
 import { JwtService } from "../utils/jwt";
+import { MapperUtil } from "../utils/mapper.util";
 import Course, { ICourseDocument } from "../models/course.model";
 import TYPES from "./types";
 import { Model } from "mongoose";
@@ -122,6 +123,7 @@ container.bind<Model<IUserTimeTracking>>(TYPES.UserTimeTrackingModel).toConstant
 container.bind<IMailService>(TYPES.IMailService).to(MailService).inSingletonScope();
 container.bind<IJwtService>(TYPES.IJwtService).to(JwtService).inSingletonScope();
 container.bind<IRedisClient>(TYPES.IRedisClient).toConstantValue(redisClient);
+container.bind<MapperUtil>(TYPES.MapperUtil).to(MapperUtil).inSingletonScope();
 
 // Services
 container.bind<IAuthService>(TYPES.IAuthService).to(AuthService).inSingletonScope();

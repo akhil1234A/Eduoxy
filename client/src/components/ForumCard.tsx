@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import Loading from "./Loading";
 
 interface ForumCardProps {
   forum: IForum;
@@ -25,7 +26,7 @@ interface ForumCardProps {
 export function ForumCard({ forum }: ForumCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [deleteForum, { isLoading: isDeleting }] = useDeleteForumMutation();
-  const { userType, userId } = useUser();
+  const { userType, userId, userLoading } = useUser();
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this forum?")) {
@@ -41,6 +42,7 @@ export function ForumCard({ forum }: ForumCardProps) {
     }
   };
 
+  if(userLoading) return <Loading/>
   return (
     <>
       <Card>
@@ -75,18 +77,7 @@ export function ForumCard({ forum }: ForumCardProps) {
         <Link href={`/${userType}/forums/${forum._id}`}>
           <CardContent>
             <p className="text-sm text-muted-foreground">{forum.description}</p>
-            {forum.topics.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {forum.topics.map((topic) => (
-                  <span
-                    key={topic}
-                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            )}
+            
           </CardContent>
         </Link>
       </Card>

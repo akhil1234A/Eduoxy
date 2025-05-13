@@ -8,14 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CreateForumModal } from "@/components/forum/CreateForumModal";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
+import Loading from "@/components/Loading";
 
 export default function AdminForumsPage() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { userId, userLoading } = useUser();
 
   const { data, isLoading, error } = useGetForumsQuery({ page, pageSize: 10, query });
 
+  if(userLoading) return <Loading/>
   if (isLoading) return <div className="text-center py-8">Loading...</div>;
   if (error) return <div className="text-center py-8 text-red-500">Error loading forums</div>;
 
@@ -56,7 +60,9 @@ export default function AdminForumsPage() {
         onSuccess={() => {
           setIsCreateModalOpen(false);
           toast.success("Forum created successfully");
-        }}
+        }
+      }
+       userId={userId}
       />
     </div>
   );

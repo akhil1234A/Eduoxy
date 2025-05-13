@@ -14,7 +14,7 @@ import { useUser } from "@/contexts/UserContext";
 
 const UserDashboard = () => {
   const router = useRouter()
-  const { userId } = useUser();
+  const { userId, userLoading } = useUser();
 
   const {
     data: dashboardResponse,
@@ -24,6 +24,8 @@ const UserDashboard = () => {
     skip: !userId,
   })
   const dashboard = dashboardResponse?.data
+
+  if(userLoading) return <Loading/>
 
   if (!userId) {
     router.push("/signin")

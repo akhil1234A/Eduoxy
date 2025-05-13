@@ -7,6 +7,8 @@ import { successResponse, errorResponse } from "../types/types";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { apiLogger } from "../utils/logger";
 import { getPaginationParams, buildPaginationResult } from "../utils/paginationUtil";
+import { MapperUtil } from "../utils/mapper.util";
+import { CertificateResponse } from "../types/dtos";
 
 /**
  * Controller for handling certificate
@@ -14,7 +16,8 @@ import { getPaginationParams, buildPaginationResult } from "../utils/paginationU
 @injectable()
 export class CertificateController {
   constructor(
-    @inject(TYPES.ICertificateService) private _certificateService: ICertificateService
+    @inject(TYPES.ICertificateService) private _certificateService: ICertificateService,
+    @inject(TYPES.MapperUtil) private _mapperUtil: MapperUtil
   ) {}
 
 /**
@@ -26,15 +29,19 @@ export class CertificateController {
     try {
       const { userId, courseId, courseName } = req.body;
       const certificate = await this._certificateService.generateCertificate(userId, courseId, courseName);
+      const certificateResponse = await this._mapperUtil.toCertificateResponse(certificate);
       apiLogger.info("Certificate generated", { certificateId: certificate.certificateId });
-      res.status(HttpStatus.CREATED).json(successResponse(RESPONSE_MESSAGES.CERTIFICATE.GENERATED_SUCCESS, certificate));
+      res
+        .status(HttpStatus.CREATED)
+        .json(successResponse(RESPONSE_MESSAGES.CERTIFICATE.GENERATED_SUCCESS, certificateResponse));
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Certificate generation failed", { error: err.message });
-      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(errorResponse(RESPONSE_MESSAGES.CERTIFICATE.GENERATED_ERROR, err.message));
+      res
+        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .json(errorResponse(RESPONSE_MESSAGES.CERTIFICATE.GENERATED_ERROR, err.message));
     }
   }
-
   /**
    * This method gets all certificates for a user with pagination
    * @param req request object
@@ -46,10 +53,11 @@ export class CertificateController {
       const params = getPaginationParams(req);
       const { certificates, total } = await this._certificateService.getUserCertificates(userId, params.page, params.limit);
       const result = buildPaginationResult(params, total);
-
+      const certificateResponse = await this._mapperUtil.toCertificateResponseArray(certificates)
+      apiLogger.info("certificateRespose",certificateResponse)
       res.status(HttpStatus.OK).json(
         successResponse(RESPONSE_MESSAGES.CERTIFICATE.RETRIEVE_SUCCESS, {
-          certificates,
+          certificates: certificateResponse,
           total: result.total,
           page: result.page,
           limit: result.limit,
@@ -76,7 +84,12 @@ export class CertificateController {
         res.status(HttpStatus.NOT_FOUND).json(errorResponse(RESPONSE_MESSAGES.CERTIFICATE.NOT_FOUND));
         return;
       }
-      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.CERTIFICATE.RETRIEVE_SUCCESS, certificate));
+     
+      const certificateResponse = await this._mapperUtil.toCertificateResponse(certificate);
+
+      res.status(HttpStatus.OK).json(
+        successResponse(RESPONSE_MESSAGES.CERTIFICATE.RETRIEVE_SUCCESS, certificateResponse)
+      );
     } catch (error) {
       const err = error as Error;
       apiLogger.error("Failed to retrieve certificate", { error: err.message });

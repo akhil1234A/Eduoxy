@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Cookies from "js-cookie";
 import {
   useGetCourseQuery,
   useGetUserCourseProgressQuery,
@@ -11,6 +10,8 @@ import {
   useLogTimeSpentMutation,
   useGetTotalTimeSpentQuery,
 } from "@/state/redux";
+import { useUser } from "@/contexts/UserContext";
+import Loading from "@/components/Loading";
 
 export const useCourseProgressData = (propCourseId?: string) => {
   const { courseId: paramCourseId, chapterId } = useParams();
@@ -22,7 +23,7 @@ export const useCourseProgressData = (propCourseId?: string) => {
   const [updateProgress] = useUpdateUserCourseProgressMutation();
   const [logTimeSpent] = useLogTimeSpentMutation();
 
-  const userId = Cookies.get("userId") || localStorage.getItem("userId");
+ const { userId, userLoading } = useUser();
 
   const {
     data: courseResponse,
@@ -174,6 +175,8 @@ export const useCourseProgressData = (propCourseId?: string) => {
       setLastTimeUpdate(playedSeconds);
     }
   };
+
+  if(userLoading) <Loading/>
 
   return {
     userId,

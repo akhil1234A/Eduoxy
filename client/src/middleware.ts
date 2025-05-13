@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 
 const ROUTE_ROLES: Record<string, string> = {
   admin: "/admin",
@@ -41,18 +40,8 @@ function isValidRouteForRole(pathname: string, userType: string) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("authToken")?.value;
-
-  let userType: string | null = null;
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userType: string };
-      userType = decoded.userType.toLowerCase();
-    } catch (error) {
-      const err = error as Error; 
-      console.log("[Middleware] Invalid token", err.message);
-    }
-  }
+  const userType = request.cookies.get("userType")?.value;
+  
 
   const isLoggedIn = Boolean(userType);
 

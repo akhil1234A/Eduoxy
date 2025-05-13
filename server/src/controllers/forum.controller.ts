@@ -8,6 +8,7 @@ import { HttpStatus } from "../utils/httpStatus";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 import { apiLogger } from "../utils/logger";
 import { buildPaginationResult, getPaginationParams } from "../utils/paginationUtil";
+import { MapperUtil } from "../utils/mapper.util";
 
 /**
  * This controller handles all the CRUD operations for forums, posts, and replies.
@@ -17,6 +18,7 @@ import { buildPaginationResult, getPaginationParams } from "../utils/paginationU
 export class ForumController {
   constructor(
     @inject(TYPES.IForumService) private _forumService: IForumService,
+    @inject(TYPES.MapperUtil) private _mapperUtil: MapperUtil
   ) {}
 
 /**
@@ -28,7 +30,13 @@ export class ForumController {
     try {
       const params = getPaginationParams(req);
       const result = await this._forumService.getForums(params.page, params.limit, params.searchTerm);
-      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_FORUMS_SUCCESS, result));
+      const ForumResponse = await this._mapperUtil.toForumResponseArray(result.items); 
+      res.status(HttpStatus.OK).json(successResponse(RESPONSE_MESSAGES.FORUM.GET_FORUMS_SUCCESS, {
+        items: ForumResponse,
+        total: result.total,
+        page: result.page, 
+        pageSize: result.pageSize,
+      }));
 
       } 
       catch (error) {

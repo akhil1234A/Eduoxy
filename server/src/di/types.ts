@@ -1,5 +1,6 @@
 import { Certificate } from "../models/certificate.model";
 import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
+import { MapperUtil } from "../utils/mapper.util";
 
 const TYPES = {
   //Repositories
@@ -53,6 +54,7 @@ const TYPES = {
   IMailService: Symbol.for("IMailService"),
   IJwtService: Symbol.for("IJwtService"),
   IRedisClient: Symbol.for("IRedisClient"),
+  MapperUtil: Symbol.for("MapperUtil"),
 
   //Models
   CourseModel: Symbol.for("CourseModel"),

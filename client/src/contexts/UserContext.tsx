@@ -6,7 +6,8 @@ import Cookies from "js-cookie";
 type UserContextType = {
   userId: string | null;
   userName: string | null;
-  userType: string | null; // can be null if not found
+  userType: string | null; 
+  userLoading: boolean;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -15,6 +16,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null); // no default
+  const [userLoading, setuserLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -27,11 +29,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUserId(id);
       setUserName(name);
       setUserType(normalizedType);
+      setuserLoading(false);
     }
   }, []);
 
   return (
-    <UserContext.Provider value={{ userId, userName, userType }}>
+    <UserContext.Provider value={{ userId, userName, userType, userLoading }}>
       {children}
     </UserContext.Provider>
   );

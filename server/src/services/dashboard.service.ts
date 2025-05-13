@@ -6,6 +6,7 @@ import { ICourseRepository } from "../interfaces/course.repository";
 import { IUserRepository } from "../interfaces/user.repository";
 import { IAuthService } from "../interfaces/auth.service";
 import { IDashboardService } from "../interfaces/dashboard.service";
+import { s3Service } from "./s3.service";
 import {
   format,
   subDays,
@@ -26,6 +27,7 @@ import { CacheUtil } from "../utils/cache";
 import { IUserCourseProgressRepository } from "../interfaces/courseProgress.repository";
 import { ICertificateRepository } from "../interfaces/certificate.repository";
 import { TimeTrackingRepository } from "../repositories/timeTracking.repository";
+import { MapperUtil } from "../utils/mapper.util";
 
 /**
  * This is a service responsible for managing dashboard functionalities
@@ -43,7 +45,8 @@ export class DashboardService implements IDashboardService {
     @inject(TYPES.IAuthService) private _authService: IAuthService,
     @inject(TYPES.IUserCourseProgressRepository) private _userCourseProgressRepository: IUserCourseProgressRepository,
     @inject(TYPES.ICertificateRepository) private _certificateRepository: ICertificateRepository,
-    @inject(TYPES.TimeTrackingRepository) private _timeTrackingRepository: TimeTrackingRepository
+    @inject(TYPES.TimeTrackingRepository) private _timeTrackingRepository: TimeTrackingRepository,
+    @inject(TYPES.MapperUtil) private _mapperUtil: MapperUtil,
   ) {}
 
   /**
@@ -457,19 +460,15 @@ export class DashboardService implements IDashboardService {
       );
     }, 0);
 
-    const certificatesEarned = certificates.certificates.map((cert: any) => ({
-      certificateId: cert.certificateId,
-      courseId: cert.courseId,
-      courseName: cert.courseName,
-      certificateUrl: cert.certificateUrl,
-      issuedAt: format(cert.issuedAt, "yyyy-MM-dd"),
-    }));
+    const certificatesWithPresignedUrls = await this._mapperUtil.toCertificateResponseArray(
+        certificates.certificates
+      );
 
     const result = {
       timeSpent,
       completedChapters,
-      certificatesEarned: certificatesEarned.length,
-      certificates: certificatesEarned,
+      certificatesEarned: certificatesWithPresignedUrls.length,
+      certificates: certificatesWithPresignedUrls,
       enrolledCourses: {
         startLearning: enrolledCourses
           .filter((course) => course.progress === 0 && !course.completed)

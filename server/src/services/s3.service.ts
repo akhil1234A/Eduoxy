@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 /**
@@ -126,6 +126,31 @@ export class S3Service {
     return url.split(bucketUrl)[1];
   }
   
+  /**
+   * Genereates a presigned url for downloading a file from s3. 
+   * @param key 
+   * @param expiresIn 
+   * @returns 
+   */
+  async generateDownloadPresignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+    if (!key) {
+      throw new Error("Key is required");
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET!,
+      Key: key,
+    });
+
+    try {
+      const presignedUrl = await getSignedUrl(this.s3Client, command, { expiresIn });
+      return presignedUrl;
+    } catch (error) {
+      console.error(`Failed to generate presigned download URL for key: ${key}`, error);
+      throw new Error("Could not generate presigned URL");
+    }
+  }
+
 }
 
 export const s3Service = new S3Service();

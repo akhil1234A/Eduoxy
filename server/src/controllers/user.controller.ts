@@ -6,6 +6,7 @@ import { HttpStatus } from "../utils/httpStatus";
 import { errorResponse, successResponse } from "../types/types";
 import { IUser } from "../models/user.model";
 import { RESPONSE_MESSAGES } from "../utils/responseMessages";
+import { MapperUtil } from "../utils/mapper.util";
 
 /**
  * Controller for handling user management
@@ -13,7 +14,8 @@ import { RESPONSE_MESSAGES } from "../utils/responseMessages";
 @injectable()
 export class UserController {
   constructor(
-    @inject(TYPES.IUserService) private _userService: IUserService
+    @inject(TYPES.IUserService) private _userService: IUserService,
+    @inject(TYPES.MapperUtil) private _mapperUtil: MapperUtil
   ) {}
 
   /**
@@ -80,7 +82,8 @@ export class UserController {
 
     try{
      const user = await this._userService.getProfile(userId);
-     res.json(successResponse(RESPONSE_MESSAGES.USER.GET_PROFILE_SUCCESS, user as IUser));
+     const userResponse = await this._mapperUtil.toProfileResponse(user);
+     res.json(successResponse(RESPONSE_MESSAGES.USER.GET_PROFILE_SUCCESS, userResponse));
     } catch (error) {
       const err = error as Error;
       res.status(HttpStatus.BAD_REQUEST).json(errorResponse(RESPONSE_MESSAGES.USER.GET_PROFILE_FAIL, err.message));

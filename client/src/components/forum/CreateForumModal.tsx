@@ -7,20 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useUser } from "@/contexts/UserContext";
 
 interface CreateForumModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  userId: string | null;
 }
 
 export const CreateForumModal: React.FC<CreateForumModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  userId,
 }) => {
   const [createForum, { isLoading }] = useCreateForumMutation();
+
   const {
     register,
     handleSubmit,
@@ -30,16 +32,12 @@ export const CreateForumModal: React.FC<CreateForumModalProps> = ({
     resolver: zodResolver(ForumSchema),
   });
 
-  const {userId} = useUser();
-
   const onSubmit = async (data: ForumSchemaType) => {
     try {
-      const topics = data.topics ? (data.topics as string).split(",").map((t) => t.trim()) : [];
       await createForum({
         userId: userId || "",
         title: data.title,
         description: data.description,
-        topics,
       }).unwrap();
       reset();
       onSuccess();
@@ -69,17 +67,6 @@ export const CreateForumModal: React.FC<CreateForumModalProps> = ({
               <p className="text-red-500 text-sm">{errors.description.message}</p>
             )}
           </div>
-          {/* <div>
-            <Label htmlFor="topics">Topics (comma-separated)</Label>
-            <Input
-              id="topics"
-              {...register("topics")}
-              placeholder="e.g., JavaScript, React, CSS"
-            />
-            {errors.topics && (
-              <p className="text-red-500 text-sm">{errors.topics.message}</p>
-            )}
-          </div> */}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
@@ -92,4 +79,4 @@ export const CreateForumModal: React.FC<CreateForumModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};
