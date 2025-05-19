@@ -2,7 +2,9 @@ import { injectable, inject } from "inversify";
 import { format } from "date-fns";
 import { s3Service } from "../services/s3.service";
 import { ICertificate } from "../models/certificate.model";
-import { CertificateResponse, ForumResponse, UserResponse} from "../types/dtos";
+import { ICourse } from "../models/course.model";
+import { ITransaction } from "../models/transaction.model";
+import { CertificateResponse, ForumResponse, listUsers, UserResponse, CourseResponse, EnrollmentResponse} from "../types/dtos";
 import { IForum } from "../interfaces/forum.model";
 import { apiLogger } from "../utils/logger";
 import { IUser } from "../models/user.model";
@@ -84,4 +86,38 @@ export class MapperUtil {
     return response;
   }
 
+  async toUserResponse(profile: IUser): Promise<listUsers> {
+    return {
+      _id: profile.id.toString(),
+      name: profile.name,
+      email: profile.email,
+      userType: profile.userType,
+      isVerified: profile.isVerified,
+      isBlocked: profile.isBlocked,
+    };
+  }
+
+  async toListUsersResponseArray(users: IUser[]): Promise<listUsers[]> {
+    return Promise.all(users.map((user) => this.toUserResponse(user)));
+  }
+
+  async toCourseResponse(course: ICourse): Promise<CourseResponse> {
+    let instructor: Pick<UserResponse, '_id' | 'name' | 'title'>;
+   
+
+    return {
+      _id: course.courseId,
+      instructor: course.teacherName,
+      title: course.title,
+      description: course.description || "",
+      createdAt: course.createdAt,
+
+    };
+  }
+
+  async toCourseResponseArray(courses: ICourse[]): Promise<CourseResponse[]> {
+    return Promise.all(courses.map((course) => this.toCourseResponse(course)));
+  }
+
+ 
 }
