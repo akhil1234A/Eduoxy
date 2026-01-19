@@ -18,8 +18,16 @@ export interface IRedisClient {
 }
 
 const redisClient: RedisClientType = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+  username: 'default',
+  password: process.env.REDIS_PASSWORD,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+    // tls: true,
+    // rejectUnauthorized: false, // Redis Cloud cert
+  },
 });
+
 
 redisClient.on("error", (err) => console.error("Redis Error:", err));
 redisClient.on("connect", () => console.log("Redis Connected"));
